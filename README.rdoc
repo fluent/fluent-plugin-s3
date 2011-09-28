@@ -1,7 +1,2 @@
-= Treasure Data output plugin for Fluent
-
-== Copyright
-
-Copyright:: Copyright (c) 2011 Treasure Data, Inc.
-License::   Apache License, Version 2.0
+= Amazon S3 output plugin for Fluent event collector
 
