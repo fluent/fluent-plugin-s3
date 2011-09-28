@@ -1,0 +1,7 @@
+= Treasure Data output plugin for Fluent
+
+== Copyright
+
+Copyright:: Copyright (c) 2011 Treasure Data, Inc.
+License::   Apache License, Version 2.0
+
