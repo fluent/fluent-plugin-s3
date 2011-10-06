@@ -8,6 +8,7 @@ class S3Output < Fluent::TimeSlicedOutput
     super
     require 'aws-sdk'
     require 'zlib'
+    require 'time'
   end
 
   def configure(conf)
