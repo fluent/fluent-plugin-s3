@@ -11,6 +11,8 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'time'
   end
 
+  attr_accessor :aws_key_id, :aws_sec_key, :s3_bucket, :path
+
   def configure(conf)
     super
 
@@ -18,37 +20,37 @@ class S3Output < Fluent::TimeSlicedOutput
       @aws_key_id = aws_key_id
     end
     unless @aws_key_id
-      raise ConfigError, "'aws_key_id' parameter is required on file output"
+      raise ConfigError, "'aws_key_id' parameter is required on s3 output"
     end
 
     if aws_sec_key = conf['aws_sec_key']
       @aws_sec_key = aws_sec_key
     end
     unless @aws_sec_key
-      raise ConfigError, "'aws_sec_key' parameter is required on file output"
+      raise ConfigError, "'aws_sec_key' parameter is required on s3 output"
     end
 
     if s3_bucket = conf['s3_bucket']
       @s3_bucket = s3_bucket
     end
     unless @s3_bucket
-      raise ConfigError, "'s3_bucket' parameter is required on file output"
+      raise ConfigError, "'s3_bucket' parameter is required on s3 output"
     end
 
     if path = conf['path']
       @path = path
     end
     unless @path
-      raise ConfigError, "'path' parameter is required on file output"
+      @path = ''
     end
 
     if @localtime
-      @formatter = Proc.new {|tag,event|
-        "#{Time.at(event.time).iso8601}\t#{tag}\t#{event.record.to_json}\n"
+      @formatter = Proc.new {|tag,time,record|
+        "#{Time.at(time).iso8601}\t#{tag}\t#{record.to_json}\n"
       }
     else
-      @formatter = Proc.new {|tag,event|
-        "#{Time.at(event.time).utc.iso8601}\t#{tag}\t#{event.record.to_json}\n"
+      @formatter = Proc.new {|tag,time,record|
+        "#{Time.at(time).utc.iso8601}\t#{tag}\t#{record.to_json}\n"
       }
     end
   end
@@ -61,8 +63,8 @@ class S3Output < Fluent::TimeSlicedOutput
     @bucket = @s3.buckets[@s3_bucket]
   end
 
-  def format(tag, event)
-    @formatter.call(tag, event)
+  def format(tag, time, record)
+    @formatter.call(tag, time, record)
   end
 
   def write(chunk)

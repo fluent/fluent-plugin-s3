@@ -12,7 +12,7 @@ begin
     gemspec.homepage = "http://fluent.github.com/"
     gemspec.has_rdoc = false
     gemspec.require_paths = ["lib"]
-    gemspec.add_dependency "fluent", "~> 0.9.14"
+    gemspec.add_dependency "fluentd", "~> 0.10.0"
     gemspec.add_dependency "aws-sdk", "~> 1.1.3"
     gemspec.test_files = Dir["test/**/*.rb"]
     gemspec.files = Dir["bin/**/*", "lib/**/*", "test/**/*.rb"] +
@@ -48,4 +48,13 @@ end
 #task :default => [VERSION_FILE, :build]
 
 task :default => [:build]
+
+Rake::TestTask.new(:test) do |t|
+  t.libs << "test"
+  t.test_files = Dir["test/*.rb"].sort
+  t.verbose = true
+  #t.warning = true
+end
+
+task :default => [:build, :gemspec]
 
