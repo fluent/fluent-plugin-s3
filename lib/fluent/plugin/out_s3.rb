@@ -9,6 +9,7 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'aws-sdk'
     require 'zlib'
     require 'time'
+    require 'tempfile'
   end
 
   attr_accessor :aws_key_id, :aws_sec_key, :s3_bucket, :path
