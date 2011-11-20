@@ -74,11 +74,10 @@ class S3Output < Fluent::TimeSlicedOutput
     w = Zlib::GzipWriter.new(tmp)
     begin
       chunk.write_to(w)
-      w.finish
-      @bucket.objects[s3path].write(Pathname.new(tmp.path))
     ensure
       w.close rescue nil
     end
+    @bucket.objects[s3path].write(Pathname.new(tmp.path))
   end
 end
 
