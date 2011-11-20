@@ -11,48 +11,17 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'time'
   end
 
-  attr_accessor :aws_key_id, :aws_sec_key, :s3_bucket, :path
+  config_param :path, :string, :default => ""
+  config_param :time_format, :string, :default => nil
+
+  config_param :aws_key_id, :string
+  config_param :aws_sec_key, :string
+  config_param :s3_bucket, :string
 
   def configure(conf)
     super
 
-    if aws_key_id = conf['aws_key_id']
-      @aws_key_id = aws_key_id
-    end
-    unless @aws_key_id
-      raise ConfigError, "'aws_key_id' parameter is required on s3 output"
-    end
-
-    if aws_sec_key = conf['aws_sec_key']
-      @aws_sec_key = aws_sec_key
-    end
-    unless @aws_sec_key
-      raise ConfigError, "'aws_sec_key' parameter is required on s3 output"
-    end
-
-    if s3_bucket = conf['s3_bucket']
-      @s3_bucket = s3_bucket
-    end
-    unless @s3_bucket
-      raise ConfigError, "'s3_bucket' parameter is required on s3 output"
-    end
-
-    if path = conf['path']
-      @path = path
-    end
-    unless @path
-      @path = ''
-    end
-
-    if @localtime
-      @formatter = Proc.new {|tag,time,record|
-        "#{Time.at(time).iso8601}\t#{tag}\t#{record.to_json}\n"
-      }
-    else
-      @formatter = Proc.new {|tag,time,record|
-        "#{Time.at(time).utc.iso8601}\t#{tag}\t#{record.to_json}\n"
-      }
-    end
+    @timef = TimeFormatter.new(@time_format, @localtime)
   end
 
   def start
@@ -64,7 +33,8 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   def format(tag, time, record)
-    @formatter.call(tag, time, record)
+    time_str = @timef.format(time)
+    "#{time_str}\t#{tag}\t#{record.to_json}\n"
   end
 
   def write(chunk)
