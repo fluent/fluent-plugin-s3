@@ -1,2 +1,55 @@
 = Amazon S3 output plugin for Fluent event collector
 
+== Overview
+
+*s3* output plugin buffers event logs in local file and upload it to S3 periodically.
+
+This plugin splits files exactly by using the time of event logs (not the time when the logs are received). For example, a log '2011-01-02 message B' is reached, and then another log '2011-01-03 message B' is reached in this order, the former one is stored in "20110102.gz" file, and latter one in "20110103.gz" file.
+
+
+== Installation
+
+Simply use RubyGems:
+
+    gem install fluent-plugin-s3
+
+== Configuration
+
+    <match pattern>
+      type s3
+
+      aws_key_id YOUR_AWS_KEY_ID
+      aws_sec_key YOUR_AWS_SECRET/KEY
+      s3_bucket YOUR_S3_BUCKET_NAME
+      path logs/
+      buffer_path /var/log/fluent/s3
+
+      time_slice_format %Y%m%d-%H
+      time_slice_wait 10m
+      utc
+    </match>
+
+[aws_key_id (required)] AWS access key id.
+
+[aws_sec_key (required)] AWS secret key.
+
+[s3_bucket (required)] S3 bucket name.
+
+[path] path prefix of the files on S3. Default is "" (no prefix).
+
+[buffer_path (required)] path prefix of the files to buffer logs.
+
+[time_slice_format] Format of the time used as the file name. Default is '%Y%m%d'. Use '%Y%m%d%H' to split files hourly.
+
+[time_slice_wait] The time to wait old logs. Default is 10 minutes. Specify larger value if old logs may reache.
+
+[utc] Use UTC instead of local time.
+
+The actual path on S3 will be: "{path}{time_slice_format}_{sequential_number}.gz"
+
+
+== Copyright
+
+Copyright:: Copyright (c) 2011 Sadayuki Furuhashi
+License::   Apache License, Version 2.0
+
