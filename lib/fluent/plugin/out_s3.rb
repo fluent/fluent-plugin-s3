@@ -9,6 +9,7 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'aws-sdk'
     require 'zlib'
     require 'time'
+    require 'tempfile'
   end
 
   config_param :path, :string, :default => ""
@@ -38,7 +39,11 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   def write(chunk)
-    s3path = "#{@path}#{chunk.key}.gz"
+    i = 0
+    begin
+      s3path = "#{@path}#{chunk.key}_#{i}.gz"
+      i += 1
+    end while @bucket.objects[s3path].exists?
 
     tmp = Tempfile.new("s3-")
     w = Zlib::GzipWriter.new(tmp)
