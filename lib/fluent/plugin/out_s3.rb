@@ -31,7 +31,7 @@ class S3Output < Fluent::TimeSlicedOutput
       :access_key_id     => @aws_key_id,
       :secret_access_key => @aws_sec_key
     }
-    options[:s3_endpoint] = @endpoint if @endpoint
+    options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
     @s3 = AWS::S3.new(options)
     @bucket = @s3.buckets[@s3_bucket]
   end

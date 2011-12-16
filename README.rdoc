@@ -21,7 +21,7 @@ Simply use RubyGems:
       aws_key_id YOUR_AWS_KEY_ID
       aws_sec_key YOUR_AWS_SECRET/KEY
       s3_bucket YOUR_S3_BUCKET_NAME
-      endpoint s3-ap-northeast-1.amazonaws.com
+      s3_endpoint s3-ap-northeast-1.amazonaws.com
       path logs/
       buffer_path /var/log/fluent/s3
 
@@ -36,7 +36,7 @@ Simply use RubyGems:
 
 [s3_bucket (required)] S3 bucket name.
 
-[endpoint] s3 endpoint name. Example, Tokyo region is "s3-ap-northeast-1.amazonaws.com".
+[s3_endpoint] s3 endpoint name. Example, Tokyo region is "s3-ap-northeast-1.amazonaws.com".
 
 [path] path prefix of the files on S3. Default is "" (no prefix).
 
