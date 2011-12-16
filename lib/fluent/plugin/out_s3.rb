@@ -18,6 +18,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :aws_key_id, :string
   config_param :aws_sec_key, :string
   config_param :s3_bucket, :string
+  config_param :s3_endpoint, :string, :default => nil
 
   def configure(conf)
     super
