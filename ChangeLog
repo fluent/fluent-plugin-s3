@@ -1,4 +1,16 @@
 
+Release 0.2.2 - 2011/12/15
+
+  * Add s3_endpoint optio
+
+
+Release 0.2.1 - 2011/10/24
+
+  * Add sequential number to the file to avoid overwriting
+  * Use bundler instead of jeweler for packaging
+  * Updated README
+
+
 Release 0.2.0 - 2011/10/16
 
   * Updated to fluentd-0.10.0
