@@ -45,7 +45,10 @@ class S3Output < Fluent::TimeSlicedOutput
   def write(chunk)
     i = 0
     begin
-      s3path = "#{@path}#{chunk.key}_#{i}.gz"
+      # XXX chunk.key don't using "/", convert '-' to '/(path separator)'
+      # %Y%m%d-%h => %Y%m%d/%h_#{i}.gz
+      filename = "#{chunk.key.to_s.gsub('-', '/')}_#{i}.gz"
+      s3path = "#{@path}#{filename}"
       i += 1
     end while @bucket.objects[s3path].exists?
 
