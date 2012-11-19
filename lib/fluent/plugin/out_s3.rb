@@ -15,8 +15,8 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :path, :string, :default => ""
   config_param :time_format, :string, :default => nil
 
-  config_param :aws_key_id, :string
-  config_param :aws_sec_key, :string
+  config_param :aws_key_id, :string, :default => nil
+  config_param :aws_sec_key, :string, :default => nil
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
 
@@ -28,10 +28,10 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def start
     super
-    options = {
-      :access_key_id     => @aws_key_id,
-      :secret_access_key => @aws_sec_key
-    }
+    if @aws_key_id && @aws_sec_key
+      options[:access_key_id] = @aws_key_id
+      options[:secret_access_key] = @aws_sec_key
+    end
     options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
     @s3 = AWS::S3.new(options)
     @bucket = @s3.buckets[@s3_bucket]
