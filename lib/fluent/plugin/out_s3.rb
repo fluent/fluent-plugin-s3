@@ -28,6 +28,7 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def start
     super
+    options = {}
     if @aws_key_id && @aws_sec_key
       options[:access_key_id] = @aws_key_id
       options[:secret_access_key] = @aws_sec_key
