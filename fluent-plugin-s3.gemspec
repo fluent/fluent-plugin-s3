@@ -18,5 +18,6 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency "fluentd", "~> 0.10.0"
   gem.add_dependency "aws-sdk", "~> 1.7"
+  gem.add_dependency "yajl-ruby", "~> 1.0"
   gem.add_development_dependency "rake", ">= 0.9.2"
 end
