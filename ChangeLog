@@ -1,4 +1,11 @@
 
+Release 0.2.3 - 2012/11/19
+
+  * Loosen 'aws-sdk' version requirement from "~> 1.1.3" to "~> 1.1"
+  * Support aws-sdk facility to load credentials from ENV vars or IAM Instance Profile by making the credentials non-mandatory
+  * Use Yajl instead of to_json not to raise exceptions when it got invalid bytes as UTF-8.
+
+
 Release 0.2.2 - 2011/12/15
 
   * Add s3_endpoint optio
