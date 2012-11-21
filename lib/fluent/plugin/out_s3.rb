@@ -55,7 +55,7 @@ class S3Output < Fluent::TimeSlicedOutput
     begin
       chunk.write_to(w)
       w.close
-      @bucket.objects[s3path].write(Pathname.new(tmp.path))
+      @bucket.objects[s3path].write(Pathname.new(tmp.path), :content_type => 'application/x-gzip')
     ensure
       w.close rescue nil
     end
