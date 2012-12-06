@@ -1,4 +1,9 @@
 
+Release 0.2.5 - 2012/12/06
+
+  * Add format_json and time/tag mixin options [#9]
+
+
 Release 0.2.4 - 2012/11/21
 
   * Set content type when writing file to s3
