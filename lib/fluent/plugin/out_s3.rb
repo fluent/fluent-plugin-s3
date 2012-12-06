@@ -14,6 +14,13 @@ class S3Output < Fluent::TimeSlicedOutput
 
   config_param :path, :string, :default => ""
   config_param :time_format, :string, :default => nil
+  config_param :format_json, :bool, :default => false
+
+  include SetTagKeyMixin
+  config_set_default :include_tag_key, false
+
+  include SetTimeKeyMixin
+  config_set_default :include_time_key, false
 
   config_param :aws_key_id, :string, :default => nil
   config_param :aws_sec_key, :string, :default => nil
@@ -39,8 +46,23 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   def format(tag, time, record)
-    time_str = @timef.format(time)
-    "#{time_str}\t#{tag}\t#{Yajl.dump(record)}\n"
+    if @include_time_key || !@format_json
+      time_str = @timef.format(time)
+    end
+
+    # copied from each mixin because current TimeSlicedOutput can't support mixins.
+    if @include_tag_key
+      record[@tag_key] = tag
+    end
+    if @include_time_key
+      record[@time_key] = time_str
+    end
+
+    if @format_json
+      Yajl.dump(record) + "\n"
+    else
+      "#{time_str}\t#{tag}\t#{Yajl.dump(record)}\n"
+    end
   end
 
   def write(chunk)
