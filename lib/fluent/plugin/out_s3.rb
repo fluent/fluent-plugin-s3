@@ -14,7 +14,6 @@ class S3Output < Fluent::TimeSlicedOutput
 
   config_param :path, :string, :default => ""
   config_param :time_format, :string, :default => nil
-  config_param :format_json, :bool, :default => false
 
   include SetTagKeyMixin
   config_set_default :include_tag_key, false
@@ -29,6 +28,12 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def configure(conf)
     super
+
+    if format_json = conf['format_json']
+      @format_json = true
+    else
+      @format_json = false
+    end
 
     @timef = TimeFormatter.new(@time_format, @localtime)
   end
