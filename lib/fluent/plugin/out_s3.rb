@@ -73,7 +73,8 @@ class S3Output < Fluent::TimeSlicedOutput
   def write(chunk)
     i = 0
     begin
-      s3path = "#{@path}#{chunk.key}_#{i}.gz"
+      parsed_path = @path.include? '%' ? Time.strftime(@path) : @path
+      s3path = "#{parsed_path}#{chunk.key}_#{i}.gz"
       i += 1
     end while @bucket.objects[s3path].exists?
 
