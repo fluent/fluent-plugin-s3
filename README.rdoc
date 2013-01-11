@@ -22,6 +22,7 @@ Simply use RubyGems:
       aws_sec_key YOUR_AWS_SECRET/KEY
       s3_bucket YOUR_S3_BUCKET_NAME
       s3_endpoint s3-ap-northeast-1.amazonaws.com
+      s3_object_key_format {path}{time_slice}_{index}.{file_extension}
       path logs/
       buffer_path /var/log/fluent/s3
 
@@ -38,6 +39,42 @@ Simply use RubyGems:
 
 [s3_endpoint] s3 endpoint name. Example, Tokyo region is "s3-ap-northeast-1.amazonaws.com".
 
+[s3_object_key_format] The format of S3 object keys. You can use several built-in variables:
+
+- {path}
+- {time_slice}
+- {index}
+- {file_extension}
+
+to decide keys dynamically.
+
+{path} is exactly the value of *path* configured in the configuration file. E.g., "logs/" in the example configuration above.
+{time_slice} is the time-slice in text that are formatted with *time_slice_format*.
+{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
+{file_extention} is always "gz" for now.
+
+The default format is "{path}{time_slice}_{index}.{file_extension}".
+
+For instance, using the example configuration above, actual object keys on S3 will be something like:
+
+    "logs/20130111-22_0.gz"
+    "logs/20130111-23_0.gz"
+    "logs/20130111-23_1.gz"
+    "logs/20130112-00_0.gz"
+
+With the configuration:
+
+    s3_object_key_format {path}/events/ts={time_slice}/events_{index}.{file_extension}
+    path log
+    time_slice_format %Y%m%d-%H
+
+You get:
+
+    "log/events/ts=20130111-22/events_0.gz"
+    "log/events/ts=20130111-23/events_0.gz"
+    "log/events/ts=20130111-23/events_1.gz"
+    "log/events/ts=20130112-00/events_0.gz"
+
 [path] path prefix of the files on S3. Default is "" (no prefix).
 
 [buffer_path (required)] path prefix of the files to buffer logs.
@@ -47,8 +84,6 @@ Simply use RubyGems:
 [time_slice_wait] The time to wait old logs. Default is 10 minutes. Specify larger value if old logs may reache.
 
 [utc] Use UTC instead of local time.
-
-The actual path on S3 will be: "{path}{time_slice_format}_{sequential_number}.gz"
 
 
 == Copyright

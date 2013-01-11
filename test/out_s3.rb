@@ -1,6 +1,9 @@
 require 'fluent/test'
 require 'fluent/plugin/out_s3'
 
+require 'flexmock/test_unit'
+require 'zlib'
+
 class S3OutputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
@@ -114,7 +117,7 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
-  def test_write
+  def test_chunk_to_write
     d = create_driver
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
@@ -127,6 +130,67 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
                  %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
                  data
+  end
+
+  def test_write_with_custom_s3_object_key_format
+    # Assert content of event logs which are being sent to S3
+    s3obj = flexmock(AWS::S3::S3Object)
+    s3obj.should_receive(:exists?).with_any_args.
+      and_return { false }
+    s3obj.should_receive(:write).with(
+      on { |pathname|
+        data = nil
+        # Event logs are compressed in GZip
+        pathname.open { |f|
+          gz = Zlib::GzipReader.new(f)
+          data = gz.read
+          gz.close
+        }
+        assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                         %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                     data
+
+        pathname.to_s.match(%r|s3-|)
+      },
+      {:content_type=>"application/x-gzip"})
+
+    # Assert the key of S3Object, which event logs are stored in
+    s3obj_col = flexmock(AWS::S3::ObjectCollection)
+    s3obj_col.should_receive(:[]).with(
+      on { |key|
+        key == "log/events/ts=20110102-13/events_0.gz"
+      }).
+      and_return {
+        s3obj
+      }
+
+    # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
+    flexmock(AWS::S3::Bucket).new_instances do |bucket|
+      bucket.should_receive(:objects).with_any_args.
+        and_return {
+          s3obj_col
+        }
+    end
+
+    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
+    # to make assertions on chunks' keys
+    d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output).configure(%[
+      aws_key_id test_key_id
+      aws_sec_key test_sec_key
+      s3_bucket test_bucket
+      s3_object_key_format {path}/events/ts={time_slice}/events_{index}.{file_extension}
+      time_slice_format %Y%m%d-%H
+      path log
+      utc
+      buffer_type memory
+    ])
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    # Finally, the instance of S3Output is initialized and then invoked
+    d.run
   end
 
 end
