@@ -10,6 +10,8 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'zlib'
     require 'time'
     require 'tempfile'
+
+    @use_ssl = true
   end
 
   config_param :path, :string, :default => ""
@@ -25,7 +27,6 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :aws_sec_key, :string, :default => nil
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
-  config_param :use_ssl, :bool, :default => true
 
   def configure(conf)
     super
@@ -34,6 +35,17 @@ class S3Output < Fluent::TimeSlicedOutput
       @format_json = true
     else
       @format_json = false
+    end
+
+    if use_ssl = conf['use_ssl']
+      if use_ssl.empty?
+        @use_ssl = true
+      else
+        @use_ssl = Config.bool_value(use_ssl)
+        if @use_ssl.nil?
+          raise ConfigError, "'true' or 'false' is required for use_ssl option on s3 output"
+        end
+      end
     end
 
     @timef = TimeFormatter.new(@time_format, @localtime)

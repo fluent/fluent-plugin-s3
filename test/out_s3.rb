@@ -29,7 +29,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'test_sec_key', d.instance.aws_sec_key
     assert_equal 'test_bucket', d.instance.s3_bucket
     assert_equal 'log', d.instance.path
-    assert d.instance.use_ssl
+    assert d.instance.instance_variable_get(:@use_ssl)
   end
 
   def test_format
