@@ -27,7 +27,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :aws_sec_key, :string, :default => nil
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
-  config_param :s3_object_key_format, :string, :default => "{path}{time_slice}_{index}.{file_extension}"
+  config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
 
   attr_reader :bucket
 
@@ -97,7 +97,7 @@ class S3Output < Fluent::TimeSlicedOutput
         "file_extension" => "gz",
         "index" => i
       }
-      s3path = @s3_object_key_format.gsub(%r({[^}]+})) { |expr|
+      s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
         values_for_s3_object_key[expr[1...expr.size-1]]
       }
       i += 1
