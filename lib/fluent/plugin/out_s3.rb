@@ -25,6 +25,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :aws_sec_key, :string, :default => nil
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
+  config_param :use_ssl, :bool, :default => true
 
   def configure(conf)
     super
@@ -46,6 +47,8 @@ class S3Output < Fluent::TimeSlicedOutput
       options[:secret_access_key] = @aws_sec_key
     end
     options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
+    options[:use_ssl] = @use_ssl
+
     @s3 = AWS::S3.new(options)
     @bucket = @s3.buckets[@s3_bucket]
   end
