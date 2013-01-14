@@ -20,4 +20,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency "aws-sdk", "~> 1.7"
   gem.add_dependency "yajl-ruby", "~> 1.0"
   gem.add_development_dependency "rake", ">= 0.9.2"
+  gem.add_development_dependency "flexmock", ">= 1.2.0"
 end
