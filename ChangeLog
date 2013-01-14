@@ -1,3 +1,7 @@
+Release 0.2.6 - 2012/01/15
+
+  * Add use_ssl option
+
 
 Release 0.2.5 - 2012/12/06
 
@@ -18,7 +22,7 @@ Release 0.2.3 - 2012/11/19
 
 Release 0.2.2 - 2011/12/15
 
-  * Add s3_endpoint optio
+  * Add s3_endpoint option
 
 
 Release 0.2.1 - 2011/10/24
