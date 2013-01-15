@@ -41,17 +41,17 @@ Simply use RubyGems:
 
 [s3_object_key_format] The format of S3 object keys. You can use several built-in variables:
 
-- {path}
-- {time_slice}
-- {index}
-- {file_extension}
+- %{path}
+- %{time_slice}
+- %{index}
+- %{file_extension}
 
 to decide keys dynamically.
 
-{path} is exactly the value of *path* configured in the configuration file. E.g., "logs/" in the example configuration above.
-{time_slice} is the time-slice in text that are formatted with *time_slice_format*.
-{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
-{file_extention} is always "gz" for now.
+%{path} is exactly the value of *path* configured in the configuration file. E.g., "logs/" in the example configuration above.
+%{time_slice} is the time-slice in text that are formatted with *time_slice_format*.
+%{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
+%{file_extention} is always "gz" for now.
 
 The default format is "{path}{time_slice}_{index}.{file_extension}".
 
