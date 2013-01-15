@@ -98,7 +98,7 @@ class S3Output < Fluent::TimeSlicedOutput
         "index" => i
       }
       s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
-        values_for_s3_object_key[expr[1...expr.size-1]]
+        values_for_s3_object_key[expr[2...expr.size-1]]
       }
       i += 1
     end while @bucket.objects[s3path].exists?
