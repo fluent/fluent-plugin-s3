@@ -110,6 +110,7 @@ class S3Output < Fluent::TimeSlicedOutput
       w.close
       @bucket.objects[s3path].write(Pathname.new(tmp.path), :content_type => 'application/x-gzip')
     ensure
+      tmp.close(true) rescue nil
       w.close rescue nil
     end
   end
