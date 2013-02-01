@@ -12,6 +12,7 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'tempfile'
 
     @use_ssl = true
+    @hostname = `hostname -s`.chomp
   end
 
   config_param :path, :string, :default => ""
@@ -95,6 +96,7 @@ class S3Output < Fluent::TimeSlicedOutput
         "path" => @path,
         "time_slice" => chunk.key,
         "file_extension" => "gz",
+        "hostname" => @hostname,
         "index" => i
       }
       s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
