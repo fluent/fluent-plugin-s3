@@ -28,7 +28,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
   config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
-  config_param :gzip, :string, :default => "yes"
+  config_param :store_as, :string, :default => "gzip"
 
   attr_reader :bucket
 
@@ -53,7 +53,6 @@ class S3Output < Fluent::TimeSlicedOutput
     end
 
     @timef = TimeFormatter.new(@time_format, @localtime)
-    @gzip = conf[:gzip] == "yes"
   end
 
   def start
@@ -92,8 +91,8 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def write(chunk)
     i = 0
-    ext = @gzip ? 'gz' : (@format_json ? 'json' : 'txt')
-    mime_type = @gzip ? 'application/x-gzip' : (@format_json ? 'application/json' : 'text/plain')
+    ext = @store_as == "gzip" ? 'gz' : (@store_as == 'json' ? 'json' : 'txt')
+    mime_type = @store_as == "gzip" ? 'application/x-gzip' : (@store_as == 'json' ? 'application/json' : 'text/plain')
     begin
       values_for_s3_object_key = {
         "path" => @path,
@@ -109,7 +108,7 @@ class S3Output < Fluent::TimeSlicedOutput
 
     tmp = Tempfile.new("s3-")
     begin
-      if @gzip
+      if @store_as == "gzip"
         w = Zlib::GzipWriter.new(tmp)
         chunk.write_to(w)
         w.close
