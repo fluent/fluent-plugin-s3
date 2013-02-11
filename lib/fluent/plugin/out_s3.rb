@@ -53,6 +53,15 @@ class S3Output < Fluent::TimeSlicedOutput
     end
 
     @timef = TimeFormatter.new(@time_format, @localtime)
+    if @localtime
+      @path_slicer = Proc.new {|path|
+        Time.now.strftime(path)
+      }
+    else
+      @path_slicer = Proc.new {|path|
+        Time.now.utc.strftime(path)
+      }
+    end
   end
 
   def start
@@ -94,8 +103,9 @@ class S3Output < Fluent::TimeSlicedOutput
     ext = @store_as == "gzip" ? 'gz' : (@store_as == 'json' ? 'json' : 'txt')
     mime_type = @store_as == "gzip" ? 'application/x-gzip' : (@store_as == 'json' ? 'application/json' : 'text/plain')
     begin
+      path = @path_slicer.call(@path)
       values_for_s3_object_key = {
-        "path" => @path,
+        "path" => path,
         "time_slice" => chunk.key,
         "file_extension" => ext,
         "index" => i
