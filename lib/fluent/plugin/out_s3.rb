@@ -28,6 +28,8 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
   config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
+  config_param :output_data_type, :string, :default => 'json'
+  config_param :include_tag_and_time, :bool, :default => true
 
   attr_reader :bucket
 
@@ -35,10 +37,26 @@ class S3Output < Fluent::TimeSlicedOutput
     super
 
     if format_json = conf['format_json']
-      @format_json = true
-    else
-      @format_json = false
+      @include_tag_and_time = false
+      @output_data_type = 'json'
     end
+
+    if @output_data_type == 'ltsv'
+      begin
+        require 'ltsv'
+      rescue LoadError
+        raise ConfigError, "You must install ltsv.gem to use 'ltsv' for output_data_type option on s3 output"
+      end
+    end
+    @dumper =
+      case @output_data_type
+      when 'json'
+        Yajl.method(:dump)
+      when 'ltsv'
+        LTSV.method(:dump)
+      else
+        raise ConfigError, "Currently only 'json' and 'ltsv' are supported for output_data_type option on s3 output"
+      end
 
     if use_ssl = conf['use_ssl']
       if use_ssl.empty?
@@ -69,7 +87,7 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   def format(tag, time, record)
-    if @include_time_key || !@format_json
+    if @include_time_key || @include_tag_and_time
       time_str = @timef.format(time)
     end
 
@@ -81,11 +99,10 @@ class S3Output < Fluent::TimeSlicedOutput
       record[@time_key] = time_str
     end
 
-    if @format_json
-      Yajl.dump(record) + "\n"
-    else
-      "#{time_str}\t#{tag}\t#{Yajl.dump(record)}\n"
-    end
+    data = @dumper.call(record)
+
+    tag_and_time = "#{time_str}\t#{tag}\t" if @include_tag_and_time
+    "#{tag_and_time}#{data}\n"
   end
 
   def write(chunk)

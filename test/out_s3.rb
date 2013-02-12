@@ -194,5 +194,61 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
+  def test_output_data_type_json
+    config = [CONFIG, 'output_data_type json'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1, "b"=>2}, time)
+    d.emit({"a"=>2, "b"=>4}, time)
+
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":1,"b":2}\n]
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":2,"b":4}\n]
+
+    d.run
+  end
+
+  def test_output_data_type_ltsv
+    config = [CONFIG, 'output_data_type ltsv'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1, "b"=>2}, time)
+    d.emit({"a"=>2, "b"=>4}, time)
+
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\ta:1\tb:2\n]
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\ta:2\tb:4\n]
+
+    d.run
+  end
+
+  def test_output_data_type_ltsv_include_tag_and_time_true
+    config = [CONFIG, 'output_data_type ltsv', 'include_tag_and_time true'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1, "b"=>2}, time)
+    d.emit({"a"=>2, "b"=>4}, time)
+
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\ta:1\tb:2\n]
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\ta:2\tb:4\n]
+
+    d.run
+  end
+
+  def test_output_data_type_ltsv_include_tag_and_time_false
+    config = [CONFIG, 'output_data_type ltsv', 'include_tag_and_time false'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1, "b"=>2}, time)
+    d.emit({"a"=>2, "b"=>4}, time)
+
+    d.expect_format %[a:1\tb:2\n]
+    d.expect_format %[a:2\tb:4\n]
+
+    d.run
+  end
+
 end
 
