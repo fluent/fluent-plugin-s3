@@ -22,7 +22,7 @@ Simply use RubyGems:
       aws_sec_key YOUR_AWS_SECRET/KEY
       s3_bucket YOUR_S3_BUCKET_NAME
       s3_endpoint s3-ap-northeast-1.amazonaws.com
-      s3_object_key_format {path}{time_slice}_{index}.{file_extension}
+      s3_object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
       path logs/
       buffer_path /var/log/fluent/s3
 
@@ -53,7 +53,7 @@ to decide keys dynamically.
 %{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
 %{file_extention} is always "gz" for now.
 
-The default format is "{path}{time_slice}_{index}.{file_extension}".
+The default format is "%{path}%{time_slice}_%{index}.%{file_extension}".
 
 For instance, using the example configuration above, actual object keys on S3 will be something like:
 
@@ -64,7 +64,7 @@ For instance, using the example configuration above, actual object keys on S3 wi
 
 With the configuration:
 
-    s3_object_key_format {path}/events/ts={time_slice}/events_{index}.{file_extension}
+    s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}.%{file_extension}
     path log
     time_slice_format %Y%m%d-%H
 
@@ -74,6 +74,11 @@ You get:
     "log/events/ts=20130111-23/events_0.gz"
     "log/events/ts=20130111-23/events_1.gz"
     "log/events/ts=20130112-00/events_0.gz"
+
+The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin-config-placeholders] mixin is also incorporated, so additional variables such as %{hostname}, %{uuid}, etc. can be used in the s3_object_key_format. This could prove useful in preventing filename conflicts when writing from multiple servers.
+
+    s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
+
 
 [path] path prefix of the files on S3. Default is "" (no prefix).
 

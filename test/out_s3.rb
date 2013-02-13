@@ -180,7 +180,7 @@ class S3OutputTest < Test::Unit::TestCase
       aws_key_id test_key_id
       aws_sec_key test_sec_key
       s3_bucket test_bucket
-      s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-${hostname}.%{file_extension}
+      s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
       time_slice_format %Y%m%d-%H
       path log
       utc
