@@ -1,5 +1,6 @@
 module Fluent
 
+require 'fluent/mixin/config_placeholders'
 
 class S3Output < Fluent::TimeSlicedOutput
   Fluent::Plugin.register_output('s3', self)
@@ -30,6 +31,12 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
 
   attr_reader :bucket
+
+  include Fluent::Mixin::ConfigPlaceholders
+
+  def placeholders
+    [:percent]
+  end
 
   def configure(conf)
     super
