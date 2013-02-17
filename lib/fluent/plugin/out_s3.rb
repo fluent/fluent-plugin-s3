@@ -74,10 +74,9 @@ class S3Output < Fluent::TimeSlicedOutput
 
     @s3 = AWS::S3.new(options)
     @bucket = @s3.buckets[@s3_bucket]
-    if not @bucket.exists? and @auto_create_bucket
-      $log.info "Creating bucket #{@s3_bucket} on #{@s3_endpoint}"
-      @s3.buckets.create(@s3_bucket)
-    end
+
+    ensure_bucket
+    check_apikeys
   end
 
   def format(tag, time, record)
@@ -126,8 +125,26 @@ class S3Output < Fluent::TimeSlicedOutput
       w.close rescue nil
     end
   end
+
+  private
+
+  def ensure_bucket
+    if !@bucket.exists?
+      if @auto_create_bucket
+        $log.info "Creating bucket #{@s3_bucket} on #{@s3_endpoint}"
+        @s3.buckets.create(@s3_bucket)
+      else
+        raise "The specified bucket does not exist: bucket = #{@s3_bucket}"
+      end
+    end
+  end
+
+  def check_apikeys
+    @bucket.empty?
+  rescue
+    raise "aws_key_id or aws_sec_key is invalid. Please check your configuration"
+  end
 end
 
 
 end
-
