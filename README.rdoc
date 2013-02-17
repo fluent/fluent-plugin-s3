@@ -79,6 +79,7 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 
     s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
 
+[auto_create_bucket] Create S3 bucket if it does not exists. Default is true.
 
 [path] path prefix of the files on S3. Default is "" (no prefix).
 
