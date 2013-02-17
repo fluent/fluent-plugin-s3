@@ -29,7 +29,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
   config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
-  config_param :auto_create_bucket, :default => true
+  config_param :auto_create_bucket, :bool, :default => true
 
   attr_reader :bucket
 
