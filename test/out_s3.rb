@@ -23,6 +23,11 @@ class S3OutputTest < Test::Unit::TestCase
       def write(chunk)
         chunk.read
       end
+
+      private
+
+      def check_apikeys
+      end
     end.configure(conf)
   end
 
@@ -186,6 +191,9 @@ class S3OutputTest < Test::Unit::TestCase
       utc
       buffer_type memory
     ])
+    s3_output = d.instance
+    def s3_output.check_apikeys
+    end
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
     d.emit({"a"=>1}, time)
