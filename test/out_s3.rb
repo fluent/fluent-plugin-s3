@@ -6,6 +6,7 @@ require 'zlib'
 
 class S3OutputTest < Test::Unit::TestCase
   def setup
+    require 'aws-sdk'
     Fluent::Test.setup
   end
 
@@ -138,6 +139,29 @@ class S3OutputTest < Test::Unit::TestCase
                  data
   end
 
+  CONFIG2 = %[
+    hostname testing.node.local
+    aws_key_id test_key_id
+    aws_sec_key test_sec_key
+    s3_bucket test_bucket
+    s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
+    time_slice_format %Y%m%d-%H
+    path log
+    utc
+    buffer_type memory
+    auto_create_bucket false
+  ]
+
+  def create_time_sliced_driver(additional_conf = '')
+    d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output) do
+      private
+
+      def check_apikeys
+      end
+    end.configure([CONFIG2, additional_conf].join("\n"))
+    d
+  end
+
   def test_write_with_custom_s3_object_key_format
     # Assert content of event logs which are being sent to S3
     s3obj = flexmock(AWS::S3::S3Object)
@@ -180,20 +204,7 @@ class S3OutputTest < Test::Unit::TestCase
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
     # to make assertions on chunks' keys
-    d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output).configure(%[
-      hostname testing.node.local
-      aws_key_id test_key_id
-      aws_sec_key test_sec_key
-      s3_bucket test_bucket
-      s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
-      time_slice_format %Y%m%d-%H
-      path log
-      utc
-      buffer_type memory
-    ])
-    s3_output = d.instance
-    def s3_output.check_apikeys
-    end
+    d = create_time_sliced_driver
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
     d.emit({"a"=>1}, time)
@@ -203,5 +214,34 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
-end
+  def setup_mocks
+    s3bucket = flexmock(AWS::S3::Bucket)
+    s3bucket.should_receive(:exists?).with_any_args.and_return { false }
+    s3bucket_col = flexmock(AWS::S3::BucketCollection)
+    s3bucket_col.should_receive(:[]).with_any_args.and_return { s3bucket }
+    flexmock(AWS::S3).new_instances do |bucket|
+      bucket.should_receive(:buckets).with_any_args.and_return { s3bucket_col }
+    end
 
+    return s3bucket, s3bucket_col
+  end
+
+  def test_auto_create_bucket_false_with_non_existence_bucket
+    s3bucket, s3bucket_col = setup_mocks
+
+    d = create_time_sliced_driver('auto_create_bucket false')
+    assert_raise(RuntimeError, "The specified bucket does not exist: bucket = test_bucket") { 
+      d.run
+    }
+  end
+
+  def test_auto_create_bucket_true_with_non_existence_bucket
+    s3bucket, s3bucket_col = setup_mocks
+    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+
+    d = create_time_sliced_driver('auto_create_bucket true')
+    assert_nothing_raised { 
+      d.run
+    }
+  end
+end
