@@ -31,9 +31,9 @@ Simply use RubyGems:
       utc
     </match>
 
-[aws_key_id (required)] AWS access key id.
+[aws_key_id] AWS access key id. This parameter is required when your agent is not running on EC2 instance with an IAM Instance Profile.
 
-[aws_sec_key (required)] AWS secret key.
+[aws_sec_key] AWS secret key. This parameter is required when your agent is not running on EC2 instance with an IAM Instance Profile.
 
 [s3_bucket (required)] S3 bucket name.
 
