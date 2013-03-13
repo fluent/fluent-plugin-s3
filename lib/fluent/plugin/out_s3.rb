@@ -61,6 +61,9 @@ class S3Output < Fluent::TimeSlicedOutput
       end
     end
 
+    @ext = @store_as == "gzip" ? 'gz' : (@store_as == 'json' ? 'json' : 'txt')
+    @mime_type = @store_as == "gzip" ? 'application/x-gzip' : (@store_as == 'json' ? 'application/json' : 'text/plain')
+
     @timef = TimeFormatter.new(@time_format, @localtime)
   end
 
@@ -103,13 +106,12 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def write(chunk)
     i = 0
-    ext = @store_as == "gzip" ? 'gz' : (@store_as == 'json' ? 'json' : 'txt')
-    mime_type = @store_as == "gzip" ? 'application/x-gzip' : (@store_as == 'json' ? 'application/json' : 'text/plain')
+
     begin
       values_for_s3_object_key = {
         "path" => @path,
         "time_slice" => chunk.key,
-        "file_extension" => ext,
+        "file_extension" => @ext,
         "index" => i
       }
       s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
@@ -128,7 +130,7 @@ class S3Output < Fluent::TimeSlicedOutput
         chunk.write_to(tmp)
         tmp.close
       end
-      @bucket.objects[s3path].write(Pathname.new(tmp.path), :content_type => mime_type)
+      @bucket.objects[s3path].write(Pathname.new(tmp.path), :content_type => @mime_type)
     ensure
       tmp.close(true) rescue nil
       w.close rescue nil
