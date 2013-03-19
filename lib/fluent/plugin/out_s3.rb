@@ -61,8 +61,11 @@ class S3Output < Fluent::TimeSlicedOutput
       end
     end
 
-    @ext = @store_as == "gzip" ? 'gz' : (@store_as == 'json' ? 'json' : 'txt')
-    @mime_type = @store_as == "gzip" ? 'application/x-gzip' : (@store_as == 'json' ? 'application/json' : 'text/plain')
+    @ext, @mime_type = case @store_as
+      when 'gzip' then ['gz', 'application/x-gzip']
+      when 'json' then ['json', 'application/json']
+      else ['txt', 'text/plain']
+    end
 
     @timef = TimeFormatter.new(@time_format, @localtime)
   end
