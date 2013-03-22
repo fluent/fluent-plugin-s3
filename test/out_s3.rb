@@ -39,6 +39,24 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'test_bucket', d.instance.s3_bucket
     assert_equal 'log', d.instance.path
     assert d.instance.instance_variable_get(:@use_ssl)
+    assert_equal 'gz', d.instance.instance_variable_get(:@ext)
+    assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@mime_type)
+  end
+
+  def test_configure_with_mime_type_json
+    conf = CONFIG.clone
+    conf << "\nstore_as json\n"
+    d = create_driver(conf)
+    assert_equal 'json', d.instance.instance_variable_get(:@ext)
+    assert_equal 'application/json', d.instance.instance_variable_get(:@mime_type)
+  end
+
+  def test_configure_with_mime_type_text
+    conf = CONFIG.clone
+    conf << "\nstore_as text\n"
+    d = create_driver(conf)
+    assert_equal 'txt', d.instance.instance_variable_get(:@ext)
+    assert_equal 'text/plain', d.instance.instance_variable_get(:@mime_type)
   end
 
   def test_format

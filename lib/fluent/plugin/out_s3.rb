@@ -29,6 +29,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :s3_bucket, :string
   config_param :s3_endpoint, :string, :default => nil
   config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
+  config_param :store_as, :string, :default => "gzip"
   config_param :auto_create_bucket, :bool, :default => true
 
   attr_reader :bucket
@@ -57,6 +58,12 @@ class S3Output < Fluent::TimeSlicedOutput
           raise ConfigError, "'true' or 'false' is required for use_ssl option on s3 output"
         end
       end
+    end
+
+    @ext, @mime_type = case @store_as
+      when 'gzip' then ['gz', 'application/x-gzip']
+      when 'json' then ['json', 'application/json']
+      else ['txt', 'text/plain']
     end
 
     @timef = TimeFormatter.new(@time_format, @localtime)
@@ -101,11 +108,12 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def write(chunk)
     i = 0
+
     begin
       values_for_s3_object_key = {
         "path" => @path,
         "time_slice" => chunk.key,
-        "file_extension" => "gz",
+        "file_extension" => @ext,
         "index" => i
       }
       s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
@@ -115,11 +123,16 @@ class S3Output < Fluent::TimeSlicedOutput
     end while @bucket.objects[s3path].exists?
 
     tmp = Tempfile.new("s3-")
-    w = Zlib::GzipWriter.new(tmp)
     begin
-      chunk.write_to(w)
-      w.close
-      @bucket.objects[s3path].write(Pathname.new(tmp.path), :content_type => 'application/x-gzip')
+      if @store_as == "gzip"
+        w = Zlib::GzipWriter.new(tmp)
+        chunk.write_to(w)
+        w.close
+      else
+        chunk.write_to(tmp)
+        tmp.close
+      end
+      @bucket.objects[s3path].write(Pathname.new(tmp.path), :content_type => @mime_type)
     ensure
       tmp.close(true) rescue nil
       w.close rescue nil
