@@ -1,3 +1,9 @@
+Release 0.3.1 - 2013/03/28
+
+  * Support json and text mime-types
+    https://github.com/fluent/fluent-plugin-s3/pull/20
+
+
 Release 0.3.0 - 2013/02/19
 
   * Enable dynamic and configurable S3 object kyes
