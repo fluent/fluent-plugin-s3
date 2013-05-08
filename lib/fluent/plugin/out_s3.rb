@@ -85,7 +85,6 @@ class S3Output < Fluent::TimeSlicedOutput
     @bucket = @s3.buckets[@s3_bucket]
 
     ensure_bucket
-    check_apikeys
   end
 
   def format(tag, time, record)
@@ -152,12 +151,6 @@ class S3Output < Fluent::TimeSlicedOutput
         raise "The specified bucket does not exist: bucket = #{@s3_bucket}"
       end
     end
-  end
-
-  def check_apikeys
-    @bucket.empty?
-  rescue
-    raise "aws_key_id or aws_sec_key is invalid. Please check your configuration"
   end
 end
 
