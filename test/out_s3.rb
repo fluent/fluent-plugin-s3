@@ -24,11 +24,6 @@ class S3OutputTest < Test::Unit::TestCase
       def write(chunk)
         chunk.read
       end
-
-      private
-
-      def check_apikeys
-      end
     end.configure(conf)
   end
 
@@ -172,10 +167,6 @@ class S3OutputTest < Test::Unit::TestCase
 
   def create_time_sliced_driver(additional_conf = '')
     d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output) do
-      private
-
-      def check_apikeys
-      end
     end.configure([CONFIG2, additional_conf].join("\n"))
     d
   end
