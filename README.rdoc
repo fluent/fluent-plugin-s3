@@ -81,6 +81,8 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 
 [auto_create_bucket] Create S3 bucket if it does not exists. Default is true.
 
+[check_apikey_on_start] Check AWS key on start. Default is true.
+
 [path] path prefix of the files on S3. Default is "" (no prefix).
 
 [buffer_path (required)] path prefix of the files to buffer logs.

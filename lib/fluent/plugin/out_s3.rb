@@ -31,6 +31,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
   config_param :store_as, :string, :default => "gzip"
   config_param :auto_create_bucket, :bool, :default => true
+  config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
 
   attr_reader :bucket
@@ -85,7 +86,7 @@ class S3Output < Fluent::TimeSlicedOutput
     @bucket = @s3.buckets[@s3_bucket]
 
     ensure_bucket
-    check_apikeys
+    check_apikeys if @check_apikey_on_start
   end
 
   def format(tag, time, record)
