@@ -11,6 +11,7 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'zlib'
     require 'time'
     require 'tempfile'
+    require 'Open3'
 
     @use_ssl = true
   end
@@ -64,6 +65,13 @@ class S3Output < Fluent::TimeSlicedOutput
 
     @ext, @mime_type = case @store_as
       when 'gzip' then ['gz', 'application/x-gzip']
+      when 'lzo' then
+        begin
+          Open3.capture3('lzop -V')
+        rescue Errno::ENOENT
+          raise ConfigError, "'lzop' utility must be in PATH for LZO compression"
+        end
+        ['lzo', 'application/x-lzop']
       when 'json' then ['json', 'application/json']
       else ['txt', 'text/plain']
     end
@@ -131,6 +139,12 @@ class S3Output < Fluent::TimeSlicedOutput
         w = Zlib::GzipWriter.new(tmp)
         chunk.write_to(w)
         w.close
+      elsif @store_as == "lzo"
+        w = Tempfile.new("chunk-tmp")
+        chunk.write_to(w)
+        w.close
+        tmp.close
+        system "lzop -qf1 -o #{tmp.path} #{w.path}"
       else
         chunk.write_to(tmp)
         tmp.close
@@ -139,6 +153,7 @@ class S3Output < Fluent::TimeSlicedOutput
     ensure
       tmp.close(true) rescue nil
       w.close rescue nil
+      w.unlink rescue nil
     end
   end
 
