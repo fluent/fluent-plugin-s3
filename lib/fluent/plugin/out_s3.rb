@@ -11,8 +11,13 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'zlib'
     require 'time'
     require 'tempfile'
+    require 'open-uri'
+    require 'json'
 
     @use_ssl = true
+    @iam_credentials_expire_at = nil
+    @refreshing_credentials = false
+    
   end
 
   config_param :path, :string, :default => ""
@@ -23,7 +28,7 @@ class S3Output < Fluent::TimeSlicedOutput
 
   include SetTimeKeyMixin
   config_set_default :include_time_key, false
-
+  
   config_param :aws_key_id, :string, :default => nil
   config_param :aws_sec_key, :string, :default => nil
   config_param :s3_bucket, :string
@@ -33,6 +38,9 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :auto_create_bucket, :bool, :default => true
   config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
+  
+  config_param :aws_session_token, :string, :default => nil
+  config_param :iam_role, :string, :default => nil
 
   attr_reader :bucket
 
@@ -40,6 +48,29 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def placeholders
     [:percent]
+  end
+  
+  def fetch_iam_credentials
+    hsh = JSON.parse( URI.parse("http://169.254.169.254/latest/meta-data/iam/security-credentials/#{@iam_role}").read )
+    
+    if hsh["Code"] == "Success"
+      @iam_credentials_expire_at = DateTime.parse(hsh["Expiration"]).to_time.to_i
+      @aws_key_id = hsh["AccessKeyId"]
+      @aws_sec_key = hsh["SecretAccessKey"]
+      @aws_session_token = hsh["Token"]
+      Thread.new do
+        while Time.now.to_i < @iam_credentials_expire_at
+          sleep 0.25
+        end
+        sleep 0.25
+        @s3 = AWS::S3.new( options() )
+        @bucket = @s3.buckets[@s3_bucket]
+        $log.info "Refreshed IAM credentials. Credentials about to expire at #{hsh["Expiration"]}"
+        fetch_iam_credentials
+      end
+    else
+      raise IOError, "Could not fetch IAM credentials for IAM role #{@iam_role}."
+    end
   end
 
   def configure(conf)
@@ -69,22 +100,32 @@ class S3Output < Fluent::TimeSlicedOutput
     end
 
     @timef = TimeFormatter.new(@time_format, @localtime)
+    
   end
-
-  def start
-    super
+  
+  def options
     options = {}
     if @aws_key_id && @aws_sec_key
       options[:access_key_id] = @aws_key_id
       options[:secret_access_key] = @aws_sec_key
+      options[:session_token] = @aws_session_token
     end
     options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
     options[:proxy_uri] = @proxy_uri if @proxy_uri
     options[:use_ssl] = @use_ssl
+    options
+  end
 
-    @s3 = AWS::S3.new(options)
+  def start
+    super
+    
+    if @iam_role
+      fetch_iam_credentials
+    end
+    
+    @s3 = AWS::S3.new(options())
     @bucket = @s3.buckets[@s3_bucket]
-
+    
     ensure_bucket
     check_apikeys if @check_apikey_on_start
   end
@@ -158,7 +199,7 @@ class S3Output < Fluent::TimeSlicedOutput
   def check_apikeys
     @bucket.empty?
   rescue
-    raise "aws_key_id or aws_sec_key is invalid. Please check your configuration"
+    raise "aws_key_id or aws_sec_key is invalid or no access to the bucket. Please check your configuration"
   end
 end
 
