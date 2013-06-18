@@ -16,7 +16,6 @@ class S3Output < Fluent::TimeSlicedOutput
 
     @use_ssl = true
     @iam_credentials_expire_at = nil
-    @refreshing_credentials = false
     
   end
 
@@ -199,7 +198,7 @@ class S3Output < Fluent::TimeSlicedOutput
   def check_apikeys
     @bucket.empty?
   rescue
-    raise "aws_key_id or aws_sec_key is invalid or no access to the bucket. Please check your configuration"
+    raise "aws_key_id or aws_sec_key is invalid#{(@iam_role ? " or no access to the bucket" : "" )}. Please check your configuration"
   end
 end
 

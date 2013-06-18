@@ -93,6 +93,42 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 
 [utc] Use UTC instead of local time.
 
+== IAM role support
+
+    <match pattern>
+      type s3
+
+      iam_role IAM_ROLE_NAME
+      s3_bucket YOUR_S3_BUCKET_NAME
+      s3_endpoint s3-ap-northeast-1.amazonaws.com
+      s3_object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
+      path logs/
+      buffer_path /var/log/fluent/s3
+
+      time_slice_format %Y%m%d-%H
+      time_slice_wait 10m
+      utc
+    </match>
+
+IAM example policy:
+
+    {
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": "s3:ListAllMyBuckets",
+          "Resource": "arn:aws:s3:::*"
+        }, {
+          "Action": "s3:*",
+          "Effect": "Allow",
+          "Resource": [
+            "arn:aws:s3:::your-bucket-name",
+            "arn:aws:s3:::your-bucket-name/*"
+          ]
+        }
+      ]
+    }
+
 
 == Copyright
 
