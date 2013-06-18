@@ -144,6 +144,7 @@ class S3Output < Fluent::TimeSlicedOutput
         chunk.write_to(w)
         w.close
         tmp.close
+        # We don't check the return code because we can't recover lzop failure.
         system "lzop -qf1 -o #{tmp.path} #{w.path}"
       else
         chunk.write_to(tmp)

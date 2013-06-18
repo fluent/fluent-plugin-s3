@@ -59,6 +59,17 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'text/plain', d.instance.instance_variable_get(:@mime_type)
   end
 
+  def test_configure_with_mime_type_lzo
+    conf = CONFIG.clone
+    conf << "\nstore_as lzo\n"
+    d = create_driver(conf)
+    assert_equal 'lzo', d.instance.instance_variable_get(:@ext)
+    assert_equal 'application/x-lzop', d.instance.instance_variable_get(:@mime_type)
+  rescue => e
+    # TODO: replace code with disable lzop command
+    assert(e.is_a?(ConfigError))
+  end
+
   def test_format
     d = create_driver
 
