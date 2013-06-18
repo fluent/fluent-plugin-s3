@@ -67,7 +67,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'application/x-lzop', d.instance.instance_variable_get(:@mime_type)
   rescue => e
     # TODO: replace code with disable lzop command
-    assert(e.is_a?(ConfigError))
+    assert(e.is_a?(Fluent::ConfigError))
   end
 
   def test_format
