@@ -58,11 +58,8 @@ class S3Output < Fluent::TimeSlicedOutput
       @aws_sec_key = hsh["SecretAccessKey"]
       @aws_session_token = hsh["Token"]
       Thread.new do
-        while Time.now.to_i < @iam_credentials_expire_at
-          sleep 0.25
-        end
-        sleep 0.25
-        @s3 = AWS::S3.new( options() )
+        sleep(@iam_credentials_expire_at - Time.now.to_i)
+        @s3 = AWS::S3.new( options )
         @bucket = @s3.buckets[@s3_bucket]
         $log.info "Refreshed IAM credentials. Credentials about to expire at #{hsh["Expiration"]}"
         fetch_iam_credentials
@@ -107,7 +104,7 @@ class S3Output < Fluent::TimeSlicedOutput
     if @aws_key_id && @aws_sec_key
       options[:access_key_id] = @aws_key_id
       options[:secret_access_key] = @aws_sec_key
-      options[:session_token] = @aws_session_token
+      options[:session_token] = @aws_session_token if @iam_role
     end
     options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
     options[:proxy_uri] = @proxy_uri if @proxy_uri
@@ -122,7 +119,7 @@ class S3Output < Fluent::TimeSlicedOutput
       fetch_iam_credentials
     end
     
-    @s3 = AWS::S3.new(options())
+    @s3 = AWS::S3.new( options )
     @bucket = @s3.buckets[@s3_bucket]
     
     ensure_bucket
