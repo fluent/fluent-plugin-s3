@@ -11,7 +11,7 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'zlib'
     require 'time'
     require 'tempfile'
-    require 'Open3'
+    require 'open3'
 
     @use_ssl = true
   end
