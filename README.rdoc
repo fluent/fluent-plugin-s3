@@ -79,9 +79,18 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 
     s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
 
+[store_as] archive format on S3. You can use serveral format:
+
+- gzip (default)
+- json
+- text
+- lzo (Need lzop command)
+
 [auto_create_bucket] Create S3 bucket if it does not exists. Default is true.
 
 [check_apikey_on_start] Check AWS key on start. Default is true.
+
+[proxy_uri] uri of proxy environment.
 
 [path] path prefix of the files on S3. Default is "" (no prefix).
 
