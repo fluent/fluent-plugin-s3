@@ -1,3 +1,13 @@
+Release 0.3.2 - 2013/06/18
+
+  * Support lzo mime-type
+    https://github.com/fluent/fluent-plugin-s3/pull/29
+  * Add proxy_uri option
+    https://github.com/fluent/fluent-plugin-s3/issues/25
+  * Add check_apikey_on_start option
+    https://github.com/fluent/fluent-plugin-s3/pull/28
+
+
 Release 0.3.1 - 2013/03/28
 
   * Support json and text mime-types
