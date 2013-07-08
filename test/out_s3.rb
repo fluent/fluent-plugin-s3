@@ -70,6 +70,25 @@ class S3OutputTest < Test::Unit::TestCase
     assert(e.is_a?(Fluent::ConfigError))
   end
 
+  def test_path_slicing
+    config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
+    d = create_driver(config)
+    path_slicer = d.instance.instance_variable_get(:@path_slicer)
+    path = d.instance.instance_variable_get(:@path)
+    slice = path_slicer.call(path)
+    assert_equal slice, Time.now.strftime("log/%Y/%m/%d")
+  end
+
+  def test_path_slicing_utc
+    config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
+    config << "\nutc\n"
+    d = create_driver(config)
+    path_slicer = d.instance.instance_variable_get(:@path_slicer)
+    path = d.instance.instance_variable_get(:@path)
+    slice = path_slicer.call(path)
+    assert_equal slice, Time.now.utc.strftime("log/%Y/%m/%d")
+  end
+
   def test_format
     d = create_driver
 
