@@ -1,3 +1,9 @@
+Release 0.3.4 - 2013/07/31
+
+  * Add dynamic path slicing by time formatted string
+    https://github.com/fluent/fluent-plugin-s3/pull/24
+
+
 Release 0.3.3 - 2013/06/18
 
   * Fix require bug on case-sensitive environment
