@@ -52,6 +52,12 @@ class S3Output < Fluent::TimeSlicedOutput
       @format_json = false
     end
 
+    if encode_msgpack_hex = conf['encode_msgpack_hex']
+      @encode_msgpack_hex = true
+    else
+      @encode_msgpack_hex = false
+    end
+
     if use_ssl = conf['use_ssl']
       if use_ssl.empty?
         @use_ssl = true
@@ -123,6 +129,8 @@ class S3Output < Fluent::TimeSlicedOutput
 
     if @format_json
       Yajl.dump(record) + "\n"
+    elsif @encode_msgpack_hex
+      "#{time_str}\t#{tag}\t#{record.to_msgpack.unpack("H*")[0]}\n"
     else
       "#{time_str}\t#{tag}\t#{Yajl.dump(record)}\n"
     end

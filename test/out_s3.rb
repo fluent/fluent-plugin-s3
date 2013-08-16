@@ -172,6 +172,47 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
+  def test_format_with_encode_msgpack_hex
+    config = [CONFIG, 'encode_msgpack_hex true'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t81a16101\n]
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t81a16102\n]
+
+    d.run
+  end
+
+  def test_format_with_encode_msgpack_hex_included_time
+    config = [CONFIG, 'encode_msgpack_hex true', 'include_time_key true'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t82a16101a474696d65b4323031312d30312d30325431333a31343a31355a\n]
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t82a16102a474696d65b4323031312d30312d30325431333a31343a31355a\n]
+
+    d.run
+  end
+
+  def test_format_with_encode_msgpack_hex_included_tag_and_time
+    config = [CONFIG, 'encode_msgpack_hex true', 'include_tag_key true', 'include_time_key true'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t83a16101a3746167a474657374a474696d65b4323031312d30312d30325431333a31343a31355a\n]
+    d.expect_format %[2011-01-02T13:14:15Z\ttest\t83a16102a3746167a474657374a474696d65b4323031312d30312d30325431333a31343a31355a\n]
+
+    d.run
+  end
   def test_chunk_to_write
     d = create_driver
 
