@@ -34,6 +34,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :auto_create_bucket, :bool, :default => true
   config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
+  config_param :reduced_redundancy, :bool, :default => false
 
   attr_reader :bucket
 
@@ -162,7 +163,8 @@ class S3Output < Fluent::TimeSlicedOutput
         chunk.write_to(tmp)
         tmp.close
       end
-      @bucket.objects[s3path].write(Pathname.new(tmp.path), :content_type => @mime_type)
+      @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
+                                                             :reduced_redundancy => @reduced_redundancy})
     ensure
       tmp.close(true) rescue nil
       w.close rescue nil
