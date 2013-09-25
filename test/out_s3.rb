@@ -230,7 +230,7 @@ class S3OutputTest < Test::Unit::TestCase
 
         pathname.to_s.match(%r|s3-|)
       },
-      {:content_type=>"application/x-gzip"})
+      {:content_type => "application/x-gzip", :reduced_redundancy => false})
 
     # Assert the key of S3Object, which event logs are stored in
     s3obj_col = flexmock(AWS::S3::ObjectCollection)
@@ -278,7 +278,7 @@ class S3OutputTest < Test::Unit::TestCase
     s3bucket, s3bucket_col = setup_mocks
 
     d = create_time_sliced_driver('auto_create_bucket false')
-    assert_raise(RuntimeError, "The specified bucket does not exist: bucket = test_bucket") { 
+    assert_raise(RuntimeError, "The specified bucket does not exist: bucket = test_bucket") {
       d.run
     }
   end
@@ -288,7 +288,7 @@ class S3OutputTest < Test::Unit::TestCase
     s3bucket_col.should_receive(:create).with_any_args.and_return { true }
 
     d = create_time_sliced_driver('auto_create_bucket true')
-    assert_nothing_raised { 
+    assert_nothing_raised {
       d.run
     }
   end
