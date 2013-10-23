@@ -47,6 +47,12 @@ class S3Output < Fluent::TimeSlicedOutput
   def configure(conf)
     super
 
+    if format_json = conf['format_none']
+      @format_none = true
+    else
+      @format_none = false
+    end
+
     if format_json = conf['format_json']
       @format_json = true
     else
@@ -110,6 +116,9 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   def format(tag, time, record)
+
+    return record['message'] + "\n" if @format_none
+
     if @include_time_key || !@format_json
       time_str = @timef.format(time)
     end
