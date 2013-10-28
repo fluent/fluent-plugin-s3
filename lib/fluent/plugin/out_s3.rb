@@ -47,7 +47,7 @@ class S3Output < Fluent::TimeSlicedOutput
   def configure(conf)
     super
 
-    if format_json = conf['format_none']
+    if format_none = conf['format_none']
       @format_none = true
     else
       @format_none = false
