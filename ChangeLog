@@ -1,3 +1,9 @@
+Release 0.3.5 - 2013/12/05
+
+  * Add 'reduced_redundancy' option to store logs in reduced redundancy
+    https://github.com/fluent/fluent-plugin-s3/pull/33
+
+
 Release 0.3.4 - 2013/07/31
 
   * Add dynamic path slicing by time formatted string
