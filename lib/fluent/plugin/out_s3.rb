@@ -12,6 +12,7 @@ class S3Output < Fluent::TimeSlicedOutput
     require 'time'
     require 'tempfile'
     require 'open3'
+    require 'snappy'
 
     @use_ssl = true
   end
@@ -74,6 +75,7 @@ class S3Output < Fluent::TimeSlicedOutput
         end
         ['lzo', 'application/x-lzop']
       when 'json' then ['json', 'application/json']
+      when 'snappy' then ['snappy', 'application/x-snappy']
       else ['txt', 'text/plain']
     end
 
@@ -159,6 +161,9 @@ class S3Output < Fluent::TimeSlicedOutput
         tmp.close
         # We don't check the return code because we can't recover lzop failure.
         system "lzop -qf1 -o #{tmp.path} #{w.path}"
+      elsif @store_as == "snappy"
+        tmp.write(Snappy.deflate(chunk.read))
+        tmp.close
       else
         chunk.write_to(tmp)
         tmp.close

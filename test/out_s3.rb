@@ -70,6 +70,14 @@ class S3OutputTest < Test::Unit::TestCase
     assert(e.is_a?(Fluent::ConfigError))
   end
 
+  def test_configure_with_mime_type_snappy
+    conf = CONFIG.clone
+    conf << "\nstore_as snappy\n"
+    d = create_driver(conf)
+    assert_equal 'snappy', d.instance.instance_variable_get(:@ext)
+    assert_equal 'application/x-snappy', d.instance.instance_variable_get(:@mime_type)
+  end
+
   def test_path_slicing
     config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
     d = create_driver(config)
