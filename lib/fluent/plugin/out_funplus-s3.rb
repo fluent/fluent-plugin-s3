@@ -91,6 +91,14 @@ class S3Output < Fluent::TimeSlicedOutput
       }
     end
 
+    @data_separator = case @data_separator
+      when /SPACE/i then ' '
+      when /COMMA/i then ','
+      when /TAB/i then "\t"
+      when /SOH/i then "\x01"
+      else @data_separator
+      end
+
   end
 
   def start
