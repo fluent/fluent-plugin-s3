@@ -3,7 +3,7 @@ module Fluent
 require 'fluent/mixin/config_placeholders'
 
 class S3Output < Fluent::TimeSlicedOutput
-  Fluent::Plugin.register_output('s3', self)
+  Fluent::Plugin.register_output('funplus-s3', self)
 
   def initialize
     super
