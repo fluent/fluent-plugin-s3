@@ -139,7 +139,7 @@ class S3Output < Fluent::TimeSlicedOutput
     if @format_json
       Yajl.dump(record) + "\n"
     else
-      "#{time_str}#{@data_separator}#{tag}#{@data_separator}#{Yajl.dump(record)}\n"
+      "#{tag}#{@data_separator}#{time_str}#{@data_separator}#{Yajl.dump(record)}\n"
     end
   end
 
