@@ -35,6 +35,8 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
   config_param :reduced_redundancy, :bool, :default => false
+  config_param :data_separator, :string, :default => ","
+  config_param :use_timestamp, :bool, :default => true
 
   attr_reader :bucket
 
@@ -111,7 +113,11 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def format(tag, time, record)
     if @include_time_key || !@format_json
-      time_str = @timef.format(time)
+      if @use_timestamp
+        time_str = time.to_i
+      else
+        time_str = @timef.format(time)
+      end
     end
 
     # copied from each mixin because current TimeSlicedOutput can't support mixins.
@@ -125,7 +131,7 @@ class S3Output < Fluent::TimeSlicedOutput
     if @format_json
       Yajl.dump(record) + "\n"
     else
-      "#{time_str}\t#{tag}\t#{Yajl.dump(record)}\n"
+      "#{time_str}#{@data_separator}#{tag}#{@data_separator}#{Yajl.dump(record)}\n"
     end
   end
 
