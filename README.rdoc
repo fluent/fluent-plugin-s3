@@ -11,12 +11,12 @@ This plugin splits files exactly by using the time of event logs (not the time w
 
 Simply use RubyGems:
 
-    gem install fluent-plugin-s3
+    gem install fluent-funplus-s3
 
 == Configuration
 
     <match pattern>
-      type s3
+      type funplus-s3
 
       aws_key_id YOUR_AWS_KEY_ID
       aws_sec_key YOUR_AWS_SECRET/KEY
@@ -25,6 +25,8 @@ Simply use RubyGems:
       s3_object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
       path logs/
       buffer_path /var/log/fluent/s3
+      use_timestamp true
+      data_separator ","
 
       time_slice_format %Y%m%d-%H
       time_slice_wait 10m
