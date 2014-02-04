@@ -76,7 +76,7 @@ class S3OutputTest < Test::Unit::TestCase
     path_slicer = d.instance.instance_variable_get(:@path_slicer)
     path = d.instance.instance_variable_get(:@path)
     slice = path_slicer.call(path)
-    assert_equal slice, Time.now.strftime("log/%Y/%m/%d")
+    assert_equal slice, Time.now.utc.strftime("log/%Y/%m/%d")
   end
 
   def test_path_slicing_utc
