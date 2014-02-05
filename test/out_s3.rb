@@ -198,6 +198,7 @@ class S3OutputTest < Test::Unit::TestCase
     utc
     buffer_type memory
     auto_create_bucket false
+    log_level debug
   ]
 
   def create_time_sliced_driver(additional_conf = '')

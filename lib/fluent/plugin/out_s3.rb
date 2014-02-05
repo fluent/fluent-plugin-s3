@@ -5,6 +5,10 @@ require 'fluent/mixin/config_placeholders'
 class S3Output < Fluent::TimeSlicedOutput
   Fluent::Plugin.register_output('s3', self)
 
+  unless method_defined?(:log)
+    define_method(:log) { $log }
+  end
+
   def initialize
     super
     require 'aws-sdk'
@@ -177,7 +181,7 @@ class S3Output < Fluent::TimeSlicedOutput
   def ensure_bucket
     if !@bucket.exists?
       if @auto_create_bucket
-        $log.info "Creating bucket #{@s3_bucket} on #{@s3_endpoint}"
+        log.info "Creating bucket #{@s3_bucket} on #{@s3_endpoint}"
         @s3.buckets.create(@s3_bucket)
       else
         raise "The specified bucket does not exist: bucket = #{@s3_bucket}"
