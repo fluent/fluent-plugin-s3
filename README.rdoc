@@ -1,4 +1,4 @@
-= Amazon S3 output plugin for Fluent event collector
+= Amazon S3 output plugin for {Fluentd}[http://github.com/fluent/fluentd]
 
 == Overview
 
@@ -103,8 +103,12 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 [utc] Use UTC instead of local time.
 
 
-== Copyright
+== Website, license, et. al.
 
-Copyright:: Copyright (c) 2011 Sadayuki Furuhashi
-License::   Apache License, Version 2.0
-
+Web site::  http://fluentd.org/
+Documents:: http://docs.fluentd.org/
+Source repository:: http://github.com/fluent
+Discussion:: http://groups.google.com/group/fluentd
+Author:: Sadayuki Furuhashi
+Copyright:: (c) 2011 FURUHASHI Sadayuki
+License:: Apache License, Version 2.0
