@@ -93,20 +93,8 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def start
     super
-    options = {}
-    if @aws_key_id && @aws_sec_key
-      options[:access_key_id] = @aws_key_id
-      options[:secret_access_key] = @aws_sec_key
-    end
-    options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
-    options[:proxy_uri] = @proxy_uri if @proxy_uri
-    options[:use_ssl] = @use_ssl
 
-    @s3 = AWS::S3.new(options)
-    @bucket = @s3.buckets[@s3_bucket]
-
-    ensure_bucket
-    check_apikeys if @check_apikey_on_start
+    initialize_bucket!
   end
 
   def format(tag, time, record)
@@ -131,6 +119,8 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def write(chunk)
     i = 0
+
+    initialize_bucket!
 
     begin
       path = @path_slicer.call(@path)
@@ -173,6 +163,26 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   private
+
+  def initialize_bucket!
+    return if @bucket && @s3
+
+    options = {}
+
+    if @aws_key_id && @aws_sec_key
+      options[:access_key_id] = @aws_key_id
+      options[:secret_access_key] = @aws_sec_key
+    end
+    options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
+    options[:proxy_uri] = @proxy_uri if @proxy_uri
+    options[:use_ssl] = @use_ssl
+
+    @s3 = AWS::S3.new(options)
+    @bucket = @s3.buckets[@s3_bucket]
+
+    ensure_bucket
+    check_apikeys if @check_apikey_on_start
+  end
 
   def ensure_bucket
     if !@bucket.exists?
