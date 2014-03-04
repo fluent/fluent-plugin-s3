@@ -35,6 +35,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :s3_endpoint, :string, :default => nil
   config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
   config_param :store_as, :string, :default => "gzip"
+  config_param :command_parameter, :string, :default => nil
   config_param :auto_create_bucket, :bool, :default => true
   config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
@@ -69,17 +70,21 @@ class S3Output < Fluent::TimeSlicedOutput
     end
 
     @ext, @mime_type = case @store_as
-      when 'gzip' then ['gz', 'application/x-gzip']
-      when 'lzo' then
-        begin
-          Open3.capture3('lzop -V')
-        rescue Errno::ENOENT
-          raise ConfigError, "'lzop' utility must be in PATH for LZO compression"
-        end
-        ['lzo', 'application/x-lzop']
-      when 'json' then ['json', 'application/json']
-      else ['txt', 'text/plain']
-    end
+                       when 'gzip'
+                         ['gz', 'application/x-gzip']
+                       when 'lzo'
+                         check_command('lzop', 'LZO')
+                         @command_parameter = '-qf1' if @command_parameter.nil?
+                         ['lzo', 'application/x-lzop']
+                       when 'lzma2'
+                         check_command('xz', 'LZMA2')
+                         @command_parameter = '-qf0' if @command_parameter.nil?
+                         ['xz', 'application/x-xz']
+                       when 'json'
+                         ['json', 'application/json']
+                       else
+                         ['txt', 'text/plain']
+                       end
 
     @timef = TimeFormatter.new(@time_format, @localtime)
 
@@ -162,7 +167,13 @@ class S3Output < Fluent::TimeSlicedOutput
         w.close
         tmp.close
         # We don't check the return code because we can't recover lzop failure.
-        system "lzop -qf1 -o #{tmp.path} #{w.path}"
+        system "lzop #{@command_parameter} -o #{tmp.path} #{w.path}"
+      elsif @store_as == "lzma2"
+        w = Tempfile.new("chunk-xz-tmp")
+        chunk.write_to(w)
+        w.close
+        tmp.close
+        system "xz #{@command_parameter} -c #{w.path} > #{tmp.path}"
       else
         chunk.write_to(tmp)
         tmp.close
@@ -193,6 +204,14 @@ class S3Output < Fluent::TimeSlicedOutput
     @bucket.empty?
   rescue
     raise "aws_key_id or aws_sec_key is invalid. Please check your configuration"
+  end
+
+  def check_command(command, algo)
+    begin
+      Open3.capture3("#{command} -V")
+    rescue Errno::ENOENT
+      raise ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
+    end
   end
 end
 
