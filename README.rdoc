@@ -12,7 +12,6 @@ This plugin splits files exactly by using the time of event logs (not the time w
 Simply use RubyGems:
     GEM_HOME="/usr/lib64/fluent/ruby/lib/ruby/gems/1.9.1/"
     GEM_PATH="/usr/lib64/fluent/ruby/lib/ruby/gems/1.9.1/"
-/usr/lib64/fluent/ruby/bin/fluent-gem install fluent-plugin-mysql
     /usr/lib64/fluent/ruby/bin/fluent-gem install fluent-funplus-s3
 
 == Configuration
