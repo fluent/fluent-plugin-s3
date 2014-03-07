@@ -1,3 +1,11 @@
+Release 0.3.7 - 2014/03/07
+
+  * Support lzma2 compression using 'xz' command
+    https://github.com/fluent/fluent-plugin-s3/pull/41
+  * Relax aws-sdk gem requirement
+    https://github.com/fluent/fluent-plugin-s3/pull/42
+
+
 Release 0.3.6 - 2014/02/05
 
   * Support 'log_level' option
