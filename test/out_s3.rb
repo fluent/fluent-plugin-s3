@@ -27,6 +27,9 @@ class S3OutputTest < Test::Unit::TestCase
 
       private
 
+      def ensure_bucket
+      end
+
       def check_apikeys
       end
     end.configure(conf)
@@ -214,8 +217,7 @@ class S3OutputTest < Test::Unit::TestCase
   def test_write_with_custom_s3_object_key_format
     # Assert content of event logs which are being sent to S3
     s3obj = flexmock(AWS::S3::S3Object)
-    s3obj.should_receive(:exists?).with_any_args.
-      and_return { false }
+    s3obj.should_receive(:exists?).with_any_args.and_return { false }
     s3obj.should_receive(:write).with(
       on { |pathname|
         data = nil
@@ -226,7 +228,7 @@ class S3OutputTest < Test::Unit::TestCase
           gz.close
         }
         assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
-                         %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                     %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
                      data
 
         pathname.to_s.match(%r|s3-|)
@@ -244,12 +246,8 @@ class S3OutputTest < Test::Unit::TestCase
       }
 
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
-    flexmock(AWS::S3::Bucket).new_instances do |bucket|
-      bucket.should_receive(:objects).with_any_args.
-        and_return {
-          s3obj_col
-        }
-    end
+    s3bucket, _ = setup_mocks(true)
+    s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
     # to make assertions on chunks' keys
@@ -263,9 +261,9 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
-  def setup_mocks
+  def setup_mocks(exists_return = false)
     s3bucket = flexmock(AWS::S3::Bucket)
-    s3bucket.should_receive(:exists?).with_any_args.and_return { false }
+    s3bucket.should_receive(:exists?).with_any_args.and_return { exists_return }
     s3bucket_col = flexmock(AWS::S3::BucketCollection)
     s3bucket_col.should_receive(:[]).with_any_args.and_return { s3bucket }
     flexmock(AWS::S3).new_instances do |bucket|
