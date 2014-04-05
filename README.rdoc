@@ -102,6 +102,14 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 
 [utc] Use UTC instead of local time.
 
+[sqs_queue_name] Optional, if included will send JSON message to SQS indicating file delivery to S3, formatted as:
+
+    {
+      "s3_bucket": "YOUR_S3_BUCKET_NAME",
+      "s3_path": "path/to/object"
+    }
+
+[sqs_endpoint] Optional, to specify region endpoint for optional SQS queue. Defaults to "sqs.ap-northeast-1.amazonaws.com".
 
 == Website, license, et. al.
 

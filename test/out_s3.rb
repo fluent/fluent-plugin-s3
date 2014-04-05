@@ -247,7 +247,6 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     s3bucket, _ = setup_mocks(true)
-
     s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
@@ -315,11 +314,9 @@ class S3OutputTest < Test::Unit::TestCase
 
     # # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     s3bucket, _ = setup_mocks(true)
-
     s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
 
     sqsqueue, _ = setup_sqs_mocks
-
     sqsqueue.should_receive(:send_message).with({s3_bucket: "test_bucket", s3_path: "log/events/ts=20110102-13/events_0-testing.node.local.gz"}.to_json)
 
     d = create_time_sliced_driver('sqs_queue_name test_queue')
