@@ -40,6 +40,8 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
   config_param :reduced_redundancy, :bool, :default => false
+  config_param :sqs_endpoint, :string, :default => 'sqs.ap-northeast-1.amazonaws.com'
+  config_param :sqs_queue_name, :string, :default => nil
 
   attr_reader :bucket
 
@@ -116,6 +118,12 @@ class S3Output < Fluent::TimeSlicedOutput
 
     check_apikeys if @check_apikey_on_start
     ensure_bucket
+
+    if @sqs_queue_name
+      @sqs = AWS::SQS.new(:sqs_endpoint => @sqs_endpoint)
+      @sqs_queue = @sqs.queues.create(@sqs_queue_name)
+    end
+
   end
 
   def format(tag, time, record)
@@ -180,6 +188,11 @@ class S3Output < Fluent::TimeSlicedOutput
       end
       @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
                                                              :reduced_redundancy => @reduced_redundancy})
+
+      if @sqs_queue
+        @sqs_queue.send_message({s3_bucket: @s3_bucket, s3_path: s3path}.to_json)
+      end
+
     ensure
       tmp.close(true) rescue nil
       w.close rescue nil

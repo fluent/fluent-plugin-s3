@@ -247,6 +247,7 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     s3bucket, _ = setup_mocks(true)
+
     s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
@@ -291,4 +292,42 @@ class S3OutputTest < Test::Unit::TestCase
       d.run
     }
   end
+
+  def setup_sqs_mocks
+    sqsqueue = flexmock(AWS::SQS::Queue)
+    sqsqueue_col = flexmock(AWS::SQS::QueueCollection)
+    sqsqueue_col.should_receive(:create).with_any_args.and_return { sqsqueue }
+    flexmock(AWS::SQS).new_instances do |sqs|
+      sqs.should_receive(:queues).with_any_args.and_return { sqsqueue_col }
+    end
+
+    return sqsqueue, sqsqueue_col
+  end
+
+  def test_write_including_sqs_queue
+    # Basic mocks for S3
+    s3obj = flexmock(AWS::S3::S3Object)
+    s3obj.should_receive(:exists?).with_any_args.and_return { false }
+    s3obj.should_receive(:write).with_any_args
+
+    s3obj_col = flexmock(AWS::S3::ObjectCollection)
+    s3obj_col.should_receive(:[]).with_any_args.and_return { s3obj }
+
+    # # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
+    s3bucket, _ = setup_mocks(true)
+
+    s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
+
+    sqsqueue, _ = setup_sqs_mocks
+
+    sqsqueue.should_receive(:send_message).with({s3_bucket: "test_bucket", s3_path: "log/events/ts=20110102-13/events_0-testing.node.local.gz"}.to_json)
+
+    d = create_time_sliced_driver('sqs_queue_name test_queue')
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    d.run
+  end
+
 end
