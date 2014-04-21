@@ -114,8 +114,8 @@ class S3Output < Fluent::TimeSlicedOutput
     @s3 = AWS::S3.new(options)
     @bucket = @s3.buckets[@s3_bucket]
 
-    check_apikeys if @check_apikey_on_start
     ensure_bucket
+    check_apikeys if @check_apikey_on_start
   end
 
   def format(tag, time, record)
