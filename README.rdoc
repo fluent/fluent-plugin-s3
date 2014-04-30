@@ -102,6 +102,16 @@ When "format_json" is true, the content is:
 
 At this format, "time" and "tag" are omitted.
 But you can set these information to the record by setting "include_tag_key" / "tag_key" and "include_time_key" / "time_key" option.
+If you set following configuration in S3 output:
+
+    format_json true
+    include_time_key true
+    time_key log_time # default is time
+
+then the record has log_time field.
+
+    {"log_time":"time string",...}
+
 
 [auto_create_bucket] Create S3 bucket if it does not exists. Default is true.
 
