@@ -94,11 +94,14 @@ The default content is:
     time\ttag\t{..json2..}
     ...
 
-But "format_json" is true, the content is:
+When "format_json" is true, the content is:
 
     {..json1..}
     {..json2..}
     ...
+
+At this format, "time" and "tag" are omitted.
+But you can set these information to the record by setting "include_tag_key" / "tag_key" and "include_time_key" / "time_key" option.
 
 [auto_create_bucket] Create S3 bucket if it does not exists. Default is true.
 
