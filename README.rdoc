@@ -86,6 +86,20 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 - text
 - lzo (Need lzop command)
 
+[format_json] Change one line format to only JSON in the S3 object. Default is false.
+
+The default content is:
+
+    time\ttag\t{..json1..}
+    time\ttag\t{..json2..}
+    ...
+
+But "format_json" is true, the content is:
+
+    {..json1..}
+    {..json2..}
+    ...
+
 [auto_create_bucket] Create S3 bucket if it does not exists. Default is true.
 
 [check_apikey_on_start] Check AWS key on start. Default is true.
