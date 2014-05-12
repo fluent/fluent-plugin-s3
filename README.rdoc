@@ -31,9 +31,9 @@ Simply use RubyGems:
       utc
     </match>
 
-[aws_key_id] AWS access key id. This parameter is required when your agent is not running on EC2 instance with an IAM Instance Profile.
+[aws_key_id] AWS access key id. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
 
-[aws_sec_key] AWS secret key. This parameter is required when your agent is not running on EC2 instance with an IAM Instance Profile.
+[aws_sec_key] AWS secret key. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
 
 [s3_bucket (required)] S3 bucket name.
 
@@ -129,6 +129,22 @@ then the record has log_time field.
 
 [utc] Use UTC instead of local time.
 
+== IAM Policy
+
+The following is an example for a minimal IAM policy needed to write to an s3 bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
+
+    { "Statement": [
+     { "Effect":"Allow",
+       "Action":"s3:*",
+       "Resource":"arn:aws:s3:::my-s3bucket*"
+      } ]
+    }
+
+Note that the bucket must already exist and *auto_create_bucket* has no effect in this case.
+
+Refer to the {AWS documentation}[http://docs.aws.amazon.com/IAM/latest/UserGuide/ExampleIAMPolicies.html] for example policies.
+
+Using {IAM roles}[http://docs.aws.amazon.com/IAM/latest/UserGuide/WorkingWithRoles.html] with a properly configured IAM policy are preferred over embedding access keys on EC2 instances.
 
 == Website, license, et. al.
 
