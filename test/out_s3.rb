@@ -133,6 +133,20 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
+  def test_format_with_format_none
+    config = [CONFIG, 'format_none true'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"message"=>"foo"}, time)
+    d.emit({"message"=>"bar"}, time)
+
+    d.expect_format %[foo\n]
+    d.expect_format %[bar\n]
+
+    d.run
+  end
+
   def test_format_with_format_json_included_tag
     config = [CONFIG, 'format_json true', 'include_tag_key true'].join("\n")
     d = create_driver(config)
