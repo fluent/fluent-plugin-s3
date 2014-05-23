@@ -40,6 +40,9 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
   config_param :reduced_redundancy, :bool, :default => false
+  config_param :after_flush, :default => [] do |val|
+    val.split(',').collect {|v| v.strip }
+  end
 
   attr_reader :bucket
 
@@ -180,6 +183,10 @@ class S3Output < Fluent::TimeSlicedOutput
       end
       @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
                                                              :reduced_redundancy => @reduced_redundancy})
+
+      @after_flush.each do |after_flush_cmd|
+        system "#{@after_flush_cmd}", "s3://#{@s3_bucket}/#{s3path}"
+      end
     ensure
       tmp.close(true) rescue nil
       w.close rescue nil

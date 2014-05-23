@@ -73,6 +73,13 @@ class S3OutputTest < Test::Unit::TestCase
     assert(e.is_a?(Fluent::ConfigError))
   end
 
+  def test_configure_with_after_flush
+    conf = CONFIG.clone
+    conf << "\nafter_flush script1, script2\n"
+    d = create_driver(conf)
+    assert_equal ['script1', 'script2'], d.instance.instance_variable_get(:@after_flush)
+  end
+
   def test_path_slicing
     config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
     d = create_driver(config)
@@ -202,6 +209,7 @@ class S3OutputTest < Test::Unit::TestCase
     buffer_type memory
     auto_create_bucket false
     log_level debug
+    after_flush after_flush_script
   ]
 
   def create_time_sliced_driver(additional_conf = '')
