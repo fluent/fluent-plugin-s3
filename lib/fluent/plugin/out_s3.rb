@@ -185,8 +185,8 @@ class S3Output < Fluent::TimeSlicedOutput
                                                              :reduced_redundancy => @reduced_redundancy})
 
       @after_flush.each do |after_flush_cmd|
-        after_hook_succeeded = system "#{after_flush_cmd}", "s3://#{@s3_bucket}/#{s3path}"
-        log.info "After flush command \"#{after_flush_cmd} s3://#{@s3_bucket}/#{s3path}\" failed!" unless after_hook_succeeded
+        after_hook_succeeded = system after_flush_cmd, @s3_bucket, s3path
+        log.info "After flush command \"#{after_flush_cmd} #{@s3_bucket} #{s3path}\" failed!" unless after_hook_succeeded
       end
     ensure
       tmp.close(true) rescue nil
