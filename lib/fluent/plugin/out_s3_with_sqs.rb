@@ -2,8 +2,8 @@ module Fluent
 
 require 'fluent/mixin/config_placeholders'
 
-class S3Output < Fluent::TimeSlicedOutput
-  Fluent::Plugin.register_output('s3', self)
+class S3WithSqsOutput < Fluent::TimeSlicedOutput
+  Fluent::Plugin.register_output('s3_with_sqs', self)
 
   unless method_defined?(:log)
     define_method(:log) { $log }

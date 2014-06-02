@@ -1,10 +1,10 @@
 require 'fluent/test'
-require 'fluent/plugin/out_s3'
+require 'fluent/plugin/out_s3_with_sqs'
 
 require 'flexmock/test_unit'
 require 'zlib'
 
-class S3OutputTest < Test::Unit::TestCase
+class S3WithSqsOutputTest < Test::Unit::TestCase
   def setup
     require 'aws-sdk'
     Fluent::Test.setup
@@ -20,7 +20,7 @@ class S3OutputTest < Test::Unit::TestCase
   ]
 
   def create_driver(conf = CONFIG)
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::S3Output) do
+    Fluent::Test::BufferedOutputTestDriver.new(Fluent::S3WithSqsOutput) do
       def write(chunk)
         chunk.read
       end
@@ -213,7 +213,7 @@ class S3OutputTest < Test::Unit::TestCase
   ]
 
   def create_time_sliced_driver(additional_conf = '')
-    d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output) do
+    d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3WithSqsOutput) do
       private
 
       def check_apikeys
