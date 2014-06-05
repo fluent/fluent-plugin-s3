@@ -7,7 +7,7 @@ Gem::Specification.new do |gem|
   gem.homepage    = "https://github.com/fluent/fluent-plugin-s3"
   gem.summary     = gem.description
   gem.version     = File.read("VERSION").strip
-  gem.authors     = ["Sadayuki Furuhashi"]
+  gem.authors     = ["Sadayuki Furuhashi", "Masahiro Nakagawa"]
   gem.email       = "frsyuki@gmail.com"
   gem.has_rdoc    = false
   #gem.platform    = Gem::Platform::RUBY
