@@ -16,7 +16,7 @@ Gem::Specification.new do |gem|
   gem.executables = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   gem.require_paths = ['lib']
 
-  gem.add_dependency "fluentd", "~> 0.10.0"
+  gem.add_dependency "fluentd", "~> 0.10.49"
   gem.add_dependency "aws-sdk", ">= 1.8.2"
   gem.add_dependency "yajl-ruby", "~> 1.0"
   gem.add_dependency "fluent-mixin-config-placeholders", "~> 0.2.0"

@@ -21,13 +21,6 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   config_param :path, :string, :default => ""
-  config_param :time_format, :string, :default => nil
-
-  include SetTagKeyMixin
-  config_set_default :include_tag_key, false
-
-  include SetTimeKeyMixin
-  config_set_default :include_time_key, false
 
   config_param :aws_key_id, :string, :default => nil
   config_param :aws_sec_key, :string, :default => nil
@@ -40,6 +33,7 @@ class S3Output < Fluent::TimeSlicedOutput
   config_param :check_apikey_on_start, :bool, :default => true
   config_param :proxy_uri, :string, :default => nil
   config_param :reduced_redundancy, :bool, :default => false
+  config_param :format, :string, :default => 'out_file'
 
   attr_reader :bucket
 
@@ -51,12 +45,6 @@ class S3Output < Fluent::TimeSlicedOutput
 
   def configure(conf)
     super
-
-    if format_json = conf['format_json']
-      @format_json = true
-    else
-      @format_json = false
-    end
 
     if use_ssl = conf['use_ssl']
       if use_ssl.empty?
@@ -86,7 +74,13 @@ class S3Output < Fluent::TimeSlicedOutput
                          ['txt', 'text/plain']
                        end
 
-    @timef = TimeFormatter.new(@time_format, @localtime)
+    if format_json = conf['format_json']
+      $log.warn "format_json is deprecated. Use 'format json' instead"
+      conf['format'] = 'json'
+    else
+      conf['format'] = @format
+    end
+    @formatter = TextFormatter.create(conf)
 
     if @localtime
       @path_slicer = Proc.new {|path|
@@ -97,7 +91,6 @@ class S3Output < Fluent::TimeSlicedOutput
         Time.now.utc.strftime(path)
       }
     end
-
   end
 
   def start
@@ -119,23 +112,7 @@ class S3Output < Fluent::TimeSlicedOutput
   end
 
   def format(tag, time, record)
-    if @include_time_key || !@format_json
-      time_str = @timef.format(time)
-    end
-
-    # copied from each mixin because current TimeSlicedOutput can't support mixins.
-    if @include_tag_key
-      record[@tag_key] = tag
-    end
-    if @include_time_key
-      record[@time_key] = time_str
-    end
-
-    if @format_json
-      Yajl.dump(record) + "\n"
-    else
-      "#{time_str}\t#{tag}\t#{Yajl.dump(record)}\n"
-    end
+    @formatter.format(tag, time, record)
   end
 
   def write(chunk)

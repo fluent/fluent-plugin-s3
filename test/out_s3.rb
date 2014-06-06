@@ -120,6 +120,20 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_format_with_format_json
+    config = [CONFIG, 'format json'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    d.expect_format %[{"a":1}\n]
+    d.expect_format %[{"a":2}\n]
+
+    d.run
+  end
+
+  def test_format_with_format_json_deprecated
     config = [CONFIG, 'format_json true'].join("\n")
     d = create_driver(config)
 
@@ -148,7 +162,7 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_format_with_format_json_included_time
-    config = [CONFIG, 'format_json true', 'include_time_key true'].join("\n")
+    config = [CONFIG, 'format json', 'include_time_key true'].join("\n")
     d = create_driver(config)
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
@@ -162,7 +176,7 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_format_with_format_json_included_tag_and_time
-    config = [CONFIG, 'format_json true', 'include_tag_key true', 'include_time_key true'].join("\n")
+    config = [CONFIG, 'format json', 'include_tag_key true', 'include_time_key true'].join("\n")
     d = create_driver(config)
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
