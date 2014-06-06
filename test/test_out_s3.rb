@@ -119,6 +119,20 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
+  def test_format_with_format_ltsv
+    config = [CONFIG, 'format ltsv'].join("\n")
+    d = create_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1, "b"=>1}, time)
+    d.emit({"a"=>2, "b"=>2}, time)
+
+    d.expect_format %[a:1\tb:1\n]
+    d.expect_format %[a:2\tb:2\n]
+
+    d.run
+  end
+
   def test_format_with_format_json
     config = [CONFIG, 'format json'].join("\n")
     d = create_driver(config)
