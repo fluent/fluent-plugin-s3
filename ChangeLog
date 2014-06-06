@@ -1,3 +1,9 @@
+Release 0.4.0 - 2014/06/06
+
+  * Add 'format' option to change one line format
+  * Update fluentd dependency to v0.10.49
+
+
 Release 0.3.7 - 2014/03/07
 
   * Support lzma2 compression using 'xz' command
