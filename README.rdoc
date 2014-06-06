@@ -86,15 +86,15 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 - text
 - lzo (Need lzop command)
 
-[format_json] Change one line format to only JSON in the S3 object. Default is false.
+[format] Change one line format in the S3 object. Supported formats are "out_file", "json", "ltsv" and "single_value".
 
-The default content is:
+- out_file (default).
 
     time\ttag\t{..json1..}
     time\ttag\t{..json2..}
     ...
 
-When "format_json" is true, the content is:
+- json
 
     {..json1..}
     {..json2..}
@@ -112,6 +112,23 @@ then the record has log_time field.
 
     {"log_time":"time string",...}
 
+- ltsv
+
+    key1:value1\tkey2:value2
+    key1:value1\tkey2:value2
+    ...
+
+"ltsv" format also accepts "include_xxx" related options. See "json" section.
+
+- single_value
+
+Use specified value instead of entire recode. If you get '{"message":"my log"}', then contents are
+
+    my log1
+    my log2
+    ...
+
+You can change key name by "message_key" option.
 
 [auto_create_bucket] Create S3 bucket if it does not exists. Default is true.
 
