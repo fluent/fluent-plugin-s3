@@ -30,6 +30,7 @@ Simply use RubyGems:
       time_slice_wait 10m
       utc
       after_flush path/to/script1, path/to/script2
+      after_flush_config path/to/script1/config, path/to/script2/config
     </match>
 
 [aws_key_id] AWS access key id. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
@@ -131,6 +132,8 @@ then the record has log_time field.
 [utc] Use UTC instead of local time.
 
 [after_flush] A string of scripts, comma separated, that will be run after each log is written to s3. Scripts will be passed the s3 path to the log file in the form "s3://my-s3bucket/path/to/log" as the first argument. Failures will be logged, but not raise an error.
+
+[after_flush_config] A string of config paths, that map to after_flush scripts.
 
 == IAM Policy
 
