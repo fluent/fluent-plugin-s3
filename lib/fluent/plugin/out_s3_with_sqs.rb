@@ -43,6 +43,9 @@ class S3WithSqsOutput < Fluent::TimeSlicedOutput
   config_param :after_flush, :default => [] do |val|
     val.split(',').collect {|v| v.strip }
   end
+  config_param :after_flush_config, :default => [] do |val|
+    val.split(',').collect {|v| v.strip }
+  end
 
   attr_reader :bucket
 
@@ -184,9 +187,10 @@ class S3WithSqsOutput < Fluent::TimeSlicedOutput
       @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
                                                              :reduced_redundancy => @reduced_redundancy})
 
-      @after_flush.each do |after_flush_cmd|
-        after_hook_succeeded = system after_flush_cmd, @s3_bucket, s3path
-        log.info "After flush command \"#{after_flush_cmd} #{@s3_bucket} #{s3path}\" failed!" unless after_hook_succeeded
+      @after_flush.each_with_index do |after_flush_cmd, i|
+        config_file = @after_flush_config[i]
+        after_hook_succeeded = system after_flush_cmd, config_file, @s3_bucket, s3path
+        log.info "After flush command \"#{after_flush_cmd} #{config_file} #{@s3_bucket} #{s3path}\" failed!" unless after_hook_succeeded
       end
     ensure
       tmp.close(true) rescue nil

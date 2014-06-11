@@ -6,10 +6,8 @@ require 'yaml'
 
 module AfterWriteHooks
   class SQS
-    CONFIG_FILE_PATH = "/path/to/your/config"
-
-    def self.run(s3_bucket, s3_path)
-      self.config['queues'].each do |queue_config|
+    def self.run(config_file_path, s3_bucket, s3_path)
+      self.config(config_file_path)['queues'].each do |queue_config|
         sqs = AWS::SQS.new(
           access_key_id: queue_config['access_key_id'],
           secret_access_key: queue_config['secret_access_key']
@@ -20,8 +18,8 @@ module AfterWriteHooks
       end
     end
 
-    def self.config
-      @config ||= YAML.load_file(CONFIG_FILE_PATH)
+    def self.config(config_file_path)
+      @config ||= YAML.load_file(config_file_path)
     end
   end
 end
