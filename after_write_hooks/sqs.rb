@@ -10,7 +10,8 @@ module AfterWriteHooks
       self.config(config_file_path)['queues'].each do |queue_config|
         sqs = AWS::SQS.new(
           access_key_id: queue_config['access_key_id'],
-          secret_access_key: queue_config['secret_access_key']
+          secret_access_key: queue_config['secret_access_key'],
+          region: queue_config['region']
         )
         message = {s3_bucket: s3_bucket, s3_path: s3_path}
         queue = sqs.queues.named(queue_config['name'])
