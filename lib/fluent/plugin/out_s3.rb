@@ -132,8 +132,9 @@ module Fluent
 
         if s3paths_checked.include? s3path then
           raise "Invalid s3_object_key_format"
+        end
 
-        if @bucket.objects[s3path].exists?
+        if @bucket.objects[s3path].exists? then
           s3paths_checked << s3path
           i =+ 1
         else
