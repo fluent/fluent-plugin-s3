@@ -114,10 +114,11 @@ module Fluent
       @formatter.format(tag, time, record)
     end
 
-    def write(chunk)
+    def s3path(chunk)
+      s3paths_checked = []
       i = 0
 
-      begin
+      while true do
         path = @path_slicer.call(@path)
         values_for_s3_object_key = {
           "path" => path,
@@ -128,9 +129,21 @@ module Fluent
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
           values_for_s3_object_key[expr[2...expr.size-1]]
         }
-        i += 1
-      end while @bucket.objects[s3path].exists?
 
+        if s3path in s3paths_checked then
+          raise "Invalid s3_object_key_format"
+
+        if @bucket.objects[s3path].exists?
+          s3paths_checked << s3path
+          i =+ 1
+        else
+          return s3path
+        end
+      end
+    end
+
+    def write(chunk)
+      chunk_s3path = s3path(chunk)
       tmp = Tempfile.new("s3-")
       begin
         if @store_as == "gzip"
@@ -154,8 +167,8 @@ module Fluent
           chunk.write_to(tmp)
           tmp.close
         end
-        @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
-                                                               :reduced_redundancy => @reduced_redundancy})
+        @bucket.objects[chunk_s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
+                                                                     :reduced_redundancy => @reduced_redundancy})
       ensure
         tmp.close(true) rescue nil
         w.close rescue nil
