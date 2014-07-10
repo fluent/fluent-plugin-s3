@@ -130,7 +130,7 @@ module Fluent
           values_for_s3_object_key[expr[2...expr.size-1]]
         }
 
-        if s3path in s3paths_checked then
+        if s3paths_checked.include? s3path then
           raise "Invalid s3_object_key_format"
 
         if @bucket.objects[s3path].exists?
