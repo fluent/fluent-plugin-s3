@@ -116,6 +116,7 @@ module Fluent
 
     def write(chunk)
       i = 0
+      previous_path = nil
 
       begin
         path = @path_slicer.call(@path)
@@ -128,7 +129,12 @@ module Fluent
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
           values_for_s3_object_key[expr[2...expr.size-1]]
         }
+        if (i > 0) && (s3path == previous_path)
+          raise "duplicated path is generated. use %{index} in s3_object_key_format: path = #{s3path}"
+        end
+
         i += 1
+        previous_path = s3path
       end while @bucket.objects[s3path].exists?
 
       tmp = Tempfile.new("s3-")
