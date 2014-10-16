@@ -1,3 +1,10 @@
+Release 0.4.1 - 2014/10/16
+
+  * Add 's3_region' option to specify S3 region
+  * Restrict aws-sdk gem dependency version to use v1
+  * Fix infinite loop when same object path is generated
+
+
 Release 0.4.0 - 2014/06/06
 
   * Add 'format' option to change one line format
