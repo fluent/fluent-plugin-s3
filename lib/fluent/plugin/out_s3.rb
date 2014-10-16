@@ -101,7 +101,7 @@ module Fluent
         options[:secret_access_key] = @aws_sec_key
       end
       options[:region] = @s3_region if @s3_region
-      options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
+      options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:proxy_uri] = @proxy_uri if @proxy_uri
       options[:use_ssl] = @use_ssl
 
