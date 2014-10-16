@@ -37,6 +37,8 @@ Simply use RubyGems:
 
 [s3_bucket (required)] S3 bucket name.
 
+[s3_region] s3 region name. For example, US West (Oregon) Region is "us-west-2". The full list of regions are available here. > http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region. We recommend using `s3_region` instead of `s3_endpoint`.
+
 [s3_endpoint] s3 endpoint name. For example, US West (Oregon) Region is "s3-us-west-2.amazonaws.com". The full list of endpoints are available here. > http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 
 [s3_object_key_format] The format of S3 object keys. You can use several built-in variables:

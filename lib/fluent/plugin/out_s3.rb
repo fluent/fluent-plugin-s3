@@ -24,6 +24,7 @@ module Fluent
     config_param :aws_key_id, :string, :default => nil
     config_param :aws_sec_key, :string, :default => nil
     config_param :s3_bucket, :string
+    config_param :s3_region, :string, :default => nil
     config_param :s3_endpoint, :string, :default => nil
     config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
     config_param :store_as, :string, :default => "gzip"
@@ -99,6 +100,7 @@ module Fluent
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
       end
+      options[:region] = @s3_region if @s3_region
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
       options[:proxy_uri] = @proxy_uri if @proxy_uri
       options[:use_ssl] = @use_ssl
