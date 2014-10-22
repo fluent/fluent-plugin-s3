@@ -1,3 +1,8 @@
+Release 0.4.2 - 2014/10/22
+
+  * Update fluent-mixin-config-placeholders to v0.3.0
+
+
 Release 0.4.1 - 2014/10/16
 
   * Add 's3_region' option to specify S3 region
