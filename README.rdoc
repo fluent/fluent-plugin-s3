@@ -158,6 +158,15 @@ You can change key name by "message_key" option.
 
 [reduced_redundancy] Use S3 reduced redundancy storage for 33% cheaper pricing. Default is false.
 
+[acl] Permission for the object on S3. It is useful for cross-account access using IAM roles. Valid values are:
+
+- private (default)
+- public_read
+- public_read_write
+- authenticated_read
+- bucket_owner_read
+- bucket_owner_full_control
+
 == IAM Policy
 
 The following is an example for a minimal IAM policy needed to write to an s3 bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
