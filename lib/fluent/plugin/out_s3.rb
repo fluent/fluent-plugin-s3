@@ -34,6 +34,7 @@ module Fluent
     config_param :proxy_uri, :string, :default => nil
     config_param :reduced_redundancy, :bool, :default => false
     config_param :format, :string, :default => 'out_file'
+    config_param :acl, :string, :default => :private
 
     attr_reader :bucket
 
@@ -163,7 +164,8 @@ module Fluent
           tmp.close
         end
         @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
-                                                               :reduced_redundancy => @reduced_redundancy})
+                                                               :reduced_redundancy => @reduced_redundancy,
+                                                               :acl => @acl})
       ensure
         tmp.close(true) rescue nil
         w.close rescue nil
