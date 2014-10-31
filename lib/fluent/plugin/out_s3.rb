@@ -187,7 +187,7 @@ module Fluent
     def check_apikeys
       @bucket.empty?
     rescue
-      raise "aws_key_id or aws_sec_key is invalid. Please check your configuration"
+      raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration"
     end
 
     def check_command(command, algo)
