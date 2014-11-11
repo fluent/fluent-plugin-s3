@@ -1,3 +1,8 @@
+Release 0.4.3 - 2014/11/10
+
+  * Change API check message to consider region mismatch
+
+
 Release 0.4.2 - 2014/10/22
 
   * Update fluent-mixin-config-placeholders to v0.3.0
