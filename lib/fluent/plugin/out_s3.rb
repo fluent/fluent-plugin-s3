@@ -68,6 +68,10 @@ module Fluent
                            check_command('xz', 'LZMA2')
                            @command_parameter = '-qf0' if @command_parameter.nil?
                            ['xz', 'application/x-xz']
+                         when 'pigz'
+                           check_command('pigz', 'PIGZ')
+                           @command_parameter = '' if @command_parameter.nil?
+                           ['gz', 'application/x-gzip']
                          when 'json'
                            ['json', 'application/json']
                          else
@@ -158,6 +162,12 @@ module Fluent
           w.close
           tmp.close
           system "xz #{@command_parameter} -c #{w.path} > #{tmp.path}"
+        elsif @store_as == "pigz"
+          w = Tempfile.new("chunk-pigz-tmp")
+          chunk.write_to(w)
+          w.close
+          tmp.close
+          system "pigz #{@command_parameter} -c #{w.path} > #{tmp.path}"
         else
           chunk.write_to(tmp)
           tmp.close
