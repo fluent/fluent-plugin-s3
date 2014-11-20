@@ -70,7 +70,7 @@ module Fluent
                            ['xz', 'application/x-xz']
                          when 'pigz'
                            check_command('pigz', 'PIGZ')
-                           @command_parameter = '' if @command_parameter.nil?
+                           @command_parameter = '-qf1' if @command_parameter.nil?
                            ['gz', 'application/x-gzip']
                          when 'json'
                            ['json', 'application/json']
