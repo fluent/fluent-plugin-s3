@@ -87,6 +87,7 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 - json
 - text
 - lzo (Need lzop command)
+- pigz (Use parallel gzip implementation, need pigz command, compatible to gzip format)
 
 [format] Change one line format in the S3 object. Supported formats are "out_file", "json", "ltsv" and "single_value".
 
