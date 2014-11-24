@@ -68,6 +68,10 @@ module Fluent
                            check_command('xz', 'LZMA2')
                            @command_parameter = '-qf0' if @command_parameter.nil?
                            ['xz', 'application/x-xz']
+                         when 'pigz'
+                           check_command('pigz', 'PIGZ')
+                           @command_parameter = '' if @command_parameter.nil?
+                           ['gz', 'application/x-gzip']
                          when 'json'
                            ['json', 'application/json']
                          else
@@ -146,18 +150,15 @@ module Fluent
           chunk.write_to(w)
           w.close
         elsif @store_as == "lzo"
-          w = Tempfile.new("chunk-tmp")
-          chunk.write_to(w)
-          w.close
           tmp.close
           # We don't check the return code because we can't recover lzop failure.
-          system "lzop #{@command_parameter} -o #{tmp.path} #{w.path}"
+          system "lzop #{@command_parameter} -o #{tmp.path} #{chunk.path}"
         elsif @store_as == "lzma2"
-          w = Tempfile.new("chunk-xz-tmp")
-          chunk.write_to(w)
-          w.close
           tmp.close
-          system "xz #{@command_parameter} -c #{w.path} > #{tmp.path}"
+          system "xz #{@command_parameter} -c #{chunk.path} > #{tmp.path}"
+        elsif @store_as == "pigz"
+          tmp.close
+          system "pigz #{@command_parameter} -c #{chunk.path} > #{tmp.path}"
         else
           chunk.write_to(tmp)
           tmp.close
