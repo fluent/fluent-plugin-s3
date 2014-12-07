@@ -186,6 +186,8 @@ module Fluent
 
     def check_apikeys
       @bucket.empty?
+    rescue AWS::S3::Errors::NoSuchBucket
+      # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue
       raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration"
     end
