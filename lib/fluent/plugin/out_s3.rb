@@ -15,12 +15,11 @@ module Fluent
       require 'time'
       require 'tempfile'
 
-      @use_ssl = true
       @compressor = nil
     end
 
     config_param :path, :string, :default => ""
-
+    config_param :use_ssl, :bool, :default => true
     config_param :aws_key_id, :string, :default => nil
     config_param :aws_sec_key, :string, :default => nil
     config_param :s3_bucket, :string
@@ -44,17 +43,6 @@ module Fluent
 
     def configure(conf)
       super
-
-      if use_ssl = conf['use_ssl']
-        if use_ssl.empty?
-          @use_ssl = true
-        else
-          @use_ssl = Config.bool_value(use_ssl)
-          if @use_ssl.nil?
-            raise ConfigError, "'true' or 'false' is required for use_ssl option on s3 output"
-          end
-        end
-      end
 
       begin
         @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new
