@@ -88,6 +88,8 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 - text
 - lzo (Need lzop command)
 
+See 'Use your compression algorithm' section for adding another format.
+
 [format] Change one line format in the S3 object. Supported formats are "out_file", "json", "ltsv" and "single_value".
 
 - out_file (default).
@@ -164,6 +166,37 @@ Note that the bucket must already exist and *auto_create_bucket* has no effect i
 Refer to the {AWS documentation}[http://docs.aws.amazon.com/IAM/latest/UserGuide/ExampleIAMPolicies.html] for example policies.
 
 Using {IAM roles}[http://docs.aws.amazon.com/IAM/latest/UserGuide/WorkingWithRoles.html] with a properly configured IAM policy are preferred over embedding access keys on EC2 instances.
+
+== Use your compression algorithm
+
+s3 plugin has plugabble compression mechanizm like Fleuntd\'s input / output plugin.
+If you set 'store_as xxx', s3 plugin searches `fluent/plugin/s3_compressor_xxx.rb`.
+You can define your compression with 'S3Output::Compressor' class. Compressor API is here:
+
+    module Fluent
+      class S3Output
+        class XXXCompressor < Compressor
+          S3Output.register_compressor('xxx', self)
+
+          # Used to file extension
+          def ext
+            'xxx'
+          end
+
+          # Used to file content type
+          def content_type
+            'application/x-xxx'
+          end
+
+          # chunk is buffer chunk. tmp is destination file for upload
+          def compress(chunk, tmp)
+            # call command or something
+          end
+        end
+      end
+    end
+
+See bundled Compressor classes for more detail.
 
 == Website, license, et. al.
 
