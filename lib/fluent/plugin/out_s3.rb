@@ -24,7 +24,6 @@ module Fluent
     config_param :aws_sec_key, :string, :default => nil
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => nil
-    config_param :s3_endpoint, :string, :default => nil
     config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
     config_param :store_as, :string, :default => "gzip"
     config_param :auto_create_bucket, :bool, :default => true
@@ -43,6 +42,10 @@ module Fluent
 
     def configure(conf)
       super
+
+      if conf.has_key?('s3_endpoint')
+        raise ConfigError, "s3_endpoint parameter is removed. Use s3_region instead"
+      end
 
       begin
         @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new
