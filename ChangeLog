@@ -1,3 +1,11 @@
+Release 0.5.0 - 2014/12/07
+
+  * Make compression algorithm pluggable
+  * Remove format_json parameter
+  * Remove s3_endpoint parameter
+  * Relax fluentd version restriction to support 0.12 or later
+
+
 Release 0.4.3 - 2014/11/10
 
   * Change API check message to consider region mismatch
