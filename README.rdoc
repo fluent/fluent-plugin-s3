@@ -106,7 +106,7 @@ At this format, "time" and "tag" are omitted.
 But you can set these information to the record by setting "include_tag_key" / "tag_key" and "include_time_key" / "time_key" option.
 If you set following configuration in S3 output:
 
-    format_json true
+    format json
     include_time_key true
     time_key log_time # default is time
 

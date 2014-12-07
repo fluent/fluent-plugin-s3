@@ -53,15 +53,10 @@ module Fluent
         $log.warn "#{@store_as} not found. Use 'text' instead"
         @compressor = TextCompressor.new
       end
-
       @compressor.configure(conf)
 
-      if format_json = conf['format_json']
-        $log.warn "format_json is deprecated. Use 'format json' instead"
-        conf['format'] = 'json'
-      else
-        conf['format'] = @format
-      end
+      # TODO: use Plugin.new_formatter instead of TextFormatter.create
+      conf['format'] = @format
       @formatter = TextFormatter.create(conf)
 
       if @localtime
