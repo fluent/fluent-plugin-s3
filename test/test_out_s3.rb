@@ -42,32 +42,32 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'test_bucket', d.instance.s3_bucket
     assert_equal 'log', d.instance.path
     assert d.instance.instance_variable_get(:@use_ssl)
-    assert_equal 'gz', d.instance.instance_variable_get(:@ext)
-    assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@mime_type)
+    assert_equal 'gz', d.instance.instance_variable_get(:@compressor).ext
+    assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
   end
 
   def test_configure_with_mime_type_json
     conf = CONFIG.clone
     conf << "\nstore_as json\n"
     d = create_driver(conf)
-    assert_equal 'json', d.instance.instance_variable_get(:@ext)
-    assert_equal 'application/json', d.instance.instance_variable_get(:@mime_type)
+    assert_equal 'json', d.instance.instance_variable_get(:@compressor).ext
+    assert_equal 'application/json', d.instance.instance_variable_get(:@compressor).content_type
   end
 
   def test_configure_with_mime_type_text
     conf = CONFIG.clone
     conf << "\nstore_as text\n"
     d = create_driver(conf)
-    assert_equal 'txt', d.instance.instance_variable_get(:@ext)
-    assert_equal 'text/plain', d.instance.instance_variable_get(:@mime_type)
+    assert_equal 'txt', d.instance.instance_variable_get(:@compressor).ext
+    assert_equal 'text/plain', d.instance.instance_variable_get(:@compressor).content_type
   end
 
   def test_configure_with_mime_type_lzo
     conf = CONFIG.clone
     conf << "\nstore_as lzo\n"
     d = create_driver(conf)
-    assert_equal 'lzo', d.instance.instance_variable_get(:@ext)
-    assert_equal 'application/x-lzop', d.instance.instance_variable_get(:@mime_type)
+    assert_equal 'lzo', d.instance.instance_variable_get(:@compressor).ext
+    assert_equal 'application/x-lzop', d.instance.instance_variable_get(:@compressor).content_type
   rescue => e
     # TODO: replace code with disable lzop command
     assert(e.is_a?(Fluent::ConfigError))
@@ -147,22 +147,8 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
-  def test_format_with_format_json_deprecated
-    config = [CONFIG, 'format_json true'].join("\n")
-    d = create_driver(config)
-
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    d.expect_format %[{"a":1}\n]
-    d.expect_format %[{"a":2}\n]
-
-    d.run
-  end
-
   def test_format_with_format_json_included_tag
-    config = [CONFIG, 'format_json true', 'include_tag_key true'].join("\n")
+    config = [CONFIG, 'format json', 'include_tag_key true'].join("\n")
     d = create_driver(config)
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
