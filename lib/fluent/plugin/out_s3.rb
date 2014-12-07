@@ -14,9 +14,9 @@ module Fluent
       require 'zlib'
       require 'time'
       require 'tempfile'
-      require 'open3'
 
       @use_ssl = true
+      @compressor = nil
     end
 
     config_param :path, :string, :default => ""
@@ -28,7 +28,6 @@ module Fluent
     config_param :s3_endpoint, :string, :default => nil
     config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
     config_param :store_as, :string, :default => "gzip"
-    config_param :command_parameter, :string, :default => nil
     config_param :auto_create_bucket, :bool, :default => true
     config_param :check_apikey_on_start, :bool, :default => true
     config_param :proxy_uri, :string, :default => nil
@@ -57,22 +56,14 @@ module Fluent
         end
       end
 
-      @ext, @mime_type = case @store_as
-                         when 'gzip'
-                           ['gz', 'application/x-gzip']
-                         when 'lzo'
-                           check_command('lzop', 'LZO')
-                           @command_parameter = '-qf1' if @command_parameter.nil?
-                           ['lzo', 'application/x-lzop']
-                         when 'lzma2'
-                           check_command('xz', 'LZMA2')
-                           @command_parameter = '-qf0' if @command_parameter.nil?
-                           ['xz', 'application/x-xz']
-                         when 'json'
-                           ['json', 'application/json']
-                         else
-                           ['txt', 'text/plain']
-                         end
+      begin
+        @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new
+      rescue => e
+        $log.warn "#{@store_as} not found. Use 'text' instead"
+        @compressor = TextCompressor.new
+      end
+
+      @compressor.configure(conf)
 
       if format_json = conf['format_json']
         $log.warn "format_json is deprecated. Use 'format json' instead"
@@ -125,7 +116,7 @@ module Fluent
         values_for_s3_object_key = {
           "path" => path,
           "time_slice" => chunk.key,
-          "file_extension" => @ext,
+          "file_extension" => @compressor.ext,
           "index" => i
         }
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
@@ -141,33 +132,11 @@ module Fluent
 
       tmp = Tempfile.new("s3-")
       begin
-        if @store_as == "gzip"
-          w = Zlib::GzipWriter.new(tmp)
-          chunk.write_to(w)
-          w.close
-        elsif @store_as == "lzo"
-          w = Tempfile.new("chunk-tmp")
-          chunk.write_to(w)
-          w.close
-          tmp.close
-          # We don't check the return code because we can't recover lzop failure.
-          system "lzop #{@command_parameter} -o #{tmp.path} #{w.path}"
-        elsif @store_as == "lzma2"
-          w = Tempfile.new("chunk-xz-tmp")
-          chunk.write_to(w)
-          w.close
-          tmp.close
-          system "xz #{@command_parameter} -c #{w.path} > #{tmp.path}"
-        else
-          chunk.write_to(tmp)
-          tmp.close
-        end
-        @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @mime_type,
+        @compressor.compress(chunk, tmp)
+        @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @compressor.content_type,
                                                                :reduced_redundancy => @reduced_redundancy})
       ensure
         tmp.close(true) rescue nil
-        w.close rescue nil
-        w.unlink rescue nil
       end
     end
 
@@ -190,12 +159,91 @@ module Fluent
       raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration"
     end
 
-    def check_command(command, algo)
-      begin
-        Open3.capture3("#{command} -V")
-      rescue Errno::ENOENT
-        raise ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
+    class Compressor
+      include Configurable
+
+      def configure(conf)
+        super
       end
+
+      def ext
+      end
+
+      def content_type
+      end
+
+      def compress(chunk, tmp)
+      end
+
+      private
+
+      def check_command(command, algo = nil)
+        require 'open3'
+
+        algo = command if algo.nil?
+        begin
+          Open3.capture3("#{command} -V")
+        rescue Errno::ENOENT
+          raise ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
+        end
+      end
+    end
+
+    class GzipCompressor < Compressor
+      def ext
+        'gz'.freeze
+      end
+
+      def content_type
+        'application/x-gzip'.freeze
+      end
+
+      def compress(chunk, tmp)
+        w = Zlib::GzipWriter.new(tmp)
+        chunk.write_to(w)
+        w.close
+      ensure
+        w.close rescue nil
+        w.unlink rescue nil
+      end
+    end
+
+    class TextCompressor < Compressor
+      def ext
+        'txt'.freeze
+      end
+
+      def content_type
+        'text/plain'.freeze
+      end
+
+      def compress(chunk, tmp)
+        chunk.write_to(tmp)
+        tmp.close
+      end
+    end
+
+    class JsonCompressor < TextCompressor
+      def ext
+        'json'.freeze
+      end
+
+      def content_type
+        'application/json'.freeze
+      end
+    end
+
+    COMPRESSOR_REGISTRY = Registry.new(:s3_compressor_type, 'fluent/plugin/s3_compressor_')
+    {
+      'gzip' => GzipCompressor,
+      'json' => JsonCompressor,
+      'text' => TextCompressor
+    }.each { |name, compressor|
+      COMPRESSOR_REGISTRY.register(name, compressor)
+    }
+
+    def self.register_compressor(name, compressor)
+      COMPRESSOR_REGISTRY.register(name, compressor)
     end
   end
 end
