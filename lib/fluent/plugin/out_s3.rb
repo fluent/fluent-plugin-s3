@@ -4,10 +4,6 @@ module Fluent
   class S3Output < Fluent::TimeSlicedOutput
     Fluent::Plugin.register_output('s3', self)
 
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
-
     def initialize
       super
       require 'aws-sdk'
