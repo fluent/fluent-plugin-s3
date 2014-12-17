@@ -1,3 +1,8 @@
+Release 0.5.1 - 2014/12/18
+
+  * Skip apikey_check error when auto_create_bucket is true and bucket doesn't exist
+
+
 Release 0.5.0 - 2014/12/07
 
   * Make compression algorithm pluggable
