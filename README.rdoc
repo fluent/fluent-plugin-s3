@@ -148,6 +148,8 @@ You can change key name by "message_key" option.
 
 [utc] Use UTC instead of local time.
 
+[reduced_redundancy] Use S3 reduced redundancy storage for 33% cheaper pricing. Default is false.
+
 == IAM Policy
 
 The following is an example for a minimal IAM policy needed to write to an s3 bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
