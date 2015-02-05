@@ -22,7 +22,7 @@ module Fluent
         w = Tempfile.new("chunk-tmp")
         chunk.write_to(w)
         w.close
-        tmp.close
+
         # We don't check the return code because we can't recover lzop failure.
         system "lzop #{@command_parameter} -o #{tmp.path} #{w.path}"
       ensure

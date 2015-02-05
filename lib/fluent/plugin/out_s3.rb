@@ -195,7 +195,6 @@ module Fluent
         w.close
       ensure
         w.close rescue nil
-        w.unlink rescue nil
       end
     end
 
