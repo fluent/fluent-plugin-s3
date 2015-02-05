@@ -1,3 +1,8 @@
+Release 0.5.2 - 2015/02/05
+
+  * Add experimental gzip_command compressor
+
+
 Release 0.5.1 - 2014/12/18
 
   * Skip apikey_check error when auto_create_bucket is true and bucket doesn't exist
