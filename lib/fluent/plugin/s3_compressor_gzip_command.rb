@@ -26,15 +26,24 @@ module Fluent
                  w = Tempfile.new("chunk-gzip-tmp")
                  chunk.write_to(w)
                  w.close
-                 tmp.close
                  w.path
                end
-        # We don't check the return code because we can't recover gzip failure.
-        system "gzip #{@command_parameter} -c #{path} > #{tmp.path}"
+
+        res = system "gzip #{@command_parameter} -c #{path} > #{tmp.path}"
+        unless res
+          log.warn "failed to execute gzip command. Fallback to GzipWriter. status = #{$?}"
+          begin
+            tmp.truncate(0)
+            gw = Zlib::GzipWriter.new(tmp)
+            chunk.write_to(gw)
+            gw.close
+          ensure
+            gw.close rescue nil
+          end
+        end
       ensure
         unless chunk_is_file
-          w.close rescue nil
-          w.unlink rescue nil
+          w.close(true) rescue nil
         end
       end
     end
