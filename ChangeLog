@@ -1,3 +1,9 @@
+Release 0.5.3 - 2015/02/06
+
+  * Add error information in API check
+  * Add GzipWriter fallback to gzip_command
+
+
 Release 0.5.2 - 2015/02/05
 
   * Add experimental gzip_command compressor
