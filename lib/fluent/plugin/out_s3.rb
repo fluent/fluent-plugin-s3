@@ -50,6 +50,7 @@ module Fluent
         @compressor = TextCompressor.new
       end
       @compressor.configure(conf)
+      @compressor.buffer_type = @buffer_type
 
       # TODO: use Plugin.new_formatter instead of TextFormatter.create
       conf['format'] = @format
@@ -148,6 +149,8 @@ module Fluent
       def configure(conf)
         super
       end
+
+      attr_accessor :buffer_type
 
       def ext
       end
