@@ -44,13 +44,12 @@ module Fluent
       end
 
       begin
-        @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new
+        @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(:buffer_type => @buffer_type, :log => log)
       rescue => e
         $log.warn "#{@store_as} not found. Use 'text' instead"
         @compressor = TextCompressor.new
       end
       @compressor.configure(conf)
-      @compressor.buffer_type = @buffer_type
 
       # TODO: use Plugin.new_formatter instead of TextFormatter.create
       conf['format'] = @format
@@ -146,11 +145,17 @@ module Fluent
     class Compressor
       include Configurable
 
+      def initialize(opts = {})
+        super()
+        @buffer_type = opts[:buffer_type]
+        @log = opts[:log]
+      end
+
+      attr_reader :buffer_type, :log
+
       def configure(conf)
         super
       end
-
-      attr_accessor :buffer_type
 
       def ext
       end
