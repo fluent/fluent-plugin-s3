@@ -1,3 +1,8 @@
+Release 0.5.4 - 2015/02/12
+
+  * Add use_server_side_encryption parameter
+
+
 Release 0.5.3 - 2015/02/06
 
   * Add error information in API check
