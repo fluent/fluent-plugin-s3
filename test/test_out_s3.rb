@@ -46,6 +46,20 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
   end
 
+  def test_s3_endpoint_with_valid_endpoint
+    d = create_driver(CONFIG + 's3_endpoint riak-cs.example.com')
+    assert_equal 'riak-cs.example.com', d.instance.s3_endpoint
+  end
+
+  data('US West (Oregon)' => 's3-us-west-2.amazonaws.com',
+       'EU (Frankfurt)' => 's3.eu-central-1.amazonaws.com',
+       'Asia Pacific (Tokyo)' => 's3-ap-northeast-1.amazonaws.com')
+  def test_s3_endpoint_with_invalid_endpoint(endpoint)
+    assert_raise(Fluent::ConfigError, "s3_endpoint parameter is not supported, use s3_region instead. This parameter is for S3 compatible services") {
+      d = create_driver(CONFIG + "s3_endpoint #{endpoint}")
+    }
+  end
+
   def test_configure_with_mime_type_json
     conf = CONFIG.clone
     conf << "\nstore_as json\n"
