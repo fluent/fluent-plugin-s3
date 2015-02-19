@@ -21,6 +21,7 @@ module Fluent
     config_param :aws_sec_key, :string, :default => nil
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => nil
+    config_param :s3_endpoint, :string, :default => nil
     config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
     config_param :store_as, :string, :default => "gzip"
     config_param :auto_create_bucket, :bool, :default => true
@@ -40,8 +41,8 @@ module Fluent
     def configure(conf)
       super
 
-      if conf.has_key?('s3_endpoint')
-        raise ConfigError, "s3_endpoint parameter is removed. Use s3_region instead"
+      if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
+        raise ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
 
       begin
@@ -75,6 +76,7 @@ module Fluent
         options[:secret_access_key] = @aws_sec_key
       end
       options[:region] = @s3_region if @s3_region
+      options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:proxy_uri] = @proxy_uri if @proxy_uri
       options[:use_ssl] = @use_ssl
       options[:s3_server_side_encryption] = @use_server_side_encryption
