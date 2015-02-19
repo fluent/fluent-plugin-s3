@@ -1,3 +1,8 @@
+Release 0.5.5 - 2015/02/19
+
+  * Revive s3_endpoint parameter for S3 compatible services
+
+
 Release 0.5.4 - 2015/02/12
 
   * Add use_server_side_encryption parameter
