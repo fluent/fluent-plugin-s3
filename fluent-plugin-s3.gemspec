@@ -17,7 +17,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ['lib']
 
   gem.add_dependency "fluentd", [">= 0.10.49", "< 2"]
-  gem.add_dependency "aws-sdk", "~> 1.38"
+  gem.add_dependency "aws-sdk-v1", "~> 1.38"
   gem.add_dependency "yajl-ruby", "~> 1.0"
   gem.add_dependency "fluent-mixin-config-placeholders", ">= 0.3.0"
   gem.add_development_dependency "rake", ">= 0.9.2"

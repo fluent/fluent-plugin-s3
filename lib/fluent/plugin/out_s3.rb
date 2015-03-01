@@ -6,7 +6,7 @@ module Fluent
 
     def initialize
       super
-      require 'aws-sdk'
+      require 'aws-sdk-v1'
       require 'zlib'
       require 'time'
       require 'tempfile'
