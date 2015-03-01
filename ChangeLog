@@ -1,3 +1,8 @@
+Release 0.5.6 - 2015/03/02
+
+  * Force to use aws-sdk-v1, not aws-sdk
+
+
 Release 0.5.5 - 2015/02/19
 
   * Revive s3_endpoint parameter for S3 compatible services
