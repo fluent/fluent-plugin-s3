@@ -1,3 +1,9 @@
+Release 0.5.7 - 2015/03/31
+
+  * Use s3_endpoint instead of endpoint for S3 Client configuration for S3 compatible services
+  * Increase the number of retry when use IAM role
+
+
 Release 0.5.6 - 2015/03/02
 
   * Force to use aws-sdk-v1, not aws-sdk
