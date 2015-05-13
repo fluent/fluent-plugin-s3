@@ -8,6 +8,7 @@ module Fluent
       super
       require 'aws-sdk-v1'
       require 'zlib'
+      require 'date'
       require 'time'
       require 'tempfile'
 
@@ -26,8 +27,11 @@ module Fluent
     config_param :store_as, :string, :default => "gzip"
     config_param :auto_create_bucket, :bool, :default => true
     config_param :check_apikey_on_start, :bool, :default => true
+    config_param :check_bucket_on_start, :bool, :default => true
     config_param :proxy_uri, :string, :default => nil
     config_param :reduced_redundancy, :bool, :default => false
+    config_param :logtime, :bool, :default => false
+    config_param :versioning, :bool, :default => false
     config_param :format, :string, :default => 'out_file'
 
     attr_reader :bucket
@@ -57,12 +61,16 @@ module Fluent
       conf['format'] = @format
       @formatter = TextFormatter.create(conf)
 
-      if @localtime
-        @path_slicer = Proc.new {|path|
+      if @logtime
+        @path_slicer = Proc.new {|path, ts|
+          DateTime.strptime(ts.to_s, @time_slice_format).strftime(path)
+        }
+      elsif @localtime
+        @path_slicer = Proc.new {|path, ts|
           Time.now.strftime(path)
         }
       else
-        @path_slicer = Proc.new {|path|
+        @path_slicer = Proc.new {|path, ts|
           Time.now.utc.strftime(path)
         }
       end
@@ -91,7 +99,7 @@ module Fluent
       @bucket = @s3.buckets[@s3_bucket]
 
       check_apikeys if @check_apikey_on_start
-      ensure_bucket
+      ensure_bucket if @check_bucket_on_start
     end
 
     def format(tag, time, record)
@@ -102,24 +110,38 @@ module Fluent
       i = 0
       previous_path = nil
 
-      begin
-        path = @path_slicer.call(@path)
-        values_for_s3_object_key = {
+      path = @path_slicer.call(@path, chunk.key)
+      values_for_s3_object_key = {
           "path" => path,
           "time_slice" => chunk.key,
           "file_extension" => @compressor.ext,
           "index" => i
-        }
-        s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
-          values_for_s3_object_key[expr[2...expr.size-1]]
-        }
-        if (i > 0) && (s3path == previous_path)
-          raise "duplicated path is generated. use %{index} in s3_object_key_format: path = #{s3path}"
-        end
+      }
+      s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
+        values_for_s3_object_key[expr[2...expr.size-1]]
+      }
+      unless @versioning
+        loop do
+          break unless @bucket.objects[s3path].exists?
 
-        i += 1
-        previous_path = s3path
-      end while @bucket.objects[s3path].exists?
+          i += 1
+          previous_path = s3path
+
+          path = @path_slicer.call(@path, chunk.key)
+          values_for_s3_object_key = {
+              "path" => path,
+              "time_slice" => chunk.key,
+              "file_extension" => @compressor.ext,
+              "index" => i
+          }
+          s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
+            values_for_s3_object_key[expr[2...expr.size-1]]
+          }
+          if s3path == previous_path
+            raise "duplicated path is generated. use %{index} in s3_object_key_format: path = #{s3path}"
+          end
+        end
+      end
 
       tmp = Tempfile.new("s3-")
       begin
