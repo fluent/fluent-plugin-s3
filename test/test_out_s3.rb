@@ -360,6 +360,22 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal nil, d.instance.aws_key_id
     assert_equal nil, d.instance.aws_sec_key
     assert_equal "AWS::Core::CredentialProviders::EC2Provider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+    assert_equal 5, d.instance.instance_variable_get(:@s3).config.credential_provider.retries
+
+    ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
+  end
+
+  def test_aws_credential_provider_ec2_with_retries
+    s3bucket, s3bucket_col = setup_mocks
+    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+    key = ENV['AWS_ACCESS_KEY_ID']
+    ENV.delete('AWS_ACCESS_KEY_ID')
+
+    config = [CONFIG_TIME_SLICE.clone.split("\n").reject{|x| x =~ /.+aws_.+/}, 'aws_iam_retries 7'].join("\n")
+    d = create_time_sliced_driver(config)
+
+    config = [CONFIG, 'include_tag_key true', 'include_time_key true'].join("\n")
+    assert_nothing_raised { d.run }
     assert_equal 7, d.instance.instance_variable_get(:@s3).config.credential_provider.retries
 
     ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?

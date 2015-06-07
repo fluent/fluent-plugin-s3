@@ -35,6 +35,8 @@ Simply use RubyGems:
 
 [aws_sec_key] AWS secret key. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
 
+[aws_iam_retries] The number of attempts to make (with exponential backoff) when loading instance profile credentials from the EC2 metadata service using an IAM role. Defaults to 5 retries.
+
 [s3_bucket (required)] S3 bucket name.
 
 [s3_region] s3 region name. For example, US West (Oregon) Region is "us-west-2". The full list of regions are available here. > http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region. We recommend using `s3_region` instead of `s3_endpoint`.

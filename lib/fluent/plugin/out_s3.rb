@@ -19,6 +19,7 @@ module Fluent
     config_param :use_server_side_encryption, :string, :default => nil
     config_param :aws_key_id, :string, :default => nil
     config_param :aws_sec_key, :string, :default => nil
+    config_param :aws_iam_retries, :integer, :default => 5
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => nil
     config_param :s3_endpoint, :string, :default => nil
@@ -77,11 +78,7 @@ module Fluent
       elsif ENV.key? "AWS_ACCESS_KEY_ID"
         options[:credential_provider] = AWS::Core::CredentialProviders::ENVProvider.new('AWS')
       else
-        # Avoid missing credentials error from the EC2 metadata service
-        # because of temporary loss of network connectivity when using IAM Role.
-        # This error is a rare case, so handles it in this plugin.
-        # retry retrieving credentials (wait for total approximately 2 min)
-        options[:credential_provider] = AWS::Core::CredentialProviders::EC2Provider.new({:retries => 7})
+        options[:credential_provider] = AWS::Core::CredentialProviders::EC2Provider.new({:retries => @aws_iam_retries})
       end
       options[:region] = @s3_region if @s3_region
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
