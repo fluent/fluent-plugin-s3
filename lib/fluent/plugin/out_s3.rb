@@ -74,6 +74,8 @@ module Fluent
       if @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
+      elsif ENV.key? "AWS_ACCESS_KEY_ID"
+        options[:credential_provider] = AWS::Core::CredentialProviders::ENVProvider.new('AWS')
       else
         # Avoid missing credentials error from the EC2 metadata service
         # because of temporary loss of network connectivity when using IAM Role.
