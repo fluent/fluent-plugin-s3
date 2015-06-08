@@ -218,7 +218,7 @@ class S3OutputTest < Test::Unit::TestCase
                  data
   end
 
-  CONFIG2 = %[
+  CONFIG_TIME_SLICE = %[
     hostname testing.node.local
     aws_key_id test_key_id
     aws_sec_key test_sec_key
@@ -228,17 +228,16 @@ class S3OutputTest < Test::Unit::TestCase
     path log
     utc
     buffer_type memory
-    auto_create_bucket false
     log_level debug
   ]
 
-  def create_time_sliced_driver(additional_conf = '')
+  def create_time_sliced_driver(conf = CONFIG_TIME_SLICE)
     d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output) do
       private
 
       def check_apikeys
       end
-    end.configure([CONFIG2, additional_conf].join("\n"))
+    end.configure(conf)
     d
   end
 
@@ -304,7 +303,8 @@ class S3OutputTest < Test::Unit::TestCase
   def test_auto_create_bucket_false_with_non_existence_bucket
     s3bucket, s3bucket_col = setup_mocks
 
-    d = create_time_sliced_driver('auto_create_bucket false')
+    config = CONFIG_TIME_SLICE + 'auto_create_bucket false'
+    d = create_time_sliced_driver(config)
     assert_raise(RuntimeError, "The specified bucket does not exist: bucket = test_bucket") {
       d.run
     }
@@ -314,9 +314,70 @@ class S3OutputTest < Test::Unit::TestCase
     s3bucket, s3bucket_col = setup_mocks
     s3bucket_col.should_receive(:create).with_any_args.and_return { true }
 
-    d = create_time_sliced_driver('auto_create_bucket true')
-    assert_nothing_raised {
-      d.run
-    }
+    config = CONFIG_TIME_SLICE + 'auto_create_bucket true'
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run }
+  end
+
+  def test_aws_credential_provider_default
+    s3bucket, s3bucket_col = setup_mocks
+    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+
+    d = create_time_sliced_driver
+    assert_nothing_raised { d.run }
+    assert_equal "AWS::Core::CredentialProviders::DefaultProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+  end
+
+  def test_aws_credential_provider_env
+    s3bucket, s3bucket_col = setup_mocks
+    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+    key = ENV['AWS_ACCESS_KEY_ID']
+    ENV.replace({'AWS_ACCESS_KEY_ID' => 'my_access_key'})
+
+    config = CONFIG_TIME_SLICE.clone.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    d = create_time_sliced_driver(config)
+
+    assert_equal true, ENV.key?('AWS_ACCESS_KEY_ID')
+    assert_nothing_raised { d.run }
+    assert_equal nil, d.instance.aws_key_id
+    assert_equal nil, d.instance.aws_sec_key
+    assert_equal "AWS::Core::CredentialProviders::ENVProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+
+    ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
+  end
+
+  def test_aws_credential_provider_ec2
+    s3bucket, s3bucket_col = setup_mocks
+    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+    key = ENV['AWS_ACCESS_KEY_ID']
+    ENV.delete('AWS_ACCESS_KEY_ID')
+
+    config = CONFIG_TIME_SLICE.clone.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    d = create_time_sliced_driver(config)
+
+    assert_equal false, ENV.key?('AWS_ACCESS_KEY_ID')
+    assert_nothing_raised { d.run }
+    assert_equal nil, d.instance.aws_key_id
+    assert_equal nil, d.instance.aws_sec_key
+    assert_equal "AWS::Core::CredentialProviders::EC2Provider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+    assert_equal 5, d.instance.instance_variable_get(:@s3).config.credential_provider.retries
+
+    ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
+  end
+
+  def test_aws_credential_provider_ec2_with_retries
+    s3bucket, s3bucket_col = setup_mocks
+    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+    key = ENV['AWS_ACCESS_KEY_ID']
+    ENV.delete('AWS_ACCESS_KEY_ID')
+
+    config = [CONFIG_TIME_SLICE.clone.split("\n").reject{|x| x =~ /.+aws_.+/}, 'aws_iam_retries 7'].join("\n")
+    d = create_time_sliced_driver(config)
+
+    config = [CONFIG, 'include_tag_key true', 'include_time_key true'].join("\n")
+    assert_nothing_raised { d.run }
+    assert_equal 7, d.instance.instance_variable_get(:@s3).config.credential_provider.retries
+
+    ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
   end
 end
