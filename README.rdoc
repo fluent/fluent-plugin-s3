@@ -1,5 +1,7 @@
 = Amazon S3 output plugin for {Fluentd}[http://github.com/fluent/fluentd]
 
+{<img src="https://travis-ci.org/fluent/fluent-plugin-s3.svg?branch=master" alt="Build Status" />}[https://travis-ci.org/fluent/fluent-plugin-s3] {<img src="https://codeclimate.com/github/fluent/fluent-plugin-s3/badges/gpa.svg" />}[https://codeclimate.com/github/fluent/fluent-plugin-s3]
+
 == Overview
 
 *s3* output plugin buffers event logs in local file and upload it to S3 periodically.
