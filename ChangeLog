@@ -1,3 +1,9 @@
+Release 0.5.8 - 2015/06/09
+
+  * Fix credential provider selection for env vars
+  * Add aws_iam_retries parameter to set number of attemps to the EC2 metadata service
+
+
 Release 0.5.7 - 2015/03/31
 
   * Use s3_endpoint instead of endpoint for S3 Client configuration for S3 compatible services
