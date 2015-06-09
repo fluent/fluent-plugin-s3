@@ -20,6 +20,8 @@ module Fluent
     config_param :aws_key_id, :string, :default => nil
     config_param :aws_sec_key, :string, :default => nil
     config_param :aws_iam_retries, :integer, :default => 5
+    config_param :sts_role_arn, :string, :default => nil
+    config_param :sts_role_session_name, :string, :default => nil
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => nil
     config_param :s3_endpoint, :string, :default => nil
@@ -80,6 +82,15 @@ module Fluent
       else
         options[:credential_provider] = AWS::Core::CredentialProviders::EC2Provider.new({:retries => @aws_iam_retries})
       end
+
+      # If a role ARN was provided, use the EC2 credential provider to connect to STS.
+      # Then use an AssumeRole provider when connecting to S3.
+      if @sts_role_arn
+        sts_conn = AWS::STS.new(options)
+        provider = AWS::Core::CredentialProviders::AssumeRoleProvider.new({:sts => sts_conn, :role_arn => @sts_role_arn, :role_session_name => @sts_role_session_name})
+        options[:credential_provider] = provider
+      end
+
       options[:region] = @s3_region if @s3_region
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
       options[:proxy_uri] = @proxy_uri if @proxy_uri

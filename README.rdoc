@@ -39,6 +39,10 @@ Simply use RubyGems:
 
 [aws_iam_retries] The number of attempts to make (with exponential backoff) when loading instance profile credentials from the EC2 metadata service using an IAM role. Defaults to 5 retries.
 
+[sts_role_arn] The Amazon Resource Name of an IAM role to assume. Use this to elevate permissions within your account, or to write to a bucket owned by another account.
+
+[sts_role_session_name] The Session Name to provide to Amazon when assuming an IAM role.
+
 [s3_bucket (required)] S3 bucket name.
 
 [s3_region] s3 region name. For example, US West (Oregon) Region is "us-west-2". The full list of regions are available here. > http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region. We recommend using `s3_region` instead of `s3_endpoint`.
