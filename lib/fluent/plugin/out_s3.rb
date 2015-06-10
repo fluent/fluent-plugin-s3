@@ -17,8 +17,8 @@ module Fluent
     config_param :path, :string, :default => ""
     config_param :use_ssl, :bool, :default => true
     config_param :use_server_side_encryption, :string, :default => nil
-    config_param :aws_key_id, :string, :default => nil
-    config_param :aws_sec_key, :string, :default => nil
+    config_param :aws_key_id, :string, :default => nil, :secret => true
+    config_param :aws_sec_key, :string, :default => nil, :secret => true
     config_param :aws_iam_retries, :integer, :default => 5
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => nil
