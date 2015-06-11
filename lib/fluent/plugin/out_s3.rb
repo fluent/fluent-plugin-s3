@@ -90,12 +90,14 @@ module Fluent
       # Then use an AssumeRole provider when connecting to S3.
       if @sts_role_arn
         sts_conn = AWS::STS.new(options)
-        provider = AWS::Core::CredentialProviders::AssumeRoleProvider.new({
+        sts_options = {
           :sts => sts_conn,
           :role_arn => @sts_role_arn,
-          :role_session_name => @sts_role_session_name,
-          :external_id => @sts_external_id
-        })
+          :role_session_name => @sts_role_session_name
+        }
+        sts_options[:external_id] = @sts_external_id if @sts_external_id
+
+        provider = AWS::Core::CredentialProviders::AssumeRoleProvider.new(sts_options)
         options[:credential_provider] = provider
         options.delete(:access_key_id)
         options.delete(:secret_access_key)
