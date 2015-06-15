@@ -107,7 +107,8 @@ module Fluent
           "path" => path,
           "time_slice" => chunk.key,
           "file_extension" => @compressor.ext,
-          "index" => i
+          "index" => i,
+          "current_epoch_time" => Time.now.to_i
         }
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
           values_for_s3_object_key[expr[2...expr.size-1]]
