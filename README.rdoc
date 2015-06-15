@@ -51,13 +51,15 @@ Simply use RubyGems:
 - %{time_slice}
 - %{index}
 - %{file_extension}
+- %{current_epoch_time}
 
 to decide keys dynamically.
 
 %{path} is exactly the value of *path* configured in the configuration file. E.g., "logs/" in the example configuration above.
 %{time_slice} is the time-slice in text that are formatted with *time_slice_format*.
 %{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
-%{file_extention} is always "gz" for now.
+%{file_extension} is always "gz" for now.
+%{current_epoch_time} is the current time in epoch seconds (e.g. 1434376143)
 
 The default format is "%{path}%{time_slice}_%{index}.%{file_extension}".
 
