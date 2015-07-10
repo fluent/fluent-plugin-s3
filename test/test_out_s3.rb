@@ -243,7 +243,7 @@ class S3OutputTest < Test::Unit::TestCase
 
   def test_write_with_custom_s3_object_key_format
     # Assert content of event logs which are being sent to S3
-    s3obj = flexmock(AWS::S3::S3Object)
+    s3obj = flexmock(Aws::S3::S3Object)
     s3obj.should_receive(:exists?).with_any_args.and_return { false }
     s3obj.should_receive(:write).with(
       on { |pathname|
@@ -263,7 +263,7 @@ class S3OutputTest < Test::Unit::TestCase
       {:content_type => "application/x-gzip", :reduced_redundancy => false, :acl => :private})
 
     # Assert the key of S3Object, which event logs are stored in
-    s3obj_col = flexmock(AWS::S3::ObjectCollection)
+    s3obj_col = flexmock(Aws::S3::ObjectCollection)
     s3obj_col.should_receive(:[]).with(
       on { |key|
         key == "log/events/ts=20110102-13/events_0-testing.node.local.gz"
@@ -337,11 +337,11 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def setup_mocks(exists_return = false)
-    s3bucket = flexmock(AWS::S3::Bucket)
+    s3bucket = flexmock(Aws::S3::Bucket)
     s3bucket.should_receive(:exists?).with_any_args.and_return { exists_return }
-    s3bucket_col = flexmock(AWS::S3::BucketCollection)
+    s3bucket_col = flexmock(Aws::S3::BucketCollection)
     s3bucket_col.should_receive(:[]).with_any_args.and_return { s3bucket }
-    flexmock(AWS::S3).new_instances do |bucket|
+    flexmock(Aws::S3).new_instances do |bucket|
       bucket.should_receive(:buckets).with_any_args.and_return { s3bucket_col }
     end
 
@@ -373,7 +373,7 @@ class S3OutputTest < Test::Unit::TestCase
 
     d = create_time_sliced_driver
     assert_nothing_raised { d.run }
-    assert_equal "AWS::Core::CredentialProviders::DefaultProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+    assert_equal "Aws::Core::CredentialProviders::DefaultProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
   end
 
   def test_aws_credential_provider_env
@@ -389,7 +389,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_nothing_raised { d.run }
     assert_equal nil, d.instance.aws_key_id
     assert_equal nil, d.instance.aws_sec_key
-    assert_equal "AWS::Core::CredentialProviders::ENVProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+    assert_equal "Aws::Core::CredentialProviders::ENVProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
 
     ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
   end
@@ -407,7 +407,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_nothing_raised { d.run }
     assert_equal nil, d.instance.aws_key_id
     assert_equal nil, d.instance.aws_sec_key
-    assert_equal "AWS::Core::CredentialProviders::EC2Provider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+    assert_equal "Aws::Core::CredentialProviders::EC2Provider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
     assert_equal 5, d.instance.instance_variable_get(:@s3).config.credential_provider.retries
 
     ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?

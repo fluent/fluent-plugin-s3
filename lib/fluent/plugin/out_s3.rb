@@ -77,9 +77,9 @@ module Fluent
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
       elsif ENV.key? "AWS_ACCESS_KEY_ID"
-        options[:credential_provider] = AWS::Core::CredentialProviders::ENVProvider.new('AWS')
+        options[:credential_provider] = Aws::Core::CredentialProviders::ENVProvider.new('AWS')
       else
-        options[:credential_provider] = AWS::Core::CredentialProviders::EC2Provider.new({:retries => @aws_iam_retries})
+        options[:credential_provider] = Aws::Core::CredentialProviders::EC2Provider.new({:retries => @aws_iam_retries})
       end
       options[:region] = @s3_region if @s3_region
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
@@ -87,7 +87,7 @@ module Fluent
       options[:use_ssl] = @use_ssl
       options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
 
-      @s3 = AWS::S3.new(options)
+      @s3 = Aws::S3.new(options)
       @bucket = @s3.buckets[@s3_bucket]
 
       check_apikeys if @check_apikey_on_start
@@ -148,7 +148,7 @@ module Fluent
 
     def check_apikeys
       @bucket.empty?
-    rescue AWS::S3::Errors::NoSuchBucket
+    rescue Aws::S3::Errors::NoSuchBucket
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
       raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration. error = #{e.inspect}"
