@@ -6,7 +6,7 @@ require 'zlib'
 
 class S3OutputTest < Test::Unit::TestCase
   def setup
-    require 'aws-sdk-v1'
+    require 'aws-sdk-resources'
     Fluent::Test.setup
   end
 
