@@ -20,7 +20,7 @@ module Fluent
     config_param :aws_sec_key, :string, :default => nil, :secret => true
     config_param :aws_iam_retries, :integer, :default => 5
     config_param :s3_bucket, :string
-    config_param :s3_region, :string, :default => nil
+    config_param :s3_region, :string, :default => "us-east-1"
     config_param :s3_endpoint, :string, :default => nil
     config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
     config_param :store_as, :string, :default => "gzip"
