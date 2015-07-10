@@ -28,6 +28,7 @@ module Fluent
     config_param :check_apikey_on_start, :bool, :default => true
     config_param :proxy_uri, :string, :default => nil
     config_param :reduced_redundancy, :bool, :default => false
+    config_param :storage_class, :string, :default => "STANDARD"
     config_param :format, :string, :default => 'out_file'
     config_param :acl, :string, :default => :private
 
@@ -67,6 +68,8 @@ module Fluent
           Time.now.utc.strftime(path)
         }
       end
+
+      @storage_class = "REDUCED_REDUNDANCY" if @reduced_redundancy
     end
 
     def start
@@ -85,8 +88,9 @@ module Fluent
       options[:proxy_uri] = @proxy_uri if @proxy_uri
       options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
 
-      @s3 = Aws::S3.new(options)
-      @bucket = @s3.buckets[@s3_bucket]
+      s3_client = Aws::S3::Client.new(options)
+      @s3 = Aws::S3::Resource.new(:client => s3_client)
+      @bucket = @s3.bucket(@s3_bucket)
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket
@@ -118,14 +122,14 @@ module Fluent
 
         i += 1
         previous_path = s3path
-      end while @bucket.objects[s3path].exists?
+      end while @bucket.object(s3path).exists?
 
       tmp = Tempfile.new("s3-")
       begin
         @compressor.compress(chunk, tmp)
-        @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @compressor.content_type,
-                                                               :reduced_redundancy => @reduced_redundancy,
-                                                               :acl => @acl})
+        @bucket.object(s3path).put(:body => tmp,
+                                   :content_type => @compressor.content_type,
+                                   :storage_class => @storage_class)
       ensure
         tmp.close(true) rescue nil
       end
@@ -137,7 +141,7 @@ module Fluent
       if !@bucket.exists?
         if @auto_create_bucket
           log.info "Creating bucket #{@s3_bucket} on #{@s3_endpoint}"
-          @s3.buckets.create(@s3_bucket)
+          @s3.create_bucket(:bucket => @s3_bucket)
         else
           raise "The specified bucket does not exist: bucket = #{@s3_bucket}"
         end
@@ -145,7 +149,7 @@ module Fluent
     end
 
     def check_apikeys
-      @bucket.empty?
+      @bucket.exists?
     rescue Aws::S3::Errors::NoSuchBucket
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
