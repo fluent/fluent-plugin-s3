@@ -15,7 +15,6 @@ module Fluent
     end
 
     config_param :path, :string, :default => ""
-    config_param :use_ssl, :bool, :default => true
     config_param :use_server_side_encryption, :string, :default => nil
     config_param :aws_key_id, :string, :default => nil, :secret => true
     config_param :aws_sec_key, :string, :default => nil, :secret => true
@@ -84,7 +83,6 @@ module Fluent
       options[:region] = @s3_region if @s3_region
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
       options[:proxy_uri] = @proxy_uri if @proxy_uri
-      options[:use_ssl] = @use_ssl
       options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
 
       @s3 = Aws::S3.new(options)
