@@ -127,6 +127,7 @@ module Fluent
       tmp = Tempfile.new("s3-")
       begin
         @compressor.compress(chunk, tmp)
+        tmp.rewind
         @bucket.object(s3path).put(:body => tmp,
                                    :content_type => @compressor.content_type,
                                    :storage_class => @storage_class)
