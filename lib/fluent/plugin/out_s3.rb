@@ -78,10 +78,6 @@ module Fluent
       if @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
-      elsif ENV.key? "AWS_ACCESS_KEY_ID"
-        options[:credential_provider] = Aws::Core::CredentialProviders::ENVProvider.new('AWS')
-      else
-        options[:credential_provider] = Aws::Core::CredentialProviders::EC2Provider.new({:retries => @aws_iam_retries})
       end
       options[:region] = @s3_region if @s3_region
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
