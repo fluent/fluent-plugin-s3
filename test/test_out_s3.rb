@@ -351,7 +351,7 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_auto_create_bucket_false_with_non_existence_bucket
-    s3bucket, s3bucket_col = setup_mocks
+    setup_mocks
 
     config = CONFIG_TIME_SLICE + 'auto_create_bucket false'
     d = create_time_sliced_driver(config)
@@ -361,8 +361,8 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_auto_create_bucket_true_with_non_existence_bucket
-    s3bucket, s3bucket_col = setup_mocks
-    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+    setup_mocks
+    @s3_resource.create_bucket(:bucket => "test_bucket")
 
     config = CONFIG_TIME_SLICE + 'auto_create_bucket true'
     d = create_time_sliced_driver(config)
