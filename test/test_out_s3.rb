@@ -1,7 +1,7 @@
 require 'fluent/test'
 require 'fluent/plugin/out_s3'
 
-require 'flexmock/test_unit'
+require 'test/unit/rr'
 require 'zlib'
 
 class S3OutputTest < Test::Unit::TestCase
