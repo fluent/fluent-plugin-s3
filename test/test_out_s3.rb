@@ -3,6 +3,7 @@ require 'fluent/plugin/out_s3'
 
 require 'test/unit/rr'
 require 'zlib'
+require 'fileutils'
 
 class S3OutputTest < Test::Unit::TestCase
   def setup
@@ -241,39 +242,21 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_write_with_custom_s3_object_key_format
-    # Assert content of event logs which are being sent to S3
-    s3obj = flexmock(Aws::S3::S3Object)
-    s3obj.should_receive(:exists?).with_any_args.and_return { false }
-    s3obj.should_receive(:write).with(
-      on { |pathname|
-        data = nil
-        # Event logs are compressed in GZip
-        pathname.open { |f|
-          gz = Zlib::GzipReader.new(f)
-          data = gz.read
-          gz.close
-        }
-        assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
-                     %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
-                     data
-
-        pathname.to_s.match(%r|s3-|)
-      },
-      {:content_type => "application/x-gzip", :reduced_redundancy => false, :acl => :private})
-
-    # Assert the key of S3Object, which event logs are stored in
-    s3obj_col = flexmock(Aws::S3::ObjectCollection)
-    s3obj_col.should_receive(:[]).with(
-      on { |key|
-        key == "log/events/ts=20110102-13/events_0-testing.node.local.gz"
-      }).
-      and_return {
-        s3obj
-      }
-
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
-    s3bucket, _ = setup_mocks(true)
-    s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
+    setup_mocks(true)
+
+    # Assert content of event logs which are being sent to S3
+    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                     :key => "test",
+                                     :client => @s3_client))
+    s3obj.exists? { false }
+    s3_test_file_path = "/tmp/s3-test.txt"
+    tempfile = File.new(s3_test_file_path, "w")
+    mock(Tempfile).new("s3-") { tempfile }
+    s3obj.put(:body => tempfile,
+              :content_type => "application/x-gzip",
+              :storage_class => "STANDARD")
+    @s3_bucket.object("log/events/ts=20110102-13/events_0-testing.node.local.gz") { s3obj }
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
     # to make assertions on chunks' keys
@@ -285,6 +268,13 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Finally, the instance of S3Output is initialized and then invoked
     d.run
+    Zlib::GzipReader.open(s3_test_file_path) do |gz|
+      data = gz.read
+      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                   data
+    end
+    FileUtils.rm_f(s3_test_file_path)
   end
 
   def test_write_with_custom_s3_object_key_format_containing_uuid_flush_placeholder
