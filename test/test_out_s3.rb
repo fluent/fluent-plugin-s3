@@ -336,15 +336,18 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def setup_mocks(exists_return = false)
-    s3bucket = flexmock(Aws::S3::Bucket)
-    s3bucket.should_receive(:exists?).with_any_args.and_return { exists_return }
-    s3bucket_col = flexmock(Aws::S3::BucketCollection)
-    s3bucket_col.should_receive(:[]).with_any_args.and_return { s3bucket }
-    flexmock(Aws::S3).new_instances do |bucket|
-      bucket.should_receive(:buckets).with_any_args.and_return { s3bucket_col }
-    end
-
-    return s3bucket, s3bucket_col
+    @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
+    @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
+    mock(Aws::S3::Resource).new(:client => @s3_client) { @s3_resource }
+    @s3_bucket = mock(Aws::S3::Bucket.new(:name => "test",
+                                          :client => @s3_client))
+    @s3_bucket.exists? { exists_return }
+    @s3_object = mock(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                          :key => "test",
+                                          :client => @s3_client))
+    @s3_bucket.object(anything).at_least(0) { @s3_object }
+    @s3_resource.bucket(anything) { @s3_bucket }
   end
 
   def test_auto_create_bucket_false_with_non_existence_bucket
