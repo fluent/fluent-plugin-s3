@@ -288,6 +288,54 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
   end
 
+  def test_write_with_custom_s3_object_key_format_containing_uuid_flush_placeholder
+    # Assert content of event logs which are being sent to S3
+    s3obj = flexmock(AWS::S3::S3Object)
+    s3obj.should_receive(:exists?).with_any_args.and_return { false }
+    s3obj.should_receive(:write).with(
+      on { |pathname|
+        data = nil
+        # Event logs are compressed in GZip
+        pathname.open { |f|
+          gz = Zlib::GzipReader.new(f)
+          data = gz.read
+          gz.close
+        }
+        assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                     %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                     data
+
+        pathname.to_s.match(%r|s3-|)
+      },
+      {:content_type => "application/x-gzip", :reduced_redundancy => false})
+
+    # Assert the key of S3Object, which event logs are stored in
+    s3obj_col = flexmock(AWS::S3::ObjectCollection)
+    s3obj_col.should_receive(:[]).with(
+      on { |key|
+        key =~ /.*.[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}.*/
+      }).
+      and_return {
+        s3obj
+      }
+
+    # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
+    s3bucket, _ = setup_mocks(true)
+    s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
+
+    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
+    # to make assertions on chunks' keys
+    config = CONFIG_TIME_SLICE.clone.gsub(/%{hostname}/,"%{uuid_flush}")
+    d = create_time_sliced_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    # Finally, the instance of S3Output is initialized and then invoked
+    d.run
+  end
+
   def setup_mocks(exists_return = false)
     s3bucket = flexmock(AWS::S3::Bucket)
     s3bucket.should_receive(:exists?).with_any_args.and_return { exists_return }

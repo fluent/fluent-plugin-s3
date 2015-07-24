@@ -58,6 +58,7 @@ to decide keys dynamically.
 %{time_slice} is the time-slice in text that are formatted with *time_slice_format*.
 %{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
 %{file_extention} is always "gz" for now.
+%{uuid_flush} a uuid that is replaced everytime the buffer will be flushed
 
 The default format is "%{path}%{time_slice}_%{index}.%{file_extension}".
 
