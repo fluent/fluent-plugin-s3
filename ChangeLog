@@ -1,3 +1,8 @@
+Release 0.5.10 - 2015/07/27
+
+  * Add "uuid_flush" placeholder to s3_object_key_format for creating unique object
+
+
 Release 0.5.9 - 2015/06/10
 
   * Add secret option to AWS key related parameters
