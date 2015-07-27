@@ -51,6 +51,7 @@ Simply use RubyGems:
 - %{time_slice}
 - %{index}
 - %{file_extension}
+- %{uuid_flush}
 
 to decide keys dynamically.
 
