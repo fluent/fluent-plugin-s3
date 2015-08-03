@@ -307,7 +307,7 @@ class S3OutputTest < Test::Unit::TestCase
 
         pathname.to_s.match(%r|s3-|)
       },
-      {:content_type => "application/x-gzip", :reduced_redundancy => false})
+      {:content_type => "application/x-gzip", :reduced_redundancy => false, :acl => :private})
 
     # Assert the key of S3Object, which event logs are stored in
     s3obj_col = flexmock(AWS::S3::ObjectCollection)
