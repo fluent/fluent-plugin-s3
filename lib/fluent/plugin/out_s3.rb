@@ -125,28 +125,6 @@ module Fluent
       tmp = Tempfile.new("s3-")
       begin
         @compressor.compress(chunk, tmp)
-        if @store_as == "gzip"
-          w = Zlib::GzipWriter.new(tmp)
-          chunk.write_to(w)
-          w.close
-        elsif @store_as == "lzo"
-          w = Tempfile.new("chunk-tmp")
-          chunk.write_to(w)
-          w.close
-          tmp.close
-          # We don't check the return code because we can't recover lzop failure.
-          system "lzop #{@command_parameter} -o #{tmp.path} #{w.path}"
-        elsif @store_as == "lzma2"
-          w = Tempfile.new("chunk-xz-tmp")
-          chunk.write_to(w)
-          w.close
-          tmp.close
-          system "xz #{@command_parameter} -c #{w.path} > #{tmp.path}"
-        else
-          chunk.write_to(tmp)
-          tmp.close
-        end
-
         @bucket.objects[s3path].write(Pathname.new(tmp.path), {:content_type => @compressor.content_type,
                                                                :reduced_redundancy => @reduced_redundancy,
                                                                :acl => @acl})
