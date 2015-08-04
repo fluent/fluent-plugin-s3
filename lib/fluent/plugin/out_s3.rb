@@ -85,7 +85,7 @@ module Fluent
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
       options[:proxy_uri] = @proxy_uri if @proxy_uri
       options[:use_ssl] = @use_ssl
-      options[:s3_server_side_encryption] = @use_server_side_encryption
+      options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
 
       @s3 = AWS::S3.new(options)
       @bucket = @s3.buckets[@s3_bucket]
