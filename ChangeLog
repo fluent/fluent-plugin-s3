@@ -1,3 +1,9 @@
+Release 0.5.11 - 2015/08/04
+
+  * Add acl parameter
+  * Fix use_server_side_encryption parameter
+
+
 Release 0.5.10 - 2015/07/27
 
   * Add "uuid_flush" placeholder to s3_object_key_format for creating unique object
