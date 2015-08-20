@@ -81,7 +81,7 @@ module Fluent
       end
       options[:region] = @s3_region if @s3_region
       options[:s3_endpoint] = @s3_endpoint if @s3_endpoint
-      options[:proxy_uri] = @proxy_uri if @proxy_uri
+      options[:http_proxy] = @proxy_uri if @proxy_uri
       options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
 
       s3_client = Aws::S3::Client.new(options)
