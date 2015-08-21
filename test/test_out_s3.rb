@@ -350,4 +350,62 @@ class S3OutputTest < Test::Unit::TestCase
     d = create_time_sliced_driver(config)
     assert_nothing_raised { d.run }
   end
+
+  def test_credentials
+    d = create_time_sliced_driver
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_instance_of(Aws::Credentials, credentials)
+  end
+
+  def test_assume_role_credentials
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::AssumeRoleCredentials).new(:role_arn => "test_arn",
+                                         :role_session_name => "test_session"){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_instance_profile_credentials
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::InstanceProfileCredentials).new({}).returns(expected_credentials)
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <instance_profile_credentials>
+      </instance_profile_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_shared_credentials
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::SharedCredentials).new({}).returns(expected_credentials)
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <shared_credentials>
+      </shared_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
 end
