@@ -191,7 +191,7 @@ module Fluent
     end
 
     def check_apikeys
-      @bucket.exists?
+      @bucket.objects.first
     rescue Aws::S3::Errors::NoSuchBucket
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
