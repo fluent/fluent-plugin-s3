@@ -38,6 +38,7 @@ module Fluent
       config_param :path, :string, :default => nil
       config_param :profile_name, :string, :default => nil
     end
+    config_param :aws_iam_retries, :integer, :default => 5
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => ENV["AWS_REGION"] || "us-east-1"
     config_param :s3_endpoint, :string, :default => nil
