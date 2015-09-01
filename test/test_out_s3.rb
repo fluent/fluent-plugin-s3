@@ -394,6 +394,20 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal(expected_credentials, credentials)
   end
 
+  def test_instance_profile_credentials_aws_iam_retries
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::InstanceProfileCredentials).new({}).returns(expected_credentials)
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      aws_iam_retries 10
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
   def test_shared_credentials
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     mock(Aws::SharedCredentials).new({}).returns(expected_credentials)
