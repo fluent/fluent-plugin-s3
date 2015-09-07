@@ -325,6 +325,48 @@ class S3OutputTest < Test::Unit::TestCase
     FileUtils.rm_f(s3_test_file_path)
   end
 
+  # ToDo: need to test hex_random does not change on retry, but it is difficult with
+  # the current fluentd test helper because it does not provide a way to run with the same chunks
+  def test_write_with_custom_s3_object_key_format_containing_hex_random_placeholder
+    # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
+    setup_mocks(true)
+
+    hex = "012345"
+    mock(SecureRandom).hex(3) { hex }
+
+    # Assert content of event logs which are being sent to S3
+    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                     :key => "test",
+                                     :client => @s3_client))
+    s3obj.exists? { false }
+    s3_test_file_path = "/tmp/s3-test.txt"
+    tempfile = File.new(s3_test_file_path, "w")
+    mock(Tempfile).new("s3-") { tempfile }
+    s3obj.put(:body => tempfile,
+              :content_type => "application/x-gzip",
+              :storage_class => "STANDARD")
+    @s3_bucket.object("log/events/ts=20110102-13/events_0-#{hex[0...5]}.gz") { s3obj }
+
+    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
+    # to make assertions on chunks' keys
+    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{hex_random}") << "\nhex_random_length 5"
+    d = create_time_sliced_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    # Finally, the instance of S3Output is initialized and then invoked
+    d.run
+    Zlib::GzipReader.open(s3_test_file_path) do |gz|
+      data = gz.read
+      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                   data
+    end
+    FileUtils.rm_f(s3_test_file_path)
+  end
+
   def setup_mocks(exists_return = false)
     @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
