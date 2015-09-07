@@ -52,6 +52,7 @@ Simply use RubyGems:
 - %{index}
 - %{file_extension}
 - %{uuid_flush}
+- %{hex_random}
 
 to decide keys dynamically.
 
@@ -60,6 +61,7 @@ to decide keys dynamically.
 %{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
 %{file_extention} is always "gz" for now.
 %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed
+%{hex_random} a random hex string that is replaced everytime the buffer will be flushed, but not assured to be unique. This is used to follow a way of peformance tuning, `Add a Hex Hash Prefix to Key Name`, written in [Request Rate and Performance Considerations - Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-considerations.html). You can configure the length of string with a `hex_random_length` parameter (Default: 4).
 
 The default format is "%{path}%{time_slice}_%{index}.%{file_extension}".
 
@@ -169,6 +171,8 @@ You can change key name by "message_key" option.
 
 To use cross-account access, you will need to create a bucket policy granting
 the specific access required. Refer to the {AWS documentation}[http://docs.aws.amazon.com/AmazonS3/latest/dev/example-walkthroughs-managing-access-example3.html] for examples.
+
+[hex_random_length] The length of `%{hex_random}` placeholder. Default is 4 as written in [Request Rate and Performance Considerations - Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-considerations.html).
 
 == IAM Policy
 

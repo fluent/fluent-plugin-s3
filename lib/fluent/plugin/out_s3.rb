@@ -1,5 +1,6 @@
 module Fluent
   require 'fluent/mixin/config_placeholders'
+  require 'securerandom'
 
   class S3Output < Fluent::TimeSlicedOutput
     Fluent::Plugin.register_output('s3', self)
@@ -51,6 +52,7 @@ module Fluent
     config_param :storage_class, :string, :default => "STANDARD"
     config_param :format, :string, :default => 'out_file'
     config_param :acl, :string, :default => :private
+    config_param :hex_random_length, :integer, :default => 4
 
     attr_reader :bucket
 
@@ -140,6 +142,9 @@ module Fluent
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket
+
+      # Securerandom.hex(2) returns 4 length hex
+      @hex_random_n = (@hex_random_length + 1) / 2
     end
 
     def format(tag, time, record)
@@ -157,7 +162,8 @@ module Fluent
           "time_slice" => chunk.key,
           "file_extension" => @compressor.ext,
           "index" => i,
-          "uuid_flush" => uuid_random
+          "uuid_flush" => uuid_random,
+          "hex_random" => hex_random,
         }
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
           values_for_s3_object_key[expr[2...expr.size-1]]
@@ -183,6 +189,10 @@ module Fluent
     end
 
     private
+
+    def hex_random
+      SecureRandom.hex(@hex_random_n)[0...@hex_random_length]
+    end
 
     def ensure_bucket
       if !@bucket.exists?
