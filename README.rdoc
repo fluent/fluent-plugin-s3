@@ -87,6 +87,8 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 
     s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
 
+[s3_force_path_style] :force_path_style (Boolean) — default: false — Indicates whether the generated URL should place the bucket name in the path (true) or as a subdomain (false).
+
 [store_as] archive format on S3. You can use serveral format:
 
 - gzip (default)
