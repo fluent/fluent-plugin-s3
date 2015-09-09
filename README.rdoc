@@ -93,6 +93,9 @@ The {fluent-mixin-config-placeholders}[https://github.com/tagomoris/fluent-mixin
 - json
 - text
 - lzo (Need lzop command)
+- lzma2 (Need xz command)
+- gzip_command (Need gzip command)
+  - This compressor uses an external gzip command, hence would result in utilizing CPU cores well compared with `gzip`
 
 See 'Use your compression algorithm' section for adding another format.
 
