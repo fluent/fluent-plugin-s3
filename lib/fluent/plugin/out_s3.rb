@@ -128,13 +128,14 @@ module Fluent
 
         @values_for_s3_object_chunk[chunk.key] ||= {
           "hex_random" => hex_random,
+          "uuid_chunk" => uuid_random,
         }
         values_for_s3_object_key = {
           "path" => path,
           "time_slice" => chunk.key,
           "file_extension" => @compressor.ext,
           "index" => i,
-          "uuid_flush" => uuid_random,
+          "uuid_flush" => uuid_random
         }.merge!(@values_for_s3_object_chunk[chunk.key])
 
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|

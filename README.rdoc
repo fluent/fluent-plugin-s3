@@ -53,6 +53,7 @@ Simply use RubyGems:
 - %{file_extension}
 - %{uuid_flush}
 - %{hex_random}
+- %{uuid_chunk}
 
 to decide keys dynamically.
 
@@ -62,6 +63,7 @@ to decide keys dynamically.
 %{file_extention} is always "gz" for now.
 %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed
 %{hex_random} a random hex string that is replaced for each buffer chunk, not assured to be unique. This is used to follow a way of peformance tuning, `Add a Hex Hash Prefix to Key Name`, written in [Request Rate and Performance Considerations - Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-considerations.html). You can configure the length of string with a `hex_random_length` parameter (Default: 4).
+%{uuid_chunk} a uuid that is replaced for each buffer chunk, that is, not replaced on retry unlike `%{uuid_flush}`.
 
 The default format is "%{path}%{time_slice}_%{index}.%{file_extension}".
 
