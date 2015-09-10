@@ -1,12 +1,13 @@
 require 'fluent/test'
 require 'fluent/plugin/out_s3'
 
-require 'flexmock/test_unit'
+require 'test/unit/rr'
 require 'zlib'
+require 'fileutils'
 
 class S3OutputTest < Test::Unit::TestCase
   def setup
-    require 'aws-sdk-v1'
+    require 'aws-sdk-resources'
     Fluent::Test.setup
   end
 
@@ -41,7 +42,6 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'test_sec_key', d.instance.aws_sec_key
     assert_equal 'test_bucket', d.instance.s3_bucket
     assert_equal 'log', d.instance.path
-    assert d.instance.instance_variable_get(:@use_ssl)
     assert_equal 'gz', d.instance.instance_variable_get(:@compressor).ext
     assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
   end
@@ -242,39 +242,21 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_write_with_custom_s3_object_key_format
-    # Assert content of event logs which are being sent to S3
-    s3obj = flexmock(AWS::S3::S3Object)
-    s3obj.should_receive(:exists?).with_any_args.and_return { false }
-    s3obj.should_receive(:write).with(
-      on { |pathname|
-        data = nil
-        # Event logs are compressed in GZip
-        pathname.open { |f|
-          gz = Zlib::GzipReader.new(f)
-          data = gz.read
-          gz.close
-        }
-        assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
-                     %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
-                     data
-
-        pathname.to_s.match(%r|s3-|)
-      },
-      {:content_type => "application/x-gzip", :reduced_redundancy => false, :acl => :private})
-
-    # Assert the key of S3Object, which event logs are stored in
-    s3obj_col = flexmock(AWS::S3::ObjectCollection)
-    s3obj_col.should_receive(:[]).with(
-      on { |key|
-        key == "log/events/ts=20110102-13/events_0-testing.node.local.gz"
-      }).
-      and_return {
-        s3obj
-      }
-
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
-    s3bucket, _ = setup_mocks(true)
-    s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
+    setup_mocks(true)
+
+    # Assert content of event logs which are being sent to S3
+    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                     :key => "test",
+                                     :client => @s3_client))
+    s3obj.exists? { false }
+    s3_test_file_path = "/tmp/s3-test.txt"
+    tempfile = File.new(s3_test_file_path, "w")
+    mock(Tempfile).new("s3-") { tempfile }
+    s3obj.put(:body => tempfile,
+              :content_type => "application/x-gzip",
+              :storage_class => "STANDARD")
+    @s3_bucket.object("log/events/ts=20110102-13/events_0-testing.node.local.gz") { s3obj }
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
     # to make assertions on chunks' keys
@@ -286,46 +268,38 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Finally, the instance of S3Output is initialized and then invoked
     d.run
+    Zlib::GzipReader.open(s3_test_file_path) do |gz|
+      data = gz.read
+      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                   data
+    end
+    FileUtils.rm_f(s3_test_file_path)
   end
 
   def test_write_with_custom_s3_object_key_format_containing_uuid_flush_placeholder
-    # Assert content of event logs which are being sent to S3
-    s3obj = flexmock(AWS::S3::S3Object)
-    s3obj.should_receive(:exists?).with_any_args.and_return { false }
-    s3obj.should_receive(:write).with(
-      on { |pathname|
-        data = nil
-        # Event logs are compressed in GZip
-        pathname.open { |f|
-          gz = Zlib::GzipReader.new(f)
-          data = gz.read
-          gz.close
-        }
-        assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
-                     %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
-                     data
-
-        pathname.to_s.match(%r|s3-|)
-      },
-      {:content_type => "application/x-gzip", :reduced_redundancy => false, :acl => :private})
-
-    # Assert the key of S3Object, which event logs are stored in
-    s3obj_col = flexmock(AWS::S3::ObjectCollection)
-    s3obj_col.should_receive(:[]).with(
-      on { |key|
-        key =~ /.*.[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}.*/
-      }).
-      and_return {
-        s3obj
-      }
-
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
-    s3bucket, _ = setup_mocks(true)
-    s3bucket.should_receive(:objects).with_any_args.and_return { s3obj_col }
+    setup_mocks(true)
+
+    uuid = "5755e23f-9b54-42d8-8818-2ea38c6f279e"
+    stub(UUIDTools::UUID).random_create{ uuid }
+
+    # Assert content of event logs which are being sent to S3
+    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                     :key => "test",
+                                     :client => @s3_client))
+    s3obj.exists? { false }
+    s3_test_file_path = "/tmp/s3-test.txt"
+    tempfile = File.new(s3_test_file_path, "w")
+    mock(Tempfile).new("s3-") { tempfile }
+    s3obj.put(:body => tempfile,
+              :content_type => "application/x-gzip",
+              :storage_class => "STANDARD")
+    @s3_bucket.object("log/events/ts=20110102-13/events_0-#{uuid}.gz") { s3obj }
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
     # to make assertions on chunks' keys
-    config = CONFIG_TIME_SLICE.clone.gsub(/%{hostname}/,"%{uuid_flush}")
+    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{uuid_flush}")
     d = create_time_sliced_driver(config)
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
@@ -334,22 +308,32 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Finally, the instance of S3Output is initialized and then invoked
     d.run
+    Zlib::GzipReader.open(s3_test_file_path) do |gz|
+      data = gz.read
+      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                   data
+    end
+    FileUtils.rm_f(s3_test_file_path)
   end
 
   def setup_mocks(exists_return = false)
-    s3bucket = flexmock(AWS::S3::Bucket)
-    s3bucket.should_receive(:exists?).with_any_args.and_return { exists_return }
-    s3bucket_col = flexmock(AWS::S3::BucketCollection)
-    s3bucket_col.should_receive(:[]).with_any_args.and_return { s3bucket }
-    flexmock(AWS::S3).new_instances do |bucket|
-      bucket.should_receive(:buckets).with_any_args.and_return { s3bucket_col }
-    end
-
-    return s3bucket, s3bucket_col
+    @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
+    @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
+    mock(Aws::S3::Resource).new(:client => @s3_client) { @s3_resource }
+    @s3_bucket = mock(Aws::S3::Bucket.new(:name => "test",
+                                          :client => @s3_client))
+    @s3_bucket.exists? { exists_return }
+    @s3_object = mock(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                          :key => "test",
+                                          :client => @s3_client))
+    @s3_bucket.object(anything).at_least(0) { @s3_object }
+    @s3_resource.bucket(anything) { @s3_bucket }
   end
 
   def test_auto_create_bucket_false_with_non_existence_bucket
-    s3bucket, s3bucket_col = setup_mocks
+    setup_mocks
 
     config = CONFIG_TIME_SLICE + 'auto_create_bucket false'
     d = create_time_sliced_driver(config)
@@ -359,73 +343,83 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_auto_create_bucket_true_with_non_existence_bucket
-    s3bucket, s3bucket_col = setup_mocks
-    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
+    setup_mocks
+    @s3_resource.create_bucket(:bucket => "test_bucket")
 
     config = CONFIG_TIME_SLICE + 'auto_create_bucket true'
     d = create_time_sliced_driver(config)
     assert_nothing_raised { d.run }
   end
 
-  def test_aws_credential_provider_default
-    s3bucket, s3bucket_col = setup_mocks
-    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
-
+  def test_credentials
     d = create_time_sliced_driver
-    assert_nothing_raised { d.run }
-    assert_equal "AWS::Core::CredentialProviders::DefaultProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_instance_of(Aws::Credentials, credentials)
   end
 
-  def test_aws_credential_provider_env
-    s3bucket, s3bucket_col = setup_mocks
-    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
-    key = ENV['AWS_ACCESS_KEY_ID']
-    ENV.replace({'AWS_ACCESS_KEY_ID' => 'my_access_key'})
-
-    config = CONFIG_TIME_SLICE.clone.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+  def test_assume_role_credentials
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::AssumeRoleCredentials).new(:role_arn => "test_arn",
+                                         :role_session_name => "test_session"){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+      </assume_role_credentials>
+    ]
     d = create_time_sliced_driver(config)
-
-    assert_equal true, ENV.key?('AWS_ACCESS_KEY_ID')
-    assert_nothing_raised { d.run }
-    assert_equal nil, d.instance.aws_key_id
-    assert_equal nil, d.instance.aws_sec_key
-    assert_equal "AWS::Core::CredentialProviders::ENVProvider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
-
-    ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
   end
 
-  def test_aws_credential_provider_ec2
-    s3bucket, s3bucket_col = setup_mocks
-    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
-    key = ENV['AWS_ACCESS_KEY_ID']
-    ENV.delete('AWS_ACCESS_KEY_ID')
-
-    config = CONFIG_TIME_SLICE.clone.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+  def test_instance_profile_credentials
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::InstanceProfileCredentials).new({}).returns(expected_credentials)
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <instance_profile_credentials>
+      </instance_profile_credentials>
+    ]
     d = create_time_sliced_driver(config)
-
-    assert_equal false, ENV.key?('AWS_ACCESS_KEY_ID')
-    assert_nothing_raised { d.run }
-    assert_equal nil, d.instance.aws_key_id
-    assert_equal nil, d.instance.aws_sec_key
-    assert_equal "AWS::Core::CredentialProviders::EC2Provider", d.instance.instance_variable_get(:@s3).config.credential_provider.class.to_s
-    assert_equal 5, d.instance.instance_variable_get(:@s3).config.credential_provider.retries
-
-    ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
   end
 
-  def test_aws_credential_provider_ec2_with_retries
-    s3bucket, s3bucket_col = setup_mocks
-    s3bucket_col.should_receive(:create).with_any_args.and_return { true }
-    key = ENV['AWS_ACCESS_KEY_ID']
-    ENV.delete('AWS_ACCESS_KEY_ID')
-
-    config = [CONFIG_TIME_SLICE.clone.split("\n").reject{|x| x =~ /.+aws_.+/}, 'aws_iam_retries 7'].join("\n")
+  def test_instance_profile_credentials_aws_iam_retries
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::InstanceProfileCredentials).new({}).returns(expected_credentials)
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      aws_iam_retries 10
+    ]
     d = create_time_sliced_driver(config)
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
 
-    config = [CONFIG, 'include_tag_key true', 'include_time_key true'].join("\n")
-    assert_nothing_raised { d.run }
-    assert_equal 7, d.instance.instance_variable_get(:@s3).config.credential_provider.retries
-
-    ENV.replace({'AWS_ACCESS_KEY_ID' => key}) unless key.nil?
+  def test_shared_credentials
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::SharedCredentials).new({}).returns(expected_credentials)
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <shared_credentials>
+      </shared_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
   end
 end
