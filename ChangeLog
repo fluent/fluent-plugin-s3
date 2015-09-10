@@ -1,3 +1,8 @@
+Release 0.6.0.pre1 - 2015/09/10
+
+  * Use AWS SDK v2
+
+
 Release 0.5.11 - 2015/08/04
 
   * Add acl parameter
