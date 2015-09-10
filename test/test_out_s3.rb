@@ -44,7 +44,6 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'log', d.instance.path
     assert_equal 'gz', d.instance.instance_variable_get(:@compressor).ext
     assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
-    assert_equal false, d.instance.s3_force_path_style
   end
 
   def test_s3_endpoint_with_valid_endpoint
@@ -75,13 +74,6 @@ class S3OutputTest < Test::Unit::TestCase
     d = create_driver(conf)
     assert_equal 'txt', d.instance.instance_variable_get(:@compressor).ext
     assert_equal 'text/plain', d.instance.instance_variable_get(:@compressor).content_type
-  end
-
-  def test_configure_with_path_style
-    conf = CONFIG.clone
-    conf << "\ns3_force_path_style true\n"
-    d = create_driver(conf)
-    assert d.instance.s3_force_path_style
   end
 
   def test_configure_with_mime_type_lzo
