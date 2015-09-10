@@ -43,6 +43,7 @@ module Fluent
     config_param :s3_region, :string, :default => ENV["AWS_REGION"] || "us-east-1"
     config_param :s3_endpoint, :string, :default => nil
     config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
+    config_param :s3_force_path_style, :bool, :default => false
     config_param :store_as, :string, :default => "gzip"
     config_param :auto_create_bucket, :bool, :default => true
     config_param :check_apikey_on_start, :bool, :default => true
@@ -69,7 +70,7 @@ module Fluent
 
       begin
         @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(:buffer_type => @buffer_type, :log => log)
-      rescue => e
+      rescue
         $log.warn "#{@store_as} not found. Use 'text' instead"
         @compressor = TextCompressor.new
       end
@@ -132,6 +133,7 @@ module Fluent
       options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:http_proxy] = @proxy_uri if @proxy_uri
       options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
+      options[:s3_force_path_style] = @s3_force_path_style
 
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(:client => s3_client)
