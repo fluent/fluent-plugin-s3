@@ -21,7 +21,7 @@ Simply use RubyGems:
       type s3
 
       aws_key_id YOUR_AWS_KEY_ID
-      aws_sec_key YOUR_AWS_SECRET/KEY
+      aws_sec_key YOUR_AWS_SECRET_KEY
       s3_bucket YOUR_S3_BUCKET_NAME
       s3_region ap-northeast-1
       s3_object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
