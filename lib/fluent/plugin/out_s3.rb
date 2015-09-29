@@ -70,7 +70,7 @@ module Fluent
       begin
         @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(:buffer_type => @buffer_type, :log => log)
       rescue => e
-        $log.warn "#{@store_as} not found. Use 'text' instead"
+        log.warn "#{@store_as} not found. Use 'text' instead"
         @compressor = TextCompressor.new
       end
       @compressor.configure(conf)
@@ -121,7 +121,7 @@ module Fluent
         credentials_options[:profile_name] = c.profile_name if c.profile_name
         options[:credentials] = Aws::SharedCredentials.new(credentials_options)
       when @aws_iam_retries
-        $log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
+        log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
         credentials_options[:retries] = @aws_iam_retries
         options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
       else
