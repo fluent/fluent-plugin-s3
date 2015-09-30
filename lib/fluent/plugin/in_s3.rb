@@ -14,7 +14,6 @@ module Fluent
       @extractor = nil
     end
 
-    config_param :path, :string, :default => ""
     config_param :use_server_side_encryption, :string, :default => nil
     config_param :aws_key_id, :string, :default => nil, :secret => true
     config_param :aws_sec_key, :string, :default => nil, :secret => true
@@ -53,16 +52,6 @@ module Fluent
 
       @parser = Plugin.new_parser(@format)
       @parser.configure(conf)
-
-      if @localtime
-        @path_slicer = Proc.new {|path|
-          Time.now.strftime(path)
-        }
-      else
-        @path_slicer = Proc.new {|path|
-          Time.now.utc.strftime(path)
-        }
-      end
     end
 
     def start
