@@ -149,7 +149,7 @@ module Fluent
 
       attr_reader :log
 
-      def initialize(log:, **options)
+      def initialize(log: $log, **options)
         super()
         @log = log
       end
