@@ -61,7 +61,10 @@ class S3InputTest < Test::Unit::TestCase
     end
 
     data("json" => ["json", "json", "application/json"],
-         "text" => ["text", "txt", "text/plain"],)
+         "text" => ["text", "txt", "text/plain"],
+         "gzip_command" => ["gzip_command", "gz", "application/x-gzip"],
+         "lzo" => ["lzo", "lzo", "application/x-lzop"],
+         "lzma2" => ["lzma2", "xz", "application/x-xz"])
     def test_extractor(data)
       store_type, ext, content_type = data
       config = CONFIG + "\nstore_as #{store_type}\n"
