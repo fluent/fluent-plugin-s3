@@ -43,7 +43,7 @@ module Fluent
       end
 
       begin
-        @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(buffer_type: @buffer_type, log: log)
+        @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
       rescue
         $log.warn "#{@store_as} not found. Use 'text' instead"
         @extractor = TextExtractor.new
@@ -147,11 +147,10 @@ module Fluent
     class Extractor
       include Configurable
 
-      attr_reader :buffer_type, :log
+      attr_reader :log
 
-      def initialize(buffer_type:, log:, **options)
+      def initialize(log:, **options)
         super()
-        @buffer_type = buffer_type
         @log = log
       end
 
