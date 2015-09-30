@@ -79,6 +79,8 @@ class S3InputTest < Test::Unit::TestCase
         content_type: extractor.content_type
       }
       assert_equal(expected, actual)
+    rescue Fluent::ConfigError => e
+      pend(e.message)
     end
   end
 
