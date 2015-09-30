@@ -84,6 +84,9 @@ class S3InputTest < Test::Unit::TestCase
     end
   end
 
+  Struct.new("StubResponse", :queue_url)
+  Struct.new("StubMessage", :message_id, :receipt_handle, :body)
+
   def setup_mocks
     @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
@@ -95,7 +98,7 @@ class S3InputTest < Test::Unit::TestCase
 
     test_queue_url = "http://example.com/test_queue"
     @sqs_client = stub(Aws::SQS::Client.new(:stub_responses => true))
-    @sqs_response = stub(Struct.new("StubResponse", :queue_url).new(test_queue_url))
+    @sqs_response = stub(Struct::StubResponse.new(test_queue_url))
     @sqs_client.get_queue_url(queue_name: "test_queue"){ @sqs_response }
     mock(Aws::SQS::Client).new(anything).at_least(0) { @sqs_client }
     @real_poller = Aws::SQS::QueuePoller.new(test_queue_url, client: @sqs_client)
@@ -108,7 +111,7 @@ class S3InputTest < Test::Unit::TestCase
     d = create_driver(CONFIG + "\ncheck_apikey_on_start false\n")
     mock(d.instance).process(anything).never
 
-    message = Struct.new("StubMessage", :message_id, :receipt_handle, :body).new(1, 1, "{}")
+    message = Struct::StubMessage.new(1, 1, "{}")
     @sqs_poller.get_messages {|config, stats|
       config.before_request.call(stats) if config.before_request
       stats.request_count += 1
@@ -143,7 +146,7 @@ class S3InputTest < Test::Unit::TestCase
         }
       ]
     }
-    message = Struct.new("StubMessage", :message_id, :receipt_handle, :body).new(1, 1, Yajl.dump(body))
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
     @sqs_poller.get_messages {|config, stats|
       config.before_request.call(stats) if config.before_request
       stats.request_count += 1
