@@ -24,7 +24,7 @@ module Fluent
     config_param :store_as, :string, :default => "gzip"
     config_param :check_apikey_on_start, :bool, :default => true
     config_param :proxy_uri, :string, :default => nil
-    config_param :format, :string, :default => 'text'
+    config_param :format, :string, :default => 'none'
 
     config_section :sqs, :multi => false do
       config_param :queue_name, :string, :default => nil
