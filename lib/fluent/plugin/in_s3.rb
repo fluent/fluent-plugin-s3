@@ -46,7 +46,7 @@ module Fluent
         @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
       rescue
         $log.warn "#{@store_as} not found. Use 'text' instead"
-        @extractor = TextExtractor.new
+        @extractor = TextExtractor.new(log: log)
       end
       @extractor.configure(conf)
 
