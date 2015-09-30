@@ -17,6 +17,26 @@ module Fluent
     config_param :use_server_side_encryption, :string, :default => nil
     config_param :aws_key_id, :string, :default => nil, :secret => true
     config_param :aws_sec_key, :string, :default => nil, :secret => true
+    config_section :assume_role_credentials, :multi => false do
+      config_param :role_arn, :string
+      config_param :role_session_name, :string
+      config_param :policy, :string, :default => nil
+      config_param :duration_seconds, :integer, :default => nil
+      config_param :external_id, :string, :default => nil
+    end
+    config_section :instance_profile_credentials, :multi => false do
+      config_param :retries, :integer, :default => nil
+      config_param :ip_address, :string, :default => nil
+      config_param :port, :integer, :default => nil
+      config_param :http_open_timeout, :float, :default => nil
+      config_param :http_read_timeout, :float, :default => nil
+      # config_param :delay, :integer or :proc, :default => nil
+      # config_param :http_degub_output, :io, :default => nil
+    end
+    config_section :shared_credentials, :multi => false do
+      config_param :path, :string, :default => nil
+      config_param :profile_name, :string, :default => nil
+    end
     config_param :aws_iam_retries, :integer, :default => 5
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => ENV["AWS_REGION"] || "us-east-1"
@@ -104,12 +124,47 @@ module Fluent
       end
     end
 
-    def create_s3_client
+    def setup_credentials
       options = {}
-      if @aws_key_id && @aws_sec_key
+      credentials_options = {}
+      case
+      when @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
+      when @assume_role_credentials
+        c = @assume_role_credentials
+        credentials_options[:role_arn] = c.role_arn
+        credentials_options[:role_session_name] = c.role_session_name
+        credentials_options[:policy] = c.policy if c.policy
+        credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
+        credentials_options[:external_id] = c.external_id if c.external_id
+        options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
+      when @instance_profile_credentials
+        c = @instance_profile_credentials
+        credentials_options[:retries] = c.retries if c.retries
+        credentials_options[:ip_address] = c.ip_address if c.ip_address
+        credentials_options[:port] = c.port if c.port
+        credentials_options[:http_open_timeout] = c.http_open_timeout if c.http_open_timeout
+        credentials_options[:http_read_timeout] = c.http_read_timeout if c.http_read_timeout
+        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
+      when @shared_credentials
+        c = @shared_credentials
+        credentials_options[:path] = c.path if c.path
+        credentials_options[:profile_name] = c.profile_name if c.profile_name
+        options[:credentials] = Aws::SharedCredentials.new(credentials_options)
+      when @aws_iam_retries
+        $log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
+        credentials_options[:retries] = @aws_iam_retries
+        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
+      else
+        # Use default credentials
+        # See http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Client.html
       end
+      options
+    end
+
+    def create_s3_client
+      options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:proxy_uri] = @proxy_uri if @proxy_uri
       options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
@@ -118,11 +173,7 @@ module Fluent
     end
 
     def create_sqs_client
-      options = {}
-      if @aws_key_id && @aws_sec_key
-        options[:access_key_id] = @aws_key_id
-        options[:secret_access_key] = @aws_sec_key
-      end
+      options = setup_credentials
       options[:region] = @s3_region if @s3_region
 
       Aws::SQS::Client.new(options)
