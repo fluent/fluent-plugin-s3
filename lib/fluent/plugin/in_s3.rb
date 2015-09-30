@@ -231,7 +231,7 @@ module Fluent
     end
 
     def self.register_extractor(name, extractor)
-      EXTRACTOR_REGISTRY.regster(name, extractor)
+      EXTRACTOR_REGISTRY.register(name, extractor)
     end
   end
 end
