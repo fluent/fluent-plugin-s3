@@ -37,7 +37,6 @@ module Fluent
       config_param :path, :string, :default => nil
       config_param :profile_name, :string, :default => nil
     end
-    config_param :aws_iam_retries, :integer, :default => 5
     config_param :s3_bucket, :string
     config_param :s3_region, :string, :default => ENV["AWS_REGION"] || "us-east-1"
     config_param :store_as, :string, :default => "gzip"
@@ -152,10 +151,6 @@ module Fluent
         credentials_options[:path] = c.path if c.path
         credentials_options[:profile_name] = c.profile_name if c.profile_name
         options[:credentials] = Aws::SharedCredentials.new(credentials_options)
-      when @aws_iam_retries
-        $log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
-        credentials_options[:retries] = @aws_iam_retries
-        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
       else
         # Use default credentials
         # See http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Client.html
