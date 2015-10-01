@@ -10,7 +10,8 @@ require 'fileutils'
 class S3InputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
-    @time = Fluent::Engine.now
+    @time = Time.parse("2015-09-30 13:14:15 UTC").to_i
+    Fluent::Engine.now = @time
   end
 
   CONFIG = %[
