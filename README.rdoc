@@ -192,7 +192,7 @@ See also:
 - {Aws::STS::Client}[http://docs.aws.amazon.com/sdkforruby/api/Aws/STS/Client.html]
 - {Aws::AssumeRoleCredentials}[http://docs.aws.amazon.com/sdkforruby/api/Aws/AssumeRoleCredentials.html]
 
-[role_arn (required)] The Amazon Resource Name (ARN) of the role to assume. 
+[role_arn (required)] The Amazon Resource Name (ARN) of the role to assume.
 
 [role_session_name (required)] An identifier for the assumed role session.
 
