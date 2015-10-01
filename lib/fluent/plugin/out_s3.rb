@@ -121,7 +121,7 @@ module Fluent
         credentials_options[:profile_name] = c.profile_name if c.profile_name
         options[:credentials] = Aws::SharedCredentials.new(credentials_options)
       when @aws_iam_retries
-        $log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
+        log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
         credentials_options[:retries] = @aws_iam_retries
         options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
       else
