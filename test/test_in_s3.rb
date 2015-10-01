@@ -57,7 +57,7 @@ class S3InputTest < Test::Unit::TestCase
     end
 
     def test_empty
-      assert_raises(Fluent::ConfigError) do
+      assert_raise(Fluent::ConfigError) do
         create_driver("")
       end
     end
