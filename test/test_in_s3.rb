@@ -62,6 +62,18 @@ class S3InputTest < Test::Unit::TestCase
       end
     end
 
+    def test_without_sqs_section
+      conf = %[
+        aws_key_id test_key_id
+        aws_sec_key test_sec_key
+        s3_bucket test_bucket
+        utc
+      ]
+      assert_raise_message("'<sqs>' sections are required") do
+        create_driver(conf)
+      end
+    end
+
     data("json" => ["json", "json", "application/json"],
          "text" => ["text", "txt", "text/plain"],
          "gzip_command" => ["gzip_command", "gz", "application/x-gzip"],
