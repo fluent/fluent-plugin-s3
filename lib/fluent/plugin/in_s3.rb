@@ -44,7 +44,7 @@ module Fluent
     config_param :proxy_uri, :string, :default => nil
     config_param :format, :string, :default => 'none'
 
-    config_section :sqs, :multi => false do
+    config_section :sqs, :required => true, :multi => false do
       config_param :queue_name, :string, :default => nil
       config_param :skip_delete, :bool, :default => false
       config_param :wait_time_seconds, :integer, :default => 20
