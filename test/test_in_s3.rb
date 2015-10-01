@@ -10,6 +10,7 @@ require 'fileutils'
 class S3InputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
+    @time = Fluent::Engine.now
   end
 
   CONFIG = %[
@@ -128,6 +129,7 @@ class S3InputTest < Test::Unit::TestCase
   def test_one_record
     setup_mocks
     d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\n")
+    d.expect_emit("input.s3", @time, { "message" => "aaa" })
 
     s3_object = stub(Object.new)
     s3_response = stub(Object.new)

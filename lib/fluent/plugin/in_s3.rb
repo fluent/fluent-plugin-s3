@@ -191,8 +191,8 @@ module Fluent
 
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
-      content = @parser.parse(content)
-      router.emit(@tag, Engine.now, content)
+      time, record = @parser.parse(content)
+      router.emit(@tag, time, record)
     end
 
     class Extractor
