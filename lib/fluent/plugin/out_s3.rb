@@ -93,41 +93,7 @@ module Fluent
 
     def start
       super
-      options = {}
-      credentials_options = {}
-      case
-      when @aws_key_id && @aws_sec_key
-        options[:access_key_id] = @aws_key_id
-        options[:secret_access_key] = @aws_sec_key
-      when @assume_role_credentials
-        c = @assume_role_credentials
-        credentials_options[:role_arn] = c.role_arn
-        credentials_options[:role_session_name] = c.role_session_name
-        credentials_options[:policy] = c.policy if c.policy
-        credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
-        credentials_options[:external_id] = c.external_id if c.external_id
-        options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
-      when @instance_profile_credentials
-        c = @instance_profile_credentials
-        credentials_options[:retries] = c.retries if c.retries
-        credentials_options[:ip_address] = c.ip_address if c.ip_address
-        credentials_options[:port] = c.port if c.port
-        credentials_options[:http_open_timeout] = c.http_open_timeout if c.http_open_timeout
-        credentials_options[:http_read_timeout] = c.http_read_timeout if c.http_read_timeout
-        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
-      when @shared_credentials
-        c = @shared_credentials
-        credentials_options[:path] = c.path if c.path
-        credentials_options[:profile_name] = c.profile_name if c.profile_name
-        options[:credentials] = Aws::SharedCredentials.new(credentials_options)
-      when @aws_iam_retries
-        log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
-        credentials_options[:retries] = @aws_iam_retries
-        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
-      else
-        # Use default credentials
-        # See http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Client.html
-      end
+      options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:http_proxy] = @proxy_uri if @proxy_uri
@@ -200,6 +166,45 @@ module Fluent
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
       raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration. error = #{e.inspect}"
+    end
+
+    def setup_credentials
+      options = {}
+      credentials_options = {}
+      case
+      when @aws_key_id && @aws_sec_key
+        options[:access_key_id] = @aws_key_id
+        options[:secret_access_key] = @aws_sec_key
+      when @assume_role_credentials
+        c = @assume_role_credentials
+        credentials_options[:role_arn] = c.role_arn
+        credentials_options[:role_session_name] = c.role_session_name
+        credentials_options[:policy] = c.policy if c.policy
+        credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
+        credentials_options[:external_id] = c.external_id if c.external_id
+        options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
+      when @instance_profile_credentials
+        c = @instance_profile_credentials
+        credentials_options[:retries] = c.retries if c.retries
+        credentials_options[:ip_address] = c.ip_address if c.ip_address
+        credentials_options[:port] = c.port if c.port
+        credentials_options[:http_open_timeout] = c.http_open_timeout if c.http_open_timeout
+        credentials_options[:http_read_timeout] = c.http_read_timeout if c.http_read_timeout
+        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
+      when @shared_credentials
+        c = @shared_credentials
+        credentials_options[:path] = c.path if c.path
+        credentials_options[:profile_name] = c.profile_name if c.profile_name
+        options[:credentials] = Aws::SharedCredentials.new(credentials_options)
+      when @aws_iam_retries
+        $log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
+        credentials_options[:retries] = @aws_iam_retries
+        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
+      else
+        # Use default credentials
+        # See http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Client.html
+      end
+      options
     end
 
     class Compressor
