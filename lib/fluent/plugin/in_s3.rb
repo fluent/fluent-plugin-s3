@@ -58,7 +58,7 @@ module Fluent
       super
 
       unless @sqs.queue_name
-        raise ConfigError, "sqs_queue_name is required"
+        raise ConfigError, "sqs/queue_name is required"
       end
 
       begin
