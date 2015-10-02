@@ -44,6 +44,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'log', d.instance.path
     assert_equal 'gz', d.instance.instance_variable_get(:@compressor).ext
     assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
+    assert_equal false, d.instance.force_path_style
   end
 
   def test_s3_endpoint_with_valid_endpoint
@@ -85,6 +86,13 @@ class S3OutputTest < Test::Unit::TestCase
   rescue => e
     # TODO: replace code with disable lzop command
     assert(e.is_a?(Fluent::ConfigError))
+  end
+
+  def test_configure_with_path_style
+    conf = CONFIG.clone
+    conf << "\nforce_path_style true\n"
+    d = create_driver(conf)
+    assert d.instance.force_path_style
   end
 
   def test_path_slicing
