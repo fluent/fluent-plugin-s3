@@ -126,7 +126,7 @@ module Fluent
       begin
         path = @path_slicer.call(@path)
 
-        @values_for_s3_object_chunk[chunk.key] ||= {
+        @values_for_s3_object_chunk[chunk.unique_id] ||= {
           "hex_random" => hex_random,
           "uuid_flush" => uuid_random,
         }
@@ -135,7 +135,7 @@ module Fluent
           "time_slice" => chunk.key,
           "file_extension" => @compressor.ext,
           "index" => i,
-        }.merge!(@values_for_s3_object_chunk[chunk.key])
+        }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
 
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
           values_for_s3_object_key[expr[2...expr.size-1]]
@@ -157,12 +157,14 @@ module Fluent
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
-        log.debug { "out_s3: trying to write {object_id:#{chunk.object_id},time_slice:#{chunk.key}} to s3://#{@s3_bucket}/#{s3path}" }
+        log.debug { "out_s3: trying to write {chunk:{object_id:#{chunk.object_id},key:#{chunk.key}}} to s3://#{@s3_bucket}/#{s3path}" }
+
         put_options = {:body => tmp, :content_type => @compressor.content_type, :storage_class => @storage_class}
         put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
         @bucket.object(s3path).put(put_options)
+
+        @values_for_s3_object_chunk.delete(chunk.unique_id)
       ensure
-        @values_for_s3_object_chunk.delete(chunk.key)
         tmp.close(true) rescue nil
       end
     end
