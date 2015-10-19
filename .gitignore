@@ -9,3 +9,5 @@
 Gemfile.lock
 vendor
 .ruby-version
+
+test/tmp/

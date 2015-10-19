@@ -59,6 +59,7 @@ module Fluent
     attr_reader :bucket
 
     include Fluent::Mixin::ConfigPlaceholders
+    MAX_HEX_RANDOM_LENGTH = 16
 
     def placeholders
       [:percent]
@@ -90,6 +91,10 @@ module Fluent
         @path_slicer = Proc.new {|path|
           Time.now.utc.strftime(path)
         }
+      end
+
+      if @hex_random_length > MAX_HEX_RANDOM_LENGTH
+        raise ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
       end
 
       @storage_class = "REDUCED_REDUNDANCY" if @reduced_redundancy
@@ -127,7 +132,7 @@ module Fluent
         path = @path_slicer.call(@path)
 
         @values_for_s3_object_chunk[chunk.unique_id] ||= {
-          "hex_random" => hex_random,
+          "hex_random" => hex_random(chunk),
           "uuid_flush" => uuid_random,
         }
         values_for_s3_object_key = {
@@ -157,7 +162,7 @@ module Fluent
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
-        log.debug { "out_s3: trying to write {chunk:{object_id:#{chunk.object_id},key:#{chunk.key}}} to s3://#{@s3_bucket}/#{s3path}" }
+        log.debug { "out_s3: write chunk: {key:#{chunk.key},tsuffix:#{tsuffix(chunk)}} to s3://#{@s3_bucket}/#{s3path}" }
 
         put_options = {:body => tmp, :content_type => @compressor.content_type, :storage_class => @storage_class}
         put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
@@ -171,8 +176,25 @@ module Fluent
 
     private
 
-    def hex_random
-      SecureRandom.hex(@hex_random_n)[0...@hex_random_length]
+    # tsuffix is the one which file buffer filename has
+    def tsuffix(chunk)
+      if chunk.is_a?(Fluent::FileBufferChunk)
+        unique_id = chunk.unique_id
+        tsuffix = unique_id[0...(unique_id.size/2)].unpack('C*').map {|x| x.to_s(16) }.join('') # size: 16
+      else
+        nil
+      end
+    end
+
+    def hex_random(chunk)
+      if chunk.is_a?(Fluent::FileBufferChunk)
+        # let me use tsuffix because its value is kept on retrying even after rebooting
+        tsuffix = tsuffix(chunk)
+        tsuffix.reverse! # tsuffix is like (time_sec, time_usec, rand) => reversing gives more randomness
+        tsuffix[0...@hex_random_length]
+      else
+        SecureRandom.hex(@hex_random_n)[0...@hex_random_length]
+      end
     end
 
     def ensure_bucket
