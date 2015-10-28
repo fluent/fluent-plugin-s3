@@ -102,7 +102,6 @@ module Fluent
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:http_proxy] = @proxy_uri if @proxy_uri
-      options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
       options[:force_path_style] = @force_path_style
 
       s3_client = Aws::S3::Client.new(options)
@@ -159,9 +158,9 @@ module Fluent
         @compressor.compress(chunk, tmp)
         tmp.rewind
         log.debug { "out_s3: trying to write {object_id:#{chunk.object_id},time_slice:#{chunk.key}} to s3://#{@s3_bucket}/#{s3path}" }
-        @bucket.object(s3path).put(:body => tmp,
-                                   :content_type => @compressor.content_type,
-                                   :storage_class => @storage_class)
+        put_options = {:body => tmp, :content_type => @compressor.content_type, :storage_class => @storage_class}
+        put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
+        @bucket.object(s3path).put(put_options)
       ensure
         @values_for_s3_object_chunk.delete(chunk.key)
         tmp.close(true) rescue nil
