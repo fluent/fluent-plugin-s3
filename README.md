@@ -93,7 +93,7 @@ the sequential number starts from 0, increments when multiple files are
 uploaded to S3 in the same time slice.
 * %{file_extention} is always "gz" for
 now.
-* %{uuid_flush} a uuid that is replaced for each buffer chunk to be flushed
+* %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed
 * %{hex_random} a random hex string that is replaced for each buffer chunk, not
 assured to be unique. This is used to follow a way of peformance tuning, `Add
 a Hex Hash Prefix to Key Name`, written in [Request Rate and Performance
