@@ -270,6 +270,7 @@ ughs-managing-access-example3.html) for examples.
 The length of `%{hex_random}` placeholder. Default is 4 as written in
 [Request Rate and Performance Considerations - Amazon Simple Storage
 Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-considerations.html).
+The maximum length is 16.
 
 **overwrite**
 

@@ -11,6 +11,10 @@ class S3OutputTest < Test::Unit::TestCase
     Fluent::Test.setup
   end
 
+  def teardown
+    Dir.glob('test/tmp/*').each {|file| FileUtils.rm_f(file) }
+  end
+
   CONFIG = %[
     aws_key_id test_key_id
     aws_sec_key test_sec_key
@@ -93,6 +97,16 @@ class S3OutputTest < Test::Unit::TestCase
     conf << "\nforce_path_style true\n"
     d = create_driver(conf)
     assert d.instance.force_path_style
+  end
+
+  def test_configure_with_hex_random_length
+    conf = CONFIG.clone
+    assert_raise Fluent::ConfigError do
+      create_driver(conf + "\nhex_random_length 17\n")
+    end
+    assert_nothing_raised do
+      create_driver(conf + "\nhex_random_length 16\n")
+    end
   end
 
   def test_path_slicing
@@ -323,16 +337,35 @@ class S3OutputTest < Test::Unit::TestCase
                    data
     end
     FileUtils.rm_f(s3_test_file_path)
+    Dir.glob('tmp/*').each {|file| FileUtils.rm_f(file) }
+  end
+
+  def test_write_with_custom_s3_object_key_format_containing_hex_random_placeholder_memory_buffer
+    hex = "012345"
+    mock(SecureRandom).hex(3) { hex }
+
+    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{hex_random}") << "\nhex_random_length 5"
+    write_with_custom_s3_object_key_format_containing_hex_random_placeholder(config, hex[0...5])
+  end
+
+  def test_write_with_custom_s3_object_key_format_containing_hex_random_placeholder_file_buffer
+    tsuffix = "5226c3c4fb3d49b1"
+    any_instance_of(Fluent::FileBufferChunk) do |klass|
+      unique_id = "R&\xC3\xC4\xFB=I\xB1R&\xC3\xC4\xFB=I\xB1" # corresponding unique_id with tsuffxi
+      stub(klass).unique_id { unique_id }
+    end
+    hex = tsuffix.reverse
+
+    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{hex_random}") << "\nhex_random_length 16"
+    config = config.gsub(/buffer_type memory/, "buffer_type file\nbuffer_path test/tmp/buf")
+    write_with_custom_s3_object_key_format_containing_hex_random_placeholder(config, hex)
   end
 
   # ToDo: need to test hex_random does not change on retry, but it is difficult with
   # the current fluentd test helper because it does not provide a way to run with the same chunks
-  def test_write_with_custom_s3_object_key_format_containing_hex_random_placeholder
+  def write_with_custom_s3_object_key_format_containing_hex_random_placeholder(config, hex)
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     setup_mocks(true)
-
-    hex = "012345"
-    mock(SecureRandom).hex(3) { hex }
 
     # Assert content of event logs which are being sent to S3
     s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
@@ -345,11 +378,8 @@ class S3OutputTest < Test::Unit::TestCase
     s3obj.put(:body => tempfile,
               :content_type => "application/x-gzip",
               :storage_class => "STANDARD")
-    @s3_bucket.object("log/events/ts=20110102-13/events_0-#{hex[0...5]}.gz") { s3obj }
+    @s3_bucket.object("log/events/ts=20110102-13/events_0-#{hex}.gz") { s3obj }
 
-    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
-    # to make assertions on chunks' keys
-    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{hex_random}") << "\nhex_random_length 5"
     d = create_time_sliced_driver(config)
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
