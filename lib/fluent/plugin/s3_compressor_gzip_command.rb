@@ -24,6 +24,7 @@ module Fluent
                  chunk.path
                else
                  w = Tempfile.new("chunk-gzip-tmp")
+                 w.binmode
                  chunk.write_to(w)
                  w.close
                  w.path

@@ -159,6 +159,7 @@ module Fluent
       end while @bucket.object(s3path).exists?
 
       tmp = Tempfile.new("s3-")
+      tmp.binmode
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
