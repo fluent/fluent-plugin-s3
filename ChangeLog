@@ -1,3 +1,10 @@
+Release 0.6.1 - 2015/10/30
+
+  * Fix server_side_encryption error
+  * Keep hex random identity on rebooting
+  * Fix Tempfile handling on windows
+
+
 Release 0.6.0 - 2015/10/09
 
   * Allow path based calling format
