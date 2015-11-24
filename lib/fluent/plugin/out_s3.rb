@@ -55,6 +55,7 @@ module Fluent
     config_param :acl, :string, :default => :private
     config_param :hex_random_length, :integer, :default => 4
     config_param :overwrite, :bool, :default => false
+    config_param :ssekms_key_id, :string, :default => nil
 
     attr_reader :bucket
 
@@ -167,6 +168,7 @@ module Fluent
 
         put_options = {:body => tmp, :content_type => @compressor.content_type, :storage_class => @storage_class}
         put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
+        put_options[:ssekms_key_id] = @ssekms_key_id if @ssekms_key_id
         @bucket.object(s3path).put(put_options)
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)

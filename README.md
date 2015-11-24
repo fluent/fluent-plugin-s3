@@ -278,6 +278,16 @@ Overwrite already existing path. Default is false, which raises an error
 if a s3 object of the same path already exists, or increment the
 `%{index}` placeholder until finding an absent path.
 
+**use_server_side_encryption**
+
+The Server-side encryption algorithm used when storing this object in S3
+(e.g., AES256, aws:kms)
+
+**ssekms_key_id**
+
+Specifies the AWS KMS key ID to use for object encryption. You have to
+set "aws:kms" to `use_server_side_encryption` to use the KMS encryption.
+
 ### assume_role_credentials
 
 Typically, you use AssumeRole for cross-account access or federation.
