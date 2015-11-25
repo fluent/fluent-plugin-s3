@@ -1,3 +1,8 @@
+Release 0.6.3 - 2015/11/25
+
+  * Add compute_checksums parameter
+
+
 Release 0.6.2 - 2015/11/24
 
   * Add ssekms_key_id option to use KMS encryption
