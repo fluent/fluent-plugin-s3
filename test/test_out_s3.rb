@@ -49,6 +49,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'gz', d.instance.instance_variable_get(:@compressor).ext
     assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
     assert_equal false, d.instance.force_path_style
+    assert_equal nil, d.instance.compute_checksums
   end
 
   def test_s3_endpoint_with_valid_endpoint
@@ -97,6 +98,13 @@ class S3OutputTest < Test::Unit::TestCase
     conf << "\nforce_path_style true\n"
     d = create_driver(conf)
     assert d.instance.force_path_style
+  end
+
+  def test_configure_with_compute_checksums
+    conf = CONFIG.clone
+    conf << "\ncompute_checksums false\n"
+    d = create_driver(conf)
+    assert_equal false, d.instance.compute_checksums
   end
 
   def test_configure_with_hex_random_length
