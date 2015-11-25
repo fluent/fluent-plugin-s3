@@ -288,6 +288,12 @@ The Server-side encryption algorithm used when storing this object in S3
 Specifies the AWS KMS key ID to use for object encryption. You have to
 set "aws:kms" to `use_server_side_encryption` to use the KMS encryption.
 
+**compute_checksums**
+
+AWS SDK uses MD5 for API request/response by default. On FIPS enabled environment,
+OpenSSL returns an error because MD5 is disabled. If you want to use
+this plugin on FIPS enabled environment, set `compute_checksums false`.
+
 ### assume_role_credentials
 
 Typically, you use AssumeRole for cross-account access or federation.
