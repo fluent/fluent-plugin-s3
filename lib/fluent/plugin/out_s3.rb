@@ -56,6 +56,7 @@ module Fluent
     config_param :hex_random_length, :integer, :default => 4
     config_param :overwrite, :bool, :default => false
     config_param :ssekms_key_id, :string, :default => nil
+    config_param :compute_checksums, :bool, :default => nil # use nil to follow SDK default configuration
 
     attr_reader :bucket
 
@@ -109,6 +110,7 @@ module Fluent
       options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:http_proxy] = @proxy_uri if @proxy_uri
       options[:force_path_style] = @force_path_style
+      options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
 
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(:client => s3_client)
