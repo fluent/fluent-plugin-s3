@@ -16,13 +16,17 @@ reached, and then another log '2011-01-03 message B' is reached in this order,
 the former one is stored in "20110102.gz" file, and latter one in
 "20110103.gz" file.
 
+**s3** input plugin reads data from S3 periodically. This plugin uses
+SQS queue on the region same as S3 bucket.
+We must setup SQS queue before use this plugin.
+
 ## Installation
 
 Simply use RubyGems:
 
     gem install fluent-plugin-s3
 
-## Configuration
+## Output: Configuration
 
     <match pattern>
       @type s3
@@ -430,6 +434,84 @@ Path to the shared file. Defaults to "#{Dir.home}/.aws/credentials".
 
 Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
 
+## Input: Configuration
+
+    <source>
+      type s3
+
+      aws_key_id YOUR_AWS_KEY_ID
+      aws_sec_key YOUR_AWS_SECRET_KEY
+      s3_bucket YOUR_S3_BUCKET_NAME
+      s3_region ap-northeast-1
+
+      <sqs>
+        queue_name YOUR_SQS_QUEUE_NAME
+      </sqs>
+    </source>
+
+**aws_key_id**
+
+AWS access key id. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
+
+**aws_sec_key**
+
+AWS secret key. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
+
+**aws_iam_retries**
+
+The number of attempts to make (with exponential backoff) when loading instance profile credentials from the EC2 metadata
+service using an IAM role. Defaults to 5 retries.
+
+**s3_bucket (required)**
+
+S3 bucket name.
+
+**s3_region**
+
+S3 region name. For example, US West (Oregon) Region is
+"us-west-2". The full list of regions are available here. >
+http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region. We
+recommend using `s3_region` instead of `s3_endpoint`.
+
+**store_as**
+
+archive format on S3. You can use serveral format:
+
+* gzip (default)
+* json
+* text
+* lzo (Need lzop command)
+* lzma2 (Need xz command)
+* gzip_command (Need gzip command)
+  * This compressor uses an external gzip command, hence would result in utilizing CPU cores well compared with `gzip`
+
+See 'Use your compression algorithm' section for adding another format.
+
+**format**
+
+Parse a line as this format in the S3 object. Supported formats are
+"apache_error", "apache2", "syslog", "json", "tsv", "ltsv", "csv",
+"nginx" and "none".
+
+**check_apikey_on_start**
+
+Check AWS key on start. Default is true.
+
+**proxy_uri**
+
+URI of proxy environment.
+
+**sqs/queue_name (required)**
+
+SQS queue name. Need to create SQS queue on the region same as S3 bucket.
+
+**sqs/skip_delete**
+
+When true, messages are not deleted after polling block. Default is false.
+
+**sqs/wait_time_seconds**
+
+The long polling interval. Default is 20.
 
 ## IAM Policy
 
