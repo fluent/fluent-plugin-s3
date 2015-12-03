@@ -61,12 +61,7 @@ module Fluent
         raise ConfigError, "sqs/queue_name is required"
       end
 
-      begin
-        @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
-      rescue
-        $log.warn "#{@store_as} not found. Use 'text' instead"
-        @extractor = TextExtractor.new(log: log)
-      end
+      @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
       @extractor.configure(conf)
 
       @parser = Plugin.new_parser(@format)

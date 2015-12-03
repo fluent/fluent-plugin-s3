@@ -74,6 +74,13 @@ class S3InputTest < Test::Unit::TestCase
       end
     end
 
+    def test_unknown_store_as
+      config = CONFIG + "\nstore_as unknown"
+      assert_raise(Fluent::ConfigError) do
+        create_driver(config)
+      end
+    end
+
     data("json" => ["json", "json", "application/json"],
          "text" => ["text", "txt", "text/plain"],
          "gzip_command" => ["gzip_command", "gz", "application/x-gzip"],
