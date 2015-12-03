@@ -1,3 +1,9 @@
+Release 0.6.4 - 2015/12/03
+
+  * Add secret parameters to role_arn, external_id and ssekms_key_id
+  * Fix region handling in assume_role_credentials
+
+
 Release 0.6.3 - 2015/11/25
 
   * Add compute_checksums parameter
