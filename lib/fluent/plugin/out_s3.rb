@@ -20,11 +20,11 @@ module Fluent
     config_param :aws_key_id, :string, :default => nil, :secret => true
     config_param :aws_sec_key, :string, :default => nil, :secret => true
     config_section :assume_role_credentials, :multi => false do
-      config_param :role_arn, :string
+      config_param :role_arn, :string, :secret => true
       config_param :role_session_name, :string
       config_param :policy, :string, :default => nil
       config_param :duration_seconds, :integer, :default => nil
-      config_param :external_id, :string, :default => nil
+      config_param :external_id, :string, :default => nil, :secret => true
     end
     config_section :instance_profile_credentials, :multi => false do
       config_param :retries, :integer, :default => nil
@@ -55,7 +55,7 @@ module Fluent
     config_param :acl, :string, :default => :private
     config_param :hex_random_length, :integer, :default => 4
     config_param :overwrite, :bool, :default => false
-    config_param :ssekms_key_id, :string, :default => nil
+    config_param :ssekms_key_id, :string, :default => nil, :secret => true
     config_param :compute_checksums, :bool, :default => nil # use nil to follow SDK default configuration
 
     attr_reader :bucket
