@@ -434,6 +434,14 @@ Path to the shared file. Defaults to "#{Dir.home}/.aws/credentials".
 
 Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
 
+## Input: Setup
+
+1. Create new [SQS](https://aws.amazon.com/documentation/sqs/) queue (use same region as S3)
+2. Set proper permission to new queue
+3. [Configure S3 event notification](http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+4. Write configuration file such as fluent.conf
+5. Run fluentd
+
 ## Input: Configuration
 
     <source>
