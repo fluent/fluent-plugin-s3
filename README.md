@@ -18,7 +18,7 @@ the former one is stored in "20110102.gz" file, and latter one in
 
 **s3** input plugin reads data from S3 periodically. This plugin uses
 SQS queue on the region same as S3 bucket.
-We must setup SQS queue before use this plugin.
+We must setup SQS queue and S3 event notification before use this plugin.
 
 ## Installation
 
