@@ -15,47 +15,95 @@ module Fluent
       @compressor = nil
     end
 
+    # For fluentd v0.12.16 or earlier
+    class << self
+      unless method_defined?(:desc)
+        def desc(description)
+        end
+      end
+    end
+    unless Fluent::Config::ConfigureProxy.method_defined?(:desc)
+      Fluent::Config::ConfigureProxy.class_eval do
+        def desc(description)
+        end
+      end
+    end
+
+    desc "Path prefix of the files on S3"
     config_param :path, :string, :default => ""
+    desc "The Server-side encryption algorithm used when storing this object in S3 (AES256, aws:kms)"
     config_param :use_server_side_encryption, :string, :default => nil
+    desc "AWS access key id"
     config_param :aws_key_id, :string, :default => nil, :secret => true
+    desc "AWS secret key."
     config_param :aws_sec_key, :string, :default => nil, :secret => true
     config_section :assume_role_credentials, :multi => false do
+      desc "The Amazon Resource Name (ARN) of the role to assume"
       config_param :role_arn, :string, :secret => true
+      desc "An identifier for the assumed role session"
       config_param :role_session_name, :string
+      desc "An IAM policy in JSON format"
       config_param :policy, :string, :default => nil
+      desc "The duration, in seconds, of the role session (900-3600)"
       config_param :duration_seconds, :integer, :default => nil
+      desc "A unique identifier that is used by third parties when assuming roles in their customers' accounts."
       config_param :external_id, :string, :default => nil, :secret => true
     end
     config_section :instance_profile_credentials, :multi => false do
+      desc "Number of times to retry when retrieving credentials"
       config_param :retries, :integer, :default => nil
+      desc "IP address (default:169.254.169.254)"
       config_param :ip_address, :string, :default => nil
+      desc "Port number (default:80)"
       config_param :port, :integer, :default => nil
+      desc "Number of seconds to wait for the connection to open"
       config_param :http_open_timeout, :float, :default => nil
+      desc "Number of seconds to wait for one block to be read"
       config_param :http_read_timeout, :float, :default => nil
       # config_param :delay, :integer or :proc, :default => nil
       # config_param :http_degub_output, :io, :default => nil
     end
     config_section :shared_credentials, :multi => false do
+      desc "Path to the shared file. (default: $HOME/.aws/credentials)"
       config_param :path, :string, :default => nil
+      desc "Profile name. Default to 'default' or ENV['AWS_PROFILE']"
       config_param :profile_name, :string, :default => nil
     end
+    desc "The number of attempts to load instance profile credentials from the EC2 metadata service using IAM role"
     config_param :aws_iam_retries, :integer, :default => 5
+    desc "S3 bucket name"
     config_param :s3_bucket, :string
+    desc "S3 region name"
     config_param :s3_region, :string, :default => ENV["AWS_REGION"] || "us-east-1"
+    desc "Use 's3_region' instead"
     config_param :s3_endpoint, :string, :default => nil
+    desc "The format of S3 object keys"
     config_param :s3_object_key_format, :string, :default => "%{path}%{time_slice}_%{index}.%{file_extension}"
+    desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
     config_param :force_path_style, :bool, :default => false
+    desc "Archive format on S3"
     config_param :store_as, :string, :default => "gzip"
+    desc "Create S3 bucket if it does not exists"
     config_param :auto_create_bucket, :bool, :default => true
+    desc "Check AWS key on start"
     config_param :check_apikey_on_start, :bool, :default => true
+    desc "URI of proxy environment"
     config_param :proxy_uri, :string, :default => nil
+    desc "Use S3 reduced redundancy storage for 33% cheaper pricing"
     config_param :reduced_redundancy, :bool, :default => false
+    desc "The type of storage to use for the object(STANDARD,REDUCED_REDUNDANCY)"
     config_param :storage_class, :string, :default => "STANDARD"
+    desc "Change one line format in the S3 object (out_file,json,ltsv,single_value)"
     config_param :format, :string, :default => 'out_file'
+    desc "Permission for the object in S3"
     config_param :acl, :string, :default => :private
+    desc "The length of `%{hex_random}` placeholder(4-16)"
     config_param :hex_random_length, :integer, :default => 4
+    desc "Overwrite already existing path"
     config_param :overwrite, :bool, :default => false
+    desc "Specifies the AWS KMS key ID to use for object encryption"
     config_param :ssekms_key_id, :string, :default => nil, :secret => true
+    desc "AWS SDK uses MD5 for API request/response by default"
     config_param :compute_checksums, :bool, :default => nil # use nil to follow SDK default configuration
 
     attr_reader :bucket
