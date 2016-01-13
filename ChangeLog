@@ -1,3 +1,9 @@
+Release 0.6.5 - 2016/01/13
+
+  * Add description to parameters
+  * Use path as prefix in API key check
+
+
 Release 0.6.4 - 2015/12/03
 
   * Add secret parameters to role_arn, external_id and ssekms_key_id
