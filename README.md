@@ -25,7 +25,7 @@ Simply use RubyGems:
 ## Configuration
 
     <match pattern>
-      type s3
+      @type s3
 
       aws_key_id YOUR_AWS_KEY_ID
       aws_sec_key YOUR_AWS_SECRET_KEY
@@ -299,7 +299,7 @@ this plugin on FIPS enabled environment, set `compute_checksums false`.
 Typically, you use AssumeRole for cross-account access or federation.
 
     <match *>
-      type s3
+      @type s3
 
       <assume_role_credentials>
         role_arn          ROLE_ARN
@@ -346,7 +346,7 @@ Retrieve temporary security credentials via HTTP request. This is useful on
 EC2 instance.
 
     <match *>
-      type s3
+      @type s3
 
       <instance_profile_credentials>
         ip_address IP_ADDRESS
@@ -391,7 +391,7 @@ This loads AWS access credentials from local ini file. This is useful for
 local developing.
 
     <match *>
-      type s3
+      @type s3
 
       <shared_credentials>
         path         PATH
