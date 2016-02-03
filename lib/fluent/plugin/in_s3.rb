@@ -71,12 +71,6 @@ module Fluent
     def start
       super
 
-      sqs_client = create_sqs_client
-      response = sqs_client.get_queue_url(queue_name: @sqs.queue_name)
-      sqs_queue_url = response.queue_url
-
-      @poller = Aws::SQS::QueuePoller.new(sqs_queue_url, client: sqs_client)
-
       s3_client = create_s3_client
       @s3 = Aws::S3::Resource.new(:client => s3_client)
       @bucket = @s3.bucket(@s3_bucket)
@@ -84,6 +78,12 @@ module Fluent
       raise "#{@bucket.name} is not found." unless @bucket.exists?
 
       check_apikeys if @check_apikey_on_start
+
+      sqs_client = create_sqs_client
+      response = sqs_client.get_queue_url(queue_name: @sqs.queue_name)
+      sqs_queue_url = response.queue_url
+
+      @poller = Aws::SQS::QueuePoller.new(sqs_queue_url, client: sqs_client)
 
       @running = true
       @thread = Thread.new(&method(:run))
