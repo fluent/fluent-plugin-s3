@@ -14,41 +14,79 @@ module Fluent
       @extractor = nil
     end
 
+    # For fluentd v0.12.16 or earlier
+    class << self
+      unless method_defined?(:desc)
+        def desc(description)
+        end
+      end
+    end
+    unless Fluent::Config::ConfigureProxy.method_defined?(:desc)
+      Fluent::Config::ConfigureProxy.class_eval do
+        def desc(description)
+        end
+      end
+    end
+
+    desc "AWS access key id"
     config_param :aws_key_id, :string, :default => nil, :secret => true
+    desc "AWS secret key."
     config_param :aws_sec_key, :string, :default => nil, :secret => true
     config_section :assume_role_credentials, :multi => false do
+      desc "The Amazon Resource Name (ARN) of the role to assume"
       config_param :role_arn, :string
+      desc "An identifier for the assumed role session"
       config_param :role_session_name, :string
+      desc "An IAM policy in JSON format"
       config_param :policy, :string, :default => nil
+      desc "The duration, in seconds, of the role session (900-3600)"
       config_param :duration_seconds, :integer, :default => nil
+      desc "A unique identifier that is used by third parties when assuming roles in their customers' accounts."
       config_param :external_id, :string, :default => nil
     end
     config_section :instance_profile_credentials, :multi => false do
+      desc "Number of times to retry when retrieving credentials"
       config_param :retries, :integer, :default => nil
+      desc "IP address (default:169.254.169.254)"
       config_param :ip_address, :string, :default => nil
+      desc "Port number (default:80)"
       config_param :port, :integer, :default => nil
+      desc "Number of seconds to wait for the connection to open"
       config_param :http_open_timeout, :float, :default => nil
+      desc "Number of seconds to wait for one block to be read"
       config_param :http_read_timeout, :float, :default => nil
       # config_param :delay, :integer or :proc, :default => nil
       # config_param :http_degub_output, :io, :default => nil
     end
     config_section :shared_credentials, :multi => false do
+      desc "Path to the shared file. (default: $HOME/.aws/credentials)"
       config_param :path, :string, :default => nil
+      desc "Profile name. Default to 'default' or ENV['AWS_PROFILE']"
       config_param :profile_name, :string, :default => nil
     end
+    desc "S3 bucket name"
     config_param :s3_bucket, :string
+    desc "S3 region name"
     config_param :s3_region, :string, :default => ENV["AWS_REGION"] || "us-east-1"
+    desc "Archive format on S3"
     config_param :store_as, :string, :default => "gzip"
+    desc "Check AWS key on start"
     config_param :check_apikey_on_start, :bool, :default => true
+    desc "URI of proxy environment"
     config_param :proxy_uri, :string, :default => nil
+    desc "Change one line format in the S3 object (none,json,ltsv,single_value)"
     config_param :format, :string, :default => 'none'
 
     config_section :sqs, :required => true, :multi => false do
+      desc "SQS queue name"
       config_param :queue_name, :string, :default => nil
+      desc "Skip message deletion"
       config_param :skip_delete, :bool, :default => false
+      desc "The long polling interval."
       config_param :wait_time_seconds, :integer, :default => 20
     end
 
+    desc "Tag string"
     config_param :tag, :string, :default => "input.s3"
 
     attr_reader :bucket
