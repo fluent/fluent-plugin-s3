@@ -14,7 +14,6 @@ module Fluent
       @extractor = nil
     end
 
-    config_param :use_server_side_encryption, :string, :default => nil
     config_param :aws_key_id, :string, :default => nil, :secret => true
     config_param :aws_sec_key, :string, :default => nil, :secret => true
     config_section :assume_role_credentials, :multi => false do
@@ -157,7 +156,6 @@ module Fluent
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:proxy_uri] = @proxy_uri if @proxy_uri
-      options[:s3_server_side_encryption] = @use_server_side_encryption.to_sym if @use_server_side_encryption
 
       Aws::S3::Client.new(options)
     end
