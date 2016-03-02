@@ -98,8 +98,8 @@ now.
 assured to be unique. This is used to follow a way of peformance tuning, `Add
 a Hex Hash Prefix to Key Name`, written in [Request Rate and Performance
 Considerations - Amazon Simple Storage
-Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-con
-siderations.html). You can configure the length of string with a
+Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-considerations.html).
+You can configure the length of string with a
 `hex_random_length` parameter (Default: 4).
 
 The default format is `%{path}%{time_slice}_%{index}.%{file_extension}`.
