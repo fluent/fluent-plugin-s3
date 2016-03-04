@@ -105,6 +105,8 @@ module Fluent
     config_param :ssekms_key_id, :string, :default => nil, :secret => true
     desc "AWS SDK uses MD5 for API request/response by default"
     config_param :compute_checksums, :bool, :default => nil # use nil to follow SDK default configuration
+    desc "Signature version for API Request (s3,v4)"
+    config_param :signature_version, :string, :default => nil # use nil to follow SDK default configuration
 
     attr_reader :bucket
 
@@ -159,6 +161,7 @@ module Fluent
       options[:http_proxy] = @proxy_uri if @proxy_uri
       options[:force_path_style] = @force_path_style
       options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
+      options[:signature_version] = @signature_version unless @signature_version.nil?
 
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(:client => s3_client)

@@ -50,6 +50,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
     assert_equal false, d.instance.force_path_style
     assert_equal nil, d.instance.compute_checksums
+    assert_equal nil, d.instance.signature_version
   end
 
   def test_s3_endpoint_with_valid_endpoint
@@ -533,5 +534,13 @@ class S3OutputTest < Test::Unit::TestCase
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
+  end
+
+  def test_signature_version
+    config = [CONFIG, 'signature_version s3'].join("\n")
+    d = create_driver(config)
+
+    signature_version = d.instance.instance_variable_get(:@signature_version)
+    assert_equal("s3", signature_version)
   end
 end
