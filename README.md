@@ -262,8 +262,7 @@ using IAM roles. Valid values are:
 
 To use cross-account access, you will need to create a bucket policy granting
 the specific access required. Refer to the [AWS
-documentation](http://docs.aws.amazon.com/AmazonS3/latest/dev/example-walkthro
-ughs-managing-access-example3.html) for examples.
+documentation](http://docs.aws.amazon.com/AmazonS3/latest/dev/example-walkthroughs-managing-access-example3.html) for examples.
 
 **hex_random_length**
 
