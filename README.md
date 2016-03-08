@@ -252,13 +252,13 @@ Permission for the object in S3. This is useful for cross-account access
 using IAM roles. Valid values are:
 
 *   private (default)
-*   public_read
-*   public_read_write (not recommended - see [Canned
+*   public-read
+*   public-read-write (not recommended - see [Canned
     ACL](http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#cann
     ed-acl))
-*   authenticated_read
-*   bucket_owner_read
-*   bucket_owner_full_control
+*   authenticated-read
+*   bucket-owner-read
+*   bucket-owner-full-control
 
 To use cross-account access, you will need to create a bucket policy granting
 the specific access required. Refer to the [AWS
