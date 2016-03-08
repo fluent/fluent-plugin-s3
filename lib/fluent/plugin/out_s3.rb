@@ -216,7 +216,11 @@ module Fluent
         tmp.rewind
         log.debug { "out_s3: write chunk: {key:#{chunk.key},tsuffix:#{tsuffix(chunk)}} to s3://#{@s3_bucket}/#{s3path}" }
 
-        put_options = {:body => tmp, :content_type => @compressor.content_type, :storage_class => @storage_class}
+        put_options = {
+          :body => tmp,
+          :content_type => @compressor.content_type,
+          :storage_class => @storage_class
+        }
         put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
         put_options[:ssekms_key_id] = @ssekms_key_id if @ssekms_key_id
         @bucket.object(s3path).put(put_options)
