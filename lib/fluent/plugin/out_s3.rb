@@ -96,7 +96,7 @@ module Fluent
     desc "Change one line format in the S3 object (out_file,json,ltsv,single_value)"
     config_param :format, :string, :default => 'out_file'
     desc "Permission for the object in S3"
-    config_param :acl, :string, :default => :private
+    config_param :acl, :string, :default => "private"
     desc "The length of `%{hex_random}` placeholder(4-16)"
     config_param :hex_random_length, :integer, :default => 4
     desc "Overwrite already existing path"
