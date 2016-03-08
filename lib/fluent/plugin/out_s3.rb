@@ -219,7 +219,8 @@ module Fluent
         put_options = {
           :body => tmp,
           :content_type => @compressor.content_type,
-          :storage_class => @storage_class
+          :storage_class => @storage_class,
+          :acl => @acl
         }
         put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
         put_options[:ssekms_key_id] = @ssekms_key_id if @ssekms_key_id
