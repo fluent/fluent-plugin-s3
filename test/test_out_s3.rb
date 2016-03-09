@@ -275,19 +275,8 @@ class S3OutputTest < Test::Unit::TestCase
   def test_write_with_custom_s3_object_key_format
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     setup_mocks(true)
-
-    # Assert content of event logs which are being sent to S3
-    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
-                                     :key => "test",
-                                     :client => @s3_client))
-    s3obj.exists? { false }
-    s3_test_file_path = "/tmp/s3-test.txt"
-    tempfile = File.new(s3_test_file_path, "w")
-    mock(Tempfile).new("s3-") { tempfile }
-    s3obj.put(:body => tempfile,
-              :content_type => "application/x-gzip",
-              :storage_class => "STANDARD")
-    @s3_bucket.object("log/events/ts=20110102-13/events_0-testing.node.local.gz") { s3obj }
+    s3_local_file_path = "/tmp/s3-test.txt"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path)
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
     # to make assertions on chunks' keys
@@ -299,13 +288,13 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Finally, the instance of S3Output is initialized and then invoked
     d.run
-    Zlib::GzipReader.open(s3_test_file_path) do |gz|
+    Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
                    %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
                    data
     end
-    FileUtils.rm_f(s3_test_file_path)
+    FileUtils.rm_f(s3_local_file_path)
   end
 
   def test_write_with_custom_s3_object_key_format_containing_uuid_flush_placeholder
@@ -315,18 +304,9 @@ class S3OutputTest < Test::Unit::TestCase
     uuid = "5755e23f-9b54-42d8-8818-2ea38c6f279e"
     stub(UUIDTools::UUID).random_create{ uuid }
 
-    # Assert content of event logs which are being sent to S3
-    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
-                                     :key => "test",
-                                     :client => @s3_client))
-    s3obj.exists? { false }
-    s3_test_file_path = "/tmp/s3-test.txt"
-    tempfile = File.new(s3_test_file_path, "w")
-    mock(Tempfile).new("s3-") { tempfile }
-    s3obj.put(:body => tempfile,
-              :content_type => "application/x-gzip",
-              :storage_class => "STANDARD")
-    @s3_bucket.object("log/events/ts=20110102-13/events_0-#{uuid}.gz") { s3obj }
+    s3_local_file_path = "/tmp/s3-test.txt"
+    s3path = "log/events/ts=20110102-13/events_0-#{uuid}.gz"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: s3path)
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
     # to make assertions on chunks' keys
@@ -339,13 +319,13 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Finally, the instance of S3Output is initialized and then invoked
     d.run
-    Zlib::GzipReader.open(s3_test_file_path) do |gz|
+    Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
                    %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
                    data
     end
-    FileUtils.rm_f(s3_test_file_path)
+    FileUtils.rm_f(s3_local_file_path)
     Dir.glob('tmp/*').each {|file| FileUtils.rm_f(file) }
   end
 
@@ -376,18 +356,9 @@ class S3OutputTest < Test::Unit::TestCase
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     setup_mocks(true)
 
-    # Assert content of event logs which are being sent to S3
-    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
-                                     :key => "test",
-                                     :client => @s3_client))
-    s3obj.exists? { false }
-    s3_test_file_path = "/tmp/s3-test.txt"
-    tempfile = File.new(s3_test_file_path, "w")
-    mock(Tempfile).new("s3-") { tempfile }
-    s3obj.put(:body => tempfile,
-              :content_type => "application/x-gzip",
-              :storage_class => "STANDARD")
-    @s3_bucket.object("log/events/ts=20110102-13/events_0-#{hex}.gz") { s3obj }
+    s3path = "log/events/ts=20110102-13/events_0-#{hex}.gz"
+    s3_local_file_path = "/tmp/s3-test.txt"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: s3path)
 
     d = create_time_sliced_driver(config)
 
@@ -397,13 +368,13 @@ class S3OutputTest < Test::Unit::TestCase
 
     # Finally, the instance of S3Output is initialized and then invoked
     d.run
-    Zlib::GzipReader.open(s3_test_file_path) do |gz|
+    Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
                    %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
                    data
     end
-    FileUtils.rm_f(s3_test_file_path)
+    FileUtils.rm_f(s3_local_file_path)
   end
 
   def setup_mocks(exists_return = false)
@@ -419,6 +390,25 @@ class S3OutputTest < Test::Unit::TestCase
                                           :client => @s3_client))
     @s3_bucket.object(anything).at_least(0) { @s3_object }
     @s3_resource.bucket(anything) { @s3_bucket }
+  end
+
+  def setup_s3_object_mocks(s3path: nil, s3_local_file_path: nil)
+    s3path ||= "log/events/ts=20110102-13/events_0-testing.node.local.gz"
+    s3_local_file_path ||= "/tmp/s3-test.txt"
+
+    # Assert content of event logs which are being sent to S3
+    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                     :key => "test",
+                                     :client => @s3_client))
+    s3obj.exists? { false }
+
+    tempfile = File.new(s3_local_file_path, "w")
+    stub(Tempfile).new("s3-") { tempfile }
+    s3obj.put(:body => tempfile,
+              :content_type => "application/x-gzip",
+              :storage_class => "STANDARD")
+
+    @s3_bucket.object(s3path) { s3obj }
   end
 
   def test_auto_create_bucket_false_with_non_existence_bucket
@@ -543,4 +533,31 @@ class S3OutputTest < Test::Unit::TestCase
     signature_version = d.instance.instance_variable_get(:@signature_version)
     assert_equal("s3", signature_version)
   end
+
+  def test_warn_for_delay
+    # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
+
+
+    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
+    # to make assertions on chunks' keys
+    d = create_time_sliced_driver
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    # Finally, the instance of S3Output is initialized and then invoked
+    require 'pry'
+    binding.pry
+    d.run
+    Zlib::GzipReader.open(s3_local_file_path) do |gz|
+      data = gz.read
+      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                   data
+    end
+    FileUtils.rm_f(s3_local_file_path)
+  end
+
+>>>>>>> setup_s3_object_mocks
 end
