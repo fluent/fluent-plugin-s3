@@ -96,7 +96,7 @@ module Fluent
     desc "Change one line format in the S3 object (out_file,json,ltsv,single_value)"
     config_param :format, :string, :default => 'out_file'
     desc "Permission for the object in S3"
-    config_param :acl, :string, :default => "private"
+    config_param :acl, :string, :default => nil
     desc "The length of `%{hex_random}` placeholder(4-16)"
     config_param :hex_random_length, :integer, :default => 4
     desc "Overwrite already existing path"
@@ -220,10 +220,10 @@ module Fluent
           :body => tmp,
           :content_type => @compressor.content_type,
           :storage_class => @storage_class,
-          :acl => @acl
         }
         put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
         put_options[:ssekms_key_id] = @ssekms_key_id if @ssekms_key_id
+        put_options[:acl] = @acl if @acl
         @bucket.object(s3path).put(put_options)
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)
