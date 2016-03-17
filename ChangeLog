@@ -1,3 +1,8 @@
+Release 0.6.6 - 2016/03/16
+
+  * Fix ACL handling in PUT operation
+
+
 Release 0.6.5 - 2016/01/13
 
   * Add description to parameters
