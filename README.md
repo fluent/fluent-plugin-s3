@@ -293,6 +293,12 @@ AWS SDK uses MD5 for API request/response by default. On FIPS enabled environmen
 OpenSSL returns an error because MD5 is disabled. If you want to use
 this plugin on FIPS enabled environment, set `compute_checksums false`.
 
+**signature_version**
+
+Signature version for API request. `s3` means signature version 2 and
+`v4` means signature version 4. Default is `nil` (Following SDK's default).
+It would be useful when you use S3 compatible storage that accepts only signature version 2.
+
 ### assume_role_credentials
 
 Typically, you use AssumeRole for cross-account access or federation.
