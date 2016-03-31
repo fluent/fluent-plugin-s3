@@ -1,3 +1,9 @@
+Release 0.6.7 - 2016/03/31
+
+  * Add signature_version parameter
+  * Add warn_for_delay parameter
+
+
 Release 0.6.6 - 2016/03/16
 
   * Fix ACL handling in PUT operation
