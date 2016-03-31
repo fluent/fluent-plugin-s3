@@ -299,6 +299,10 @@ Signature version for API request. `s3` means signature version 2 and
 `v4` means signature version 4. Default is `nil` (Following SDK's default).
 It would be useful when you use S3 compatible storage that accepts only signature version 2.
 
+**warn_for_delay**
+
+Given a threshold to treat events as delay, output warning logs if delayed events were put into s3.
+
 ### assume_role_credentials
 
 Typically, you use AssumeRole for cross-account access or federation.
