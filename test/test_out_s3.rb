@@ -4,6 +4,7 @@ require 'fluent/plugin/out_s3'
 require 'test/unit/rr'
 require 'zlib'
 require 'fileutils'
+require 'timecop'
 
 class S3OutputTest < Test::Unit::TestCase
   def setup
@@ -392,9 +393,9 @@ class S3OutputTest < Test::Unit::TestCase
     @s3_resource.bucket(anything) { @s3_bucket }
   end
 
-  def setup_s3_object_mocks(s3path: nil, s3_local_file_path: nil)
-    s3path ||= "log/events/ts=20110102-13/events_0-testing.node.local.gz"
-    s3_local_file_path ||= "/tmp/s3-test.txt"
+  def setup_s3_object_mocks(params = {})
+    s3path = params[:s3path] || "log/events/ts=20110102-13/events_0-testing.node.local.gz"
+    s3_local_file_path = params[:s3_local_file_path] || "/tmp/s3-test.txt"
 
     # Assert content of event logs which are being sent to S3
     s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
@@ -535,29 +536,26 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_warn_for_delay
-    # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.txt"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path)
 
+    config = CONFIG_TIME_SLICE + 'warn_for_delay 1d'
+    d = create_time_sliced_driver(config)
 
-    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
-    # to make assertions on chunks' keys
-    d = create_time_sliced_driver
+    delayed_time = Time.parse("2011-01-02 13:14:15 UTC")
+    now = delayed_time + 86000 + 1
+    Timecop.freeze(now)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
+    d.emit({"a"=>1}, delayed_time.to_i)
+    d.emit({"a"=>2}, delayed_time.to_i)
 
-    # Finally, the instance of S3Output is initialized and then invoked
-    require 'pry'
-    binding.pry
     d.run
-    Zlib::GzipReader.open(s3_local_file_path) do |gz|
-      data = gz.read
-      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
-                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
-                   data
-    end
+
+    logs = d.instance.log.logs
+    assert_true logs.any? {|log| log.include?('[warn]: out_s3: delayed events were put') }
+
+    Timecop.return
     FileUtils.rm_f(s3_local_file_path)
   end
-
->>>>>>> setup_s3_object_mocks
 end

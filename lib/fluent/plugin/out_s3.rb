@@ -107,6 +107,8 @@ module Fluent
     config_param :compute_checksums, :bool, :default => nil # use nil to follow SDK default configuration
     desc "Signature version for API Request (s3,v4)"
     config_param :signature_version, :string, :default => nil # use nil to follow SDK default configuration
+    desc "Given a threshold to treat events as delay, output warning logs if delayed events were put into s3"
+    config_param :warn_for_delay, :time, :default => nil
 
     attr_reader :bucket
 
@@ -230,6 +232,12 @@ module Fluent
         @bucket.object(s3path).put(put_options)
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)
+
+        if @warn_for_delay
+          if Time.strptime(chunk.key, @time_slice_format) < Time.now - @warn_for_delay
+            log.warn { "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}" }
+          end
+        end
       ensure
         tmp.close(true) rescue nil
       end
