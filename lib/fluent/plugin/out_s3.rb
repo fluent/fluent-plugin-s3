@@ -89,9 +89,9 @@ module Fluent
     config_param :check_apikey_on_start, :bool, :default => true
     desc "URI of proxy environment"
     config_param :proxy_uri, :string, :default => nil
-    desc "Use S3 reduced redundancy storage for 33% cheaper pricing"
+    desc "Use S3 reduced redundancy storage for 33% cheaper pricing. Deprecated. Use storage_class instead"
     config_param :reduced_redundancy, :bool, :default => false
-    desc "The type of storage to use for the object(STANDARD,REDUCED_REDUNDANCY)"
+    desc "The type of storage to use for the object(STANDARD,REDUCED_REDUNDANCY,STANDARD_IA)"
     config_param :storage_class, :string, :default => "STANDARD"
     desc "Change one line format in the S3 object (out_file,json,ltsv,single_value)"
     config_param :format, :string, :default => 'out_file'
@@ -151,7 +151,10 @@ module Fluent
         raise ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
       end
 
-      @storage_class = "REDUCED_REDUNDANCY" if @reduced_redundancy
+      if @reduced_redundancy
+        $log.warn "reduced_redundancy parameter is deprecated. Use storage_class parameter instead"
+        @storage_class = "REDUCED_REDUNDANCY"
+      end
       @values_for_s3_object_chunk = {}
     end
 
