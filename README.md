@@ -241,10 +241,16 @@ old logs may reache.
 
 Use UTC instead of local time.
 
+**storage_class**
+
+Set storage class. Possible values are `STANDARD`, `REDUCED_REDUNDANCY`, `STANDARD_IA` from [Ruby SDK](http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Object.html#storage_class-instance_method).
+
 **reduced_redundancy**
 
 Use S3 reduced redundancy storage for 33% cheaper pricing. Default is
 false.
+
+This is deprecated. Use `storage_class REDUCED_REDUNDANCY` instead.
 
 **acl**
 
