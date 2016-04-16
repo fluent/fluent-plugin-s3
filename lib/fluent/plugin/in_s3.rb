@@ -1,6 +1,4 @@
 module Fluent
-  require 'fluent/mixin/config_placeholders'
-
   class S3Input < Input
     Fluent::Plugin.register_input('s3', self)
 
