@@ -103,6 +103,12 @@ module Fluent
     config_param :overwrite, :bool, :default => false
     desc "Specifies the AWS KMS key ID to use for object encryption"
     config_param :ssekms_key_id, :string, :default => nil, :secret => true
+    desc "Specifies the algorithm to use to when encrypting the object"
+    config_param :sse_customer_algorithm, :string, :default => nil
+    desc "Specifies the customer-provided encryption key for Amazon S3 to use in encrypting data"
+    config_param :sse_customer_key, :string, :default => nil, :secret => true
+    desc "Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321"
+    config_param :sse_customer_key_md5, :string, :default => nil, :secret => true
     desc "AWS SDK uses MD5 for API request/response by default"
     config_param :compute_checksums, :bool, :default => nil # use nil to follow SDK default configuration
     desc "Signature version for API Request (s3,v4)"
@@ -231,6 +237,9 @@ module Fluent
         }
         put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
         put_options[:ssekms_key_id] = @ssekms_key_id if @ssekms_key_id
+        put_options[:sse_customer_algorithm] = @sse_customer_algorithm if @sse_customer_algorithm
+        put_options[:sse_customer_key] = @sse_customer_key if @sse_customer_key
+        put_options[:sse_customer_key_md5] = @sse_customer_key_md5 if @sse_customer_key_md5
         put_options[:acl] = @acl if @acl
         @bucket.object(s3path).put(put_options)
 
