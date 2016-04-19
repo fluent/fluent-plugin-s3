@@ -1,3 +1,8 @@
+Release 0.6.8 - 2016/04/19
+
+  * Add sse customer key options
+
+
 Release 0.6.7 - 2016/03/31
 
   * Add signature_version parameter
