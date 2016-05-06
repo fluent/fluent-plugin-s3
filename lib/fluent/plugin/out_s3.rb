@@ -408,6 +408,20 @@ module Fluent
         chunk.write_to(tmp)
       end
     end
+	
+	class CSVCompressor < Compressor
+      def ext
+        'csv'.freeze
+      end
+
+      def content_type
+        'text/plain'.freeze
+      end
+
+      def compress(chunk, tmp)
+        chunk.write_to(tmp)
+      end
+    end
 
     class JsonCompressor < TextCompressor
       def ext
@@ -423,7 +437,8 @@ module Fluent
     {
       'gzip' => GzipCompressor,
       'json' => JsonCompressor,
-      'text' => TextCompressor
+      'text' => TextCompressor,
+      'csv' => CSVCompressor
     }.each { |name, compressor|
       COMPRESSOR_REGISTRY.register(name, compressor)
     }
