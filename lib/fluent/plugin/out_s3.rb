@@ -1,6 +1,5 @@
 module Fluent
   require 'fluent/mixin/config_placeholders'
-  require 'securerandom'
 
   class S3Output < Fluent::TimeSlicedOutput
     Fluent::Plugin.register_output('s3', self)
@@ -180,9 +179,6 @@ module Fluent
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket
-
-      # Securerandom.hex(2) returns 4 length hex
-      @hex_random_n = (@hex_random_length + 1) / 2
     end
 
     def format(tag, time, record)
@@ -257,25 +253,16 @@ module Fluent
 
     private
 
-    # tsuffix is the one which file buffer filename has
-    def tsuffix(chunk)
-      if chunk.is_a?(Fluent::FileBufferChunk)
-        unique_id = chunk.unique_id
-        tsuffix = unique_id[0...(unique_id.size/2)].unpack('C*').map {|x| x.to_s(16) }.join('') # size: 16
-      else
-        nil
-      end
+    # v0.14 has a useful Fluent::UniqueId.hex(unique_id) method, though
+    def unique_hex(chunk)
+      unique_id = chunk.unique_id
+      unique_id.unpack('C*').map {|x| x.to_s(16) }.join('')
     end
 
     def hex_random(chunk)
-      if chunk.is_a?(Fluent::FileBufferChunk)
-        # let me use tsuffix because its value is kept on retrying even after rebooting
-        tsuffix = tsuffix(chunk)
-        tsuffix.reverse! # tsuffix is like (time_sec, time_usec, rand) => reversing gives more randomness
-        tsuffix[0...@hex_random_length]
-      else
-        SecureRandom.hex(@hex_random_n)[0...@hex_random_length]
-      end
+      unique_hex = unique_hex(chunk)
+      unique_hex.reverse! # unique_hex is like (time_sec, time_usec, rand) => reversing gives more randomness
+      unique_hex[0...@hex_random_length]
     end
 
     def ensure_bucket
