@@ -126,8 +126,7 @@ You get:
     "log/events/ts=20130112-00/events_0.gz"
 
 The
-[fluent-mixin-config-placeholders](https://github.com/tagomoris/fluent-mixin-c
-onfig-placeholders) mixin is also incorporated, so additional variables such
+[fluent-mixin-config-placeholders](https://github.com/tagomoris/fluent-mixin-config-placeholders) mixin is also incorporated, so additional variables such
 as %{hostname}, %{uuid}, etc. can be used in the s3_object_key_format. This
 could prove useful in preventing filename conflicts when writing from multiple
 servers.
@@ -260,8 +259,7 @@ using IAM roles. Valid values are:
 *   private (default)
 *   public-read
 *   public-read-write (not recommended - see [Canned
-    ACL](http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#cann
-    ed-acl))
+    ACL](http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl))
 *   authenticated-read
 *   bucket-owner-read
 *   bucket-owner-full-control
@@ -337,12 +335,9 @@ Typically, you use AssumeRole for cross-account access or federation.
 See also:
 
 *   [Using IAM Roles - AWS Identity and Access
-    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.h
-    tml)
-*   [Aws::STS::Client](http://docs.aws.amazon.com/sdkforruby/api/Aws/STS/Clien
-    t.html)
-*   [Aws::AssumeRoleCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws
-    /AssumeRoleCredentials.html)
+    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html)
+*   [Aws::STS::Client](http://docs.aws.amazon.com/sdkforruby/api/Aws/STS/Client.html)
+*   [Aws::AssumeRoleCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/AssumeRoleCredentials.html)
 
 **role_arn (required)**
 
@@ -383,14 +378,11 @@ EC2 instance.
 
 See also:
 
-*   [Aws::InstanceProfileCredentials](http://docs.aws.amazon.com/sdkforruby/ap
-    i/Aws/InstanceProfileCredentials.html)
+*   [Aws::InstanceProfileCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/InstanceProfileCredentials.html)
 *   [Temporary Security Credentials - AWS Identity and Access
-    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials
-    _temp.html)
+    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html)
 *   [Instance Metadata and User Data - Amazon Elastic Compute
-    Cloud](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-met
-    adata.html)
+    Cloud](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html)
 
 **retries**
 
@@ -428,8 +420,7 @@ local developing.
 
 See also:
 
-*   [Aws::SharedCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/Sha
-    redCredentials.html)
+*   [Aws::SharedCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/SharedCredentials.html)
 
 **path**
 
@@ -456,8 +447,7 @@ Note that the bucket must already exist and **auto_create_bucket** has no
 effect in this case.
 
 Refer to the [AWS
-documentation](http://docs.aws.amazon.com/IAM/latest/UserGuide/ExampleIAMPolic
-ies.html) for example policies.
+documentation](http://docs.aws.amazon.com/IAM/latest/UserGuide/ExampleIAMPolicies.html) for example policies.
 
 Using [IAM
 roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/WorkingWithRoles.html)
