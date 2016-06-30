@@ -539,7 +539,7 @@ class S3OutputTest < Test::Unit::TestCase
     d.run
 
     logs = d.instance.log.logs
-    assert_true logs.any? {|log| log.include?('[warn]: out_s3: delayed events were put') }
+    assert_true logs.any? {|log| log.include?('out_s3: delayed events were put') }
 
     Timecop.return
     FileUtils.rm_f(s3_local_file_path)
