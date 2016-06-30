@@ -330,38 +330,24 @@ class S3OutputTest < Test::Unit::TestCase
     Dir.glob('tmp/*').each {|file| FileUtils.rm_f(file) }
   end
 
-  def test_write_with_custom_s3_object_key_format_containing_hex_random_placeholder_memory_buffer
-    hex = "012345"
-    mock(SecureRandom).hex(3) { hex }
-
-    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{hex_random}") << "\nhex_random_length 5"
-    write_with_custom_s3_object_key_format_containing_hex_random_placeholder(config, hex[0...5])
-  end
-
-  def test_write_with_custom_s3_object_key_format_containing_hex_random_placeholder_file_buffer
-    tsuffix = "5226c3c4fb3d49b1"
-    any_instance_of(Fluent::FileBufferChunk) do |klass|
-      unique_id = "R&\xC3\xC4\xFB=I\xB1R&\xC3\xC4\xFB=I\xB1" # corresponding unique_id with tsuffxi
-      stub(klass).unique_id { unique_id }
-    end
-    hex = tsuffix.reverse
-
-    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{hex_random}") << "\nhex_random_length 16"
-    config = config.gsub(/buffer_type memory/, "buffer_type file\nbuffer_path test/tmp/buf")
-    write_with_custom_s3_object_key_format_containing_hex_random_placeholder(config, hex)
-  end
-
   # ToDo: need to test hex_random does not change on retry, but it is difficult with
   # the current fluentd test helper because it does not provide a way to run with the same chunks
-  def write_with_custom_s3_object_key_format_containing_hex_random_placeholder(config, hex)
+  def test_write_with_custom_s3_object_key_format_containing_hex_random_placeholder
+    unique_hex = "5226c3c4fb3d49b15226c3c4fb3d49b1"
+    hex_random = unique_hex.reverse[0...5]
+
+    config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{hex_random}") << "\nhex_random_length #{hex_random.length}"
+    config = config.gsub(/buffer_type memory/, "buffer_type file\nbuffer_path test/tmp/buf")
+
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     setup_mocks(true)
 
-    s3path = "log/events/ts=20110102-13/events_0-#{hex}.gz"
+    s3path = "log/events/ts=20110102-13/events_0-#{hex_random}.gz"
     s3_local_file_path = "/tmp/s3-test.txt"
     setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: s3path)
 
     d = create_time_sliced_driver(config)
+    stub(d.instance).unique_hex { unique_hex }
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
     d.emit({"a"=>1}, time)
