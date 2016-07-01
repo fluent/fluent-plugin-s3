@@ -26,7 +26,7 @@ class S3OutputTest < Test::Unit::TestCase
   ]
 
   def create_driver(conf = CONFIG)
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::S3Output) do
+    Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output) do
       def write(chunk)
         chunk.read
       end
@@ -247,7 +247,7 @@ class S3OutputTest < Test::Unit::TestCase
 
     assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
                  %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
-                 data
+                 data.first
   end
 
   CONFIG_TIME_SLICE = %[
