@@ -1,5 +1,5 @@
 source "http://rubygems.org"
 
-#gem 'fluentd', '~> 0.12.0'
+gem 'json', '= 1.8.3'
 
 gemspec
