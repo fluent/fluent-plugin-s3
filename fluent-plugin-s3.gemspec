@@ -22,6 +22,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency "yajl-ruby", "~> 1.0"
   gem.add_dependency "fluent-mixin-config-placeholders", ">= 0.3.0"
   gem.add_development_dependency "rake", ">= 0.9.2"
+  gem.add_development_dependency "rr", "= 1.1.2"
   gem.add_development_dependency "test-unit", ">= 3.0.8"
   gem.add_development_dependency "test-unit-rr", ">= 1.0.3"
   gem.add_development_dependency "timecop"
