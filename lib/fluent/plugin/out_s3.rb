@@ -69,7 +69,7 @@ module Fluent
       config_param :profile_name, :string, :default => nil
     end
     desc "The number of attempts to load instance profile credentials from the EC2 metadata service using IAM role"
-    config_param :aws_iam_retries, :integer, :default => 5
+    config_param :aws_iam_retries, :integer, :default => nil
     desc "S3 bucket name"
     config_param :s3_bucket, :string
     desc "S3 region name"
