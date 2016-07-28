@@ -1,3 +1,10 @@
+Release 0.6.9 - 2016/07/28
+
+  * Support v0.14
+  * Fix aws_iam_retries warning
+  * Fix race condition at start with buffers
+
+
 Release 0.6.8 - 2016/04/19
 
   * Add sse customer key options
