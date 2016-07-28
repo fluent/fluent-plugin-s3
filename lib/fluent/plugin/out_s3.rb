@@ -164,7 +164,6 @@ module Fluent
     end
 
     def start
-      super
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
@@ -179,6 +178,8 @@ module Fluent
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket
+
+      super
     end
 
     def format(tag, time, record)
