@@ -1,3 +1,5 @@
+require 'fluent/input'
+
 module Fluent
   class S3Input < Input
     Fluent::Plugin.register_input('s3', self)

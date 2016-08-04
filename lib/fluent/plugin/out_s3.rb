@@ -1,3 +1,5 @@
+require 'fluent/output'
+
 module Fluent
   require 'fluent/mixin/config_placeholders'
 
