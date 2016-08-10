@@ -178,7 +178,9 @@ class S3InputTest < Test::Unit::TestCase
       [message]
     }
     assert_nothing_raised do
-      d.run
+      d.run do
+        d.instance.router.emit("input.s3", @time, { "message" => "aaa" })
+      end
     end
   end
 
@@ -216,7 +218,11 @@ class S3InputTest < Test::Unit::TestCase
       [message]
     }
     assert_nothing_raised do
-      d.run
+      d.run do
+        d.instance.router.emit("input.s3", @time, { "message" => "aaa\n" })
+        d.instance.router.emit("input.s3", @time, { "message" => "bbb\n" })
+        d.instance.router.emit("input.s3", @time, { "message" => "ccc\n" })
+      end
     end
   end
 end
