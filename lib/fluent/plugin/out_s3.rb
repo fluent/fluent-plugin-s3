@@ -15,20 +15,6 @@ module Fluent
       @uuid_flush_enabled = false
     end
 
-    # For fluentd v0.12.16 or earlier
-    class << self
-      unless method_defined?(:desc)
-        def desc(description)
-        end
-      end
-    end
-    unless Fluent::Config::ConfigureProxy.method_defined?(:desc)
-      Fluent::Config::ConfigureProxy.class_eval do
-        def desc(description)
-        end
-      end
-    end
-
     desc "Path prefix of the files on S3"
     config_param :path, :string, :default => ""
     desc "The Server-side encryption algorithm used when storing this object in S3 (AES256, aws:kms)"
