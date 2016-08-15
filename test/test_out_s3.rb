@@ -414,16 +414,16 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def setup_mocks(exists_return = false)
-    @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    @s3_client = stub(Aws::S3::Client.new(stub_responses: true))
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
-    @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
-    mock(Aws::S3::Resource).new(:client => @s3_client) { @s3_resource }
-    @s3_bucket = mock(Aws::S3::Bucket.new(:name => "test",
-                                          :client => @s3_client))
+    @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
+    mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
+    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test",
+                                          client: @s3_client))
     @s3_bucket.exists? { exists_return }
-    @s3_object = mock(Aws::S3::Object.new(:bucket_name => "test_bucket",
-                                          :key => "test",
-                                          :client => @s3_client))
+    @s3_object = mock(Aws::S3::Object.new(bucket_name: "test_bucket",
+                                          key: "test",
+                                          client: @s3_client))
     @s3_bucket.object(anything).at_least(0) { @s3_object }
     @s3_resource.bucket(anything) { @s3_bucket }
   end
@@ -433,16 +433,16 @@ class S3OutputTest < Test::Unit::TestCase
     s3_local_file_path = params[:s3_local_file_path] || "/tmp/s3-test.txt"
 
     # Assert content of event logs which are being sent to S3
-    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
-                                     :key => "test",
-                                     :client => @s3_client))
+    s3obj = stub(Aws::S3::Object.new(bucket_name: "test_bucket",
+                                     key: "test",
+                                     client: @s3_client))
     s3obj.exists? { false }
 
     tempfile = File.new(s3_local_file_path, "w")
     stub(Tempfile).new("s3-") { tempfile }
-    s3obj.put(:body => tempfile,
-              :content_type => "application/x-gzip",
-              :storage_class => "STANDARD")
+    s3obj.put(body: tempfile,
+              content_type: "application/x-gzip",
+              storage_class: "STANDARD")
 
     @s3_bucket.object(s3path) { s3obj }
   end
@@ -489,7 +489,7 @@ class S3OutputTest < Test::Unit::TestCase
 
   def test_auto_create_bucket_true_with_non_existence_bucket
     setup_mocks
-    @s3_resource.create_bucket(:bucket => "test_bucket")
+    @s3_resource.create_bucket(bucket: "test_bucket")
 
     config = CONFIG_TIME_SLICE + 'auto_create_bucket true'
     d = create_time_sliced_driver(config)
@@ -506,8 +506,8 @@ class S3OutputTest < Test::Unit::TestCase
 
   def test_assume_role_credentials
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
-    mock(Aws::AssumeRoleCredentials).new(:role_arn => "test_arn",
-                                         :role_session_name => "test_session"){
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session"){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -526,11 +526,11 @@ class S3OutputTest < Test::Unit::TestCase
 
   def test_assume_role_credentials_with_region
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
-    sts_client = Aws::STS::Client.new(:region => 'ap-northeast-1')
-    mock(Aws::STS::Client).new(:region => 'ap-northeast-1'){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new(:role_arn => "test_arn",
-                                         :role_session_name => "test_session",
-                                         :client => sts_client){
+    sts_client = Aws::STS::Client.new(region: 'ap-northeast-1')
+    mock(Aws::STS::Client).new(region: 'ap-northeast-1'){ sts_client }
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: sts_client){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")

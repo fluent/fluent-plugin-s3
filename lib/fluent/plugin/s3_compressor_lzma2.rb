@@ -3,7 +3,7 @@ module Fluent
     class LZMA2Compressor < Compressor
       S3Output.register_compressor('lzma2', self)
 
-      config_param :command_parameter, :string, :default => '-qf0'
+      config_param :command_parameter, :string, default: '-qf0'
 
       def configure(conf)
         super

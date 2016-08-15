@@ -3,7 +3,7 @@ module Fluent
     class GzipCommandCompressor < Compressor
       S3Output.register_compressor('gzip_command', self)
 
-      config_param :command_parameter, :string, :default => ''
+      config_param :command_parameter, :string, default: ''
 
       def configure(conf)
         super

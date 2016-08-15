@@ -3,7 +3,7 @@ module Fluent
     class LZMA2Extractor < Extractor
       S3Input.register_extractor('lzma2', self)
 
-      config_param :command_parameter, :string, :default => '-qdc'
+      config_param :command_parameter, :string, default: '-qdc'
 
       def configure(conf)
         super

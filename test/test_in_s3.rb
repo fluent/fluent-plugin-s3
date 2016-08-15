@@ -110,16 +110,16 @@ class S3InputTest < Test::Unit::TestCase
   Struct.new("StubMessage", :message_id, :receipt_handle, :body)
 
   def setup_mocks
-    @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    @s3_client = stub(Aws::S3::Client.new(stub_responses: true))
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
-    @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
-    mock(Aws::S3::Resource).new(:client => @s3_client) { @s3_resource }
-    @s3_bucket = mock(Aws::S3::Bucket.new(:name => "test",
-                                          :client => @s3_client))
+    @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
+    mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
+    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test",
+                                          client: @s3_client))
     @s3_resource.bucket(anything) { @s3_bucket }
 
     test_queue_url = "http://example.com/test_queue"
-    @sqs_client = stub(Aws::SQS::Client.new(:stub_responses => true))
+    @sqs_client = stub(Aws::SQS::Client.new(stub_responses: true))
     @sqs_response = stub(Struct::StubResponse.new(test_queue_url))
     @sqs_client.get_queue_url(queue_name: "test_queue"){ @sqs_response }
     mock(Aws::SQS::Client).new(anything).at_least(0) { @sqs_client }
