@@ -1,4 +1,8 @@
 require 'fluent/output'
+require 'aws-sdk-resources'
+require 'zlib'
+require 'time'
+require 'tempfile'
 
 module Fluent
   class S3Output < Fluent::TimeSlicedOutput
@@ -6,11 +10,6 @@ module Fluent
 
     def initialize
       super
-      require 'aws-sdk-resources'
-      require 'zlib'
-      require 'time'
-      require 'tempfile'
-
       @compressor = nil
       @uuid_flush_enabled = false
     end
