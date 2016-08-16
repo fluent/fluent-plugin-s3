@@ -1,4 +1,4 @@
-module Fluent
+module Fluent::Plugin
   class S3Output
     class LZOCompressor < Compressor
       S3Output.register_compressor('lzo', self)

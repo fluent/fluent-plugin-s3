@@ -1,4 +1,4 @@
-module Fluent
+module Fluent::Plugin
   class S3Input
     class LZOExtractor < Extractor
       S3Input.register_extractor('lzo', self)

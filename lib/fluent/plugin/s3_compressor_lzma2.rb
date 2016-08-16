@@ -1,4 +1,4 @@
-module Fluent
+module Fluent::Plugin
   class S3Output
     class LZMA2Compressor < Compressor
       S3Output.register_compressor('lzma2', self)

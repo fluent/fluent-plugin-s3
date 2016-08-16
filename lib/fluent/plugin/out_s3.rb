@@ -4,9 +4,11 @@ require 'zlib'
 require 'time'
 require 'tempfile'
 
-module Fluent
-  class S3Output < Fluent::TimeSlicedOutput
+module Fluent::Plugin
+  class S3Output < Fluent::Plugin::Output
     Fluent::Plugin.register_output('s3', self)
+
+    helpers :compat_parameters, :formatter, :inject
 
     def initialize
       super
@@ -78,8 +80,6 @@ module Fluent
     config_param :reduced_redundancy, :bool, default: false
     desc "The type of storage to use for the object(STANDARD,REDUCED_REDUNDANCY,STANDARD_IA)"
     config_param :storage_class, :string, default: "STANDARD"
-    desc "Change one line format in the S3 object (out_file,json,ltsv,single_value)"
-    config_param :format, :string, default: 'out_file'
     desc "Permission for the object in S3"
     config_param :acl, :string, default: nil
     desc "The length of `%{hex_random}` placeholder(4-16)"
@@ -105,27 +105,32 @@ module Fluent
     desc "Given a threshold to treat events as delay, output warning logs if delayed events were put into s3"
     config_param :warn_for_delay, :time, default: nil
 
+    DEFAULT_FORMAT_TYPE = "out_file"
+
+    config_section :format do
+      config_set_default :@type, DEFAULT_FORMAT_TYPE
+    end
+
     attr_reader :bucket
 
     MAX_HEX_RANDOM_LENGTH = 16
 
     def configure(conf)
+      compat_parameters_convert(conf, :buffer, :formatter, :inject)
+
       super
 
       if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
-        raise ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
+        raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
 
       begin
         @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(buffer_type: @buffer_type, log: log)
       rescue
-        $log.warn "#{@store_as} not found. Use 'text' instead"
+        log.warn "#{@store_as} not found. Use 'text' instead"
         @compressor = TextCompressor.new
       end
       @compressor.configure(conf)
-
-      @formatter = Plugin.new_formatter(@format)
-      @formatter.configure(conf)
 
       if @localtime
         @path_slicer = Proc.new {|path|
@@ -138,11 +143,11 @@ module Fluent
       end
 
       if @hex_random_length > MAX_HEX_RANDOM_LENGTH
-        raise ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
+        raise Fluent::ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
       end
 
       if @reduced_redundancy
-        $log.warn "reduced_redundancy parameter is deprecated. Use storage_class parameter instead"
+        log.warn "reduced_redundancy parameter is deprecated. Use storage_class parameter instead"
         @storage_class = "REDUCED_REDUNDANCY"
       end
 
@@ -151,6 +156,8 @@ module Fluent
     end
 
     def start
+      @formatter = formatter_create(conf: @formatter_configs.first, default_type: DEFAULT_FORMAT_TYPE)
+
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
@@ -174,7 +181,8 @@ module Fluent
     end
 
     def format(tag, time, record)
-      @formatter.format(tag, time, record)
+      r = inject_values_to_record(tag, time, record)
+      @formatter.format(tag, time, r)
     end
 
     def write(chunk)
@@ -219,8 +227,8 @@ module Fluent
         end
 
         values_for_s3_object_key = {
-          "path" => @path_slicer.call(@path),
-          "date_slice" => chunk.key,
+          "path" => path,
+          "time_slice" => chunk.unique_id,
           "file_extension" => @compressor.ext,
           "hms_slice" => hms_slicer,
         }
@@ -362,7 +370,7 @@ module Fluent
         credentials_options[:profile_name] = c.profile_name if c.profile_name
         options[:credentials] = Aws::SharedCredentials.new(credentials_options)
       when @aws_iam_retries
-        $log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
+        log.warn("'aws_iam_retries' parameter is deprecated. Use 'instance_profile_credentials' instead")
         credentials_options[:retries] = @aws_iam_retries
         if ENV["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"]
           options[:credentials] = Aws::ECSCredentials.new(credentials_options)
@@ -377,7 +385,7 @@ module Fluent
     end
 
     class Compressor
-      include Configurable
+      include Fluent::Configurable
 
       def initialize(opts = {})
         super()
@@ -409,7 +417,7 @@ module Fluent
         begin
           Open3.capture3("#{command} -V")
         rescue Errno::ENOENT
-          raise ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
+          raise Fluent::ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
         end
       end
     end
@@ -456,7 +464,7 @@ module Fluent
       end
     end
 
-    COMPRESSOR_REGISTRY = Registry.new(:s3_compressor_type, 'fluent/plugin/s3_compressor_')
+    COMPRESSOR_REGISTRY = Fluent::Registry.new(:s3_compressor_type, 'fluent/plugin/s3_compressor_')
     {
       'gzip' => GzipCompressor,
       'json' => JsonCompressor,

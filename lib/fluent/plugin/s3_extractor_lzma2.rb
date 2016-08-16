@@ -1,4 +1,4 @@
-module Fluent
+module Fluent::Plugin
   class S3Input
     class LZMA2Extractor < Extractor
       S3Input.register_extractor('lzma2', self)
