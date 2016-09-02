@@ -1,3 +1,8 @@
+Release 0.7.1 - 2016/09/02
+
+  * Support IAM role for Amazon ECS task
+
+
 Release 0.7.0 - 2016/08/10
 
   * Add s3 input plugin
