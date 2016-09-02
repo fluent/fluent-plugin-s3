@@ -484,6 +484,25 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal(expected_credentials, credentials)
   end
 
+  def test_ecs_credentials
+    ENV["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = "/credential_provider_version/credentials?id=task_UUID"
+
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::ECSCredentials).new({}).returns(expected_credentials)
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <instance_profile_credentials>
+      </instance_profile_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised{ d.run }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+
+    ENV["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = nil
+  end
+
   def test_instance_profile_credentials_aws_iam_retries
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     mock(Aws::InstanceProfileCredentials).new({}).returns(expected_credentials)
