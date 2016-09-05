@@ -1,32 +1,22 @@
 require 'fluent/input'
 
-module Fluent
-  class S3Input < Input
+require 'aws-sdk-resources'
+require 'zlib'
+require 'time'
+require 'tempfile'
+
+module Fluent::Plugin
+  class S3Input < Fluent::Plugin::Input
     Fluent::Plugin.register_input('s3', self)
+
+    helpers :compat_parameters, :parser, :thread
 
     def initialize
       super
-      require 'aws-sdk-resources'
-      require 'zlib'
-      require 'time'
-      require 'tempfile'
-
       @extractor = nil
     end
 
-    # For fluentd v0.12.16 or earlier
-    class << self
-      unless method_defined?(:desc)
-        def desc(description)
-        end
-      end
-    end
-    unless Fluent::Config::ConfigureProxy.method_defined?(:desc)
-      Fluent::Config::ConfigureProxy.class_eval do
-        def desc(description)
-        end
-      end
-    end
+    DEFAULT_PARSE_TYPE = "none"
 
     desc "AWS access key id"
     config_param :aws_key_id, :string, default: nil, secret: true
@@ -74,8 +64,6 @@ module Fluent
     config_param :check_apikey_on_start, :bool, default: true
     desc "URI of proxy environment"
     config_param :proxy_uri, :string, default: nil
-    desc "Change one line format in the S3 object (none,json,ltsv,single_value)"
-    config_param :format, :string, default: 'none'
 
     config_section :sqs, required: true, multi: false do
       desc "SQS queue name"
@@ -89,20 +77,24 @@ module Fluent
     desc "Tag string"
     config_param :tag, :string, default: "input.s3"
 
+    config_section :parse do
+      config_set_default :@type, DEFAULT_PARSE_TYPE
+    end
+
     attr_reader :bucket
 
     def configure(conf)
       super
 
+      parser_config = conf.elements("parse").first
       unless @sqs.queue_name
-        raise ConfigError, "sqs/queue_name is required"
+        raise Fluent::ConfigError, "sqs/queue_name is required"
       end
 
       @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
       @extractor.configure(conf)
 
-      @parser = Plugin.new_parser(@format)
-      @parser.configure(conf)
+      @parser = parser_create(conf: parser_config, default_type: DEFAULT_PARSE_TYPE)
     end
 
     def start
@@ -123,12 +115,11 @@ module Fluent
       @poller = Aws::SQS::QueuePoller.new(sqs_queue_url, client: sqs_client)
 
       @running = true
-      @thread = Thread.new(&method(:run))
+      thread_create(:in_s3, &method(:run))
     end
 
     def shutdown
       @running = false
-      @thread.join
       super
     end
 
@@ -227,7 +218,7 @@ module Fluent
     end
 
     class Extractor
-      include Configurable
+      include Fluent::Configurable
 
       attr_reader :log
 
@@ -303,7 +294,7 @@ module Fluent
       end
     end
 
-    EXTRACTOR_REGISTRY = Registry.new(:s3_extractor_type, 'fluent/plugin/s3_extractor_')
+    EXTRACTOR_REGISTRY = Fluent::Registry.new(:s3_extractor_type, 'fluent/plugin/s3_extractor_')
     {
       'gzip' => GzipExtractor,
       'text' => TextExtractor,

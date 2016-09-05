@@ -1,16 +1,21 @@
 require 'aws-sdk-resources'
 
 require 'fluent/test'
+require 'fluent/test/helpers'
+require 'fluent/test/log'
+require 'fluent/test/driver/input'
 require 'fluent/plugin/in_s3'
 
 require 'test/unit/rr'
 require 'zlib'
 require 'fileutils'
 
+include Fluent::Test::Helpers
+
 class S3InputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
-    @time = Time.parse("2015-09-30 13:14:15 UTC").to_i
+    @time = event_time("2015-09-30 13:14:15 UTC")
     Fluent::Engine.now = @time
     if Fluent.const_defined?(:EventTime)
       stub(Fluent::EventTime).now { @time }
@@ -28,9 +33,7 @@ class S3InputTest < Test::Unit::TestCase
   ]
 
   def create_driver(conf = CONFIG)
-    d = Fluent::Test::InputTestDriver.new(Fluent::S3Input)
-    d.configure(conf)
-    d
+    Fluent::Test::Driver::Input.new(Fluent::Plugin::S3Input).configure(conf)
   end
 
   class ConfigTest < self
@@ -122,7 +125,7 @@ class S3InputTest < Test::Unit::TestCase
     @sqs_client = stub(Aws::SQS::Client.new(stub_responses: true))
     @sqs_response = stub(Struct::StubResponse.new(test_queue_url))
     @sqs_client.get_queue_url(queue_name: "test_queue"){ @sqs_response }
-    mock(Aws::SQS::Client).new(anything).at_least(0) { @sqs_client }
+    mock(Aws::SQS::Client).new(anything).once { @sqs_client }
     @real_poller = Aws::SQS::QueuePoller.new(test_queue_url, client: @sqs_client)
     @sqs_poller = stub(@real_poller)
     mock(Aws::SQS::QueuePoller).new(anything, client: @sqs_client) { @sqs_poller }
@@ -134,23 +137,22 @@ class S3InputTest < Test::Unit::TestCase
     mock(d.instance).process(anything).never
 
     message = Struct::StubMessage.new(1, 1, "{}")
-    @sqs_poller.get_messages {|config, stats|
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
       config.before_request.call(stats) if config.before_request
       stats.request_count += 1
       if stats.request_count > 1
         d.instance.instance_variable_set(:@running, false)
       end
       [message]
-    }
+    end
     assert_nothing_raised do
-      d.run
+      d.run {}
     end
   end
 
   def test_one_record
     setup_mocks
     d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\n")
-    d.expect_emit("input.s3", @time, { "message" => "aaa" })
 
     s3_object = stub(Object.new)
     s3_response = stub(Object.new)
@@ -170,25 +172,22 @@ class S3InputTest < Test::Unit::TestCase
       ]
     }
     message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
-    @sqs_poller.get_messages {|config, stats|
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
       config.before_request.call(stats) if config.before_request
       stats.request_count += 1
-      if stats.request_count > 1
+      if stats.request_count >= 1
         d.instance.instance_variable_set(:@running, false)
       end
       [message]
-    }
-    assert_nothing_raised do
-      d.run
     end
+    d.run(expect_emits: 1)
+    events = d.events
+    assert_equal({ "message" => "aaa" }, events.first[2])
   end
 
   def test_one_record_multi_line
     setup_mocks
     d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\n")
-    d.expect_emit("input.s3", @time, { "message" => "aaa\n" })
-    d.expect_emit("input.s3", @time, { "message" => "bbb\n" })
-    d.expect_emit("input.s3", @time, { "message" => "ccc\n" })
 
     s3_object = stub(Object.new)
     s3_response = stub(Object.new)
@@ -208,16 +207,21 @@ class S3InputTest < Test::Unit::TestCase
       ]
     }
     message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
-    @sqs_poller.get_messages {|config, stats|
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
       config.before_request.call(stats) if config.before_request
       stats.request_count += 1
-      if stats.request_count > 1
+      if stats.request_count >= 1
         d.instance.instance_variable_set(:@running, false)
       end
       [message]
-    }
-    assert_nothing_raised do
-      d.run
     end
+    d.run(expect_emits: 3)
+    events = d.events
+    expected_records = [
+      { "message" => "aaa\n" },
+      { "message" => "bbb\n" },
+      { "message" => "ccc\n" }
+    ]
+    assert_equal(expected_records, events.map {|_tag, _time, record| record })
   end
 end
