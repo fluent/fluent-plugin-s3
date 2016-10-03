@@ -132,6 +132,7 @@ module Fluent::Plugin
       end
       @compressor.configure(conf)
 
+      @formatter = formatter_create(conf: conf.elements("format").first, default_type: DEFAULT_FORMAT_TYPE)
       if @localtime
         @path_slicer = Proc.new {|path|
           Time.now.strftime(path)
@@ -156,8 +157,6 @@ module Fluent::Plugin
     end
 
     def start
-      @formatter = formatter_create(conf: @formatter_configs.first, default_type: DEFAULT_FORMAT_TYPE)
-
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
