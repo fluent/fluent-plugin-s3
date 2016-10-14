@@ -47,7 +47,8 @@ Simply use RubyGems:
 **aws_key_id**
 
 AWS access key id. This parameter is required when your agent is not
-running on EC2 instance with an IAM Role.
+running on EC2 instance with an IAM Role. When using an IAM role, make 
+sure to configure `instance_profile_credentials`. Usage can be found below.
 
 **aws_sec_key**
 
