@@ -12,6 +12,9 @@ class S3InputTest < Test::Unit::TestCase
     Fluent::Test.setup
     @time = Time.parse("2015-09-30 13:14:15 UTC").to_i
     Fluent::Engine.now = @time
+    if Fluent.const_defined?(:EventTime)
+      stub(Fluent::EventTime).now { @time }
+    end
   end
 
   CONFIG = %[
