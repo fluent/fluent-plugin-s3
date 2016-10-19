@@ -217,10 +217,13 @@ module Fluent
 
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
+      es = MultiEventStream.new
       content.each_line do |line|
-        time, record = @parser.parse(line)
-        router.emit(@tag, time, record)
+        @parser.parse(line) do |time, record|
+          es.add(time, record)
+        end
       end
+      router.emit_stream(@tag, es)
     end
 
     class Extractor

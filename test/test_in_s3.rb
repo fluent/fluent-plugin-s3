@@ -12,6 +12,9 @@ class S3InputTest < Test::Unit::TestCase
     Fluent::Test.setup
     @time = Time.parse("2015-09-30 13:14:15 UTC").to_i
     Fluent::Engine.now = @time
+    if Fluent.const_defined?(:EventTime)
+      stub(Fluent::EventTime).now { @time }
+    end
   end
 
   CONFIG = %[
@@ -178,9 +181,7 @@ class S3InputTest < Test::Unit::TestCase
       [message]
     }
     assert_nothing_raised do
-      d.run do
-        d.instance.router.emit("input.s3", @time, { "message" => "aaa" })
-      end
+      d.run
     end
   end
 
@@ -218,11 +219,7 @@ class S3InputTest < Test::Unit::TestCase
       [message]
     }
     assert_nothing_raised do
-      d.run do
-        d.instance.router.emit("input.s3", @time, { "message" => "aaa\n" })
-        d.instance.router.emit("input.s3", @time, { "message" => "bbb\n" })
-        d.instance.router.emit("input.s3", @time, { "message" => "ccc\n" })
-      end
+      d.run
     end
   end
 end
