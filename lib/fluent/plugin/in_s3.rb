@@ -218,8 +218,9 @@ module Fluent
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
       content.each_line do |line|
-        time, record = @parser.parse(line)
-        router.emit(@tag, time, record)
+        @parser.parse(line) do |time, record|
+          router.emit(@tag, time, record)
+        end
       end
     end
 
