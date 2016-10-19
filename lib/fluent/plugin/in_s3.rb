@@ -148,7 +148,8 @@ module Fluent
 
           process(body)
         rescue => e
-          log.warn "#{e.message}\n#{e.backtrace.join("\n")}"
+          log.warn(error: e)
+          log.warn_backtrace(e.backtrace)
           @running = false
           throw :skip_delete
         end
