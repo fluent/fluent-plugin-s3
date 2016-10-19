@@ -150,7 +150,6 @@ module Fluent
         rescue => e
           log.warn(error: e)
           log.warn_backtrace(e.backtrace)
-          @running = false
           throw :skip_delete
         end
       end
