@@ -644,17 +644,15 @@ class S3OutputTest < Test::Unit::TestCase
 
     delayed_time = event_time("2011-01-02 13:14:15 UTC")
     now = delayed_time + 86000 + 1
-    Timecop.freeze(now)
+    Timecop.freeze(now) do
+      d.run(default_tag: "test") do
+        d.feed(delayed_time, {"a"=>1})
+        d.feed(delayed_time, {"a"=>2})
+      end
 
-    d.run(default_tag: "test") do
-      d.feed(delayed_time, {"a"=>1})
-      d.feed(delayed_time, {"a"=>2})
+      logs = d.instance.log.logs
+      assert_true logs.any? {|log| log.include?('out_s3: delayed events were put') }
     end
-
-    logs = d.instance.log.logs
-    assert_true logs.any? {|log| log.include?('out_s3: delayed events were put') }
-
-    Timecop.return
     FileUtils.rm_f(s3_local_file_path)
   end
 end
