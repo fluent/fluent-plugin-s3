@@ -134,15 +134,6 @@ module Fluent::Plugin
       @compressor.configure(conf)
 
       @formatter = formatter_create(conf: conf.elements("format").first, default_type: DEFAULT_FORMAT_TYPE)
-      if @localtime
-        @path_slicer = Proc.new {|path|
-          Time.now.strftime(path)
-        }
-      else
-        @path_slicer = Proc.new {|path|
-          Time.now.utc.strftime(path)
-        }
-      end
 
       if @hex_random_length > MAX_HEX_RANDOM_LENGTH
         raise Fluent::ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
@@ -191,7 +182,7 @@ module Fluent::Plugin
 
       if @check_object
         begin
-          path = @path_slicer.call(@path)
+          path = extract_placeholders(@path, chunk.metadata)
 
           @values_for_s3_object_chunk[chunk.unique_id] ||= {
             "hex_random" => hex_random(chunk),
@@ -225,6 +216,8 @@ module Fluent::Plugin
         else
           hms_slicer = Time.now.utc.strftime("%H%M%S")
         end
+
+        path = extract_placeholders(@path, chunk.metadata)
 
         values_for_s3_object_key = {
           "path" => path,
