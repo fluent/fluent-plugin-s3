@@ -57,7 +57,7 @@ module Fluent::Plugin
       config_param :profile_name, :string, default: nil
     end
     desc "The number of attempts to load instance profile credentials from the EC2 metadata service using IAM role"
-    config_param :aws_iam_retries, :integer, default: nil
+    config_param :aws_iam_retries, :integer, default: nil, deprecated: "Use 'instance_profile_credentials' instead"
     desc "S3 bucket name"
     config_param :s3_bucket, :string
     desc "S3 region name"
@@ -77,7 +77,7 @@ module Fluent::Plugin
     desc "URI of proxy environment"
     config_param :proxy_uri, :string, default: nil
     desc "Use S3 reduced redundancy storage for 33% cheaper pricing. Deprecated. Use storage_class instead"
-    config_param :reduced_redundancy, :bool, default: false
+    config_param :reduced_redundancy, :bool, default: false, deprecated: "Use storage_class parameter instead."
     desc "The type of storage to use for the object(STANDARD,REDUCED_REDUNDANCY,STANDARD_IA)"
     config_param :storage_class, :string, default: "STANDARD"
     desc "Permission for the object in S3"
