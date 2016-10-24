@@ -208,7 +208,7 @@ module Fluent::Plugin
 
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
-      es = MultiEventStream.new
+      es = Fluent::MultiEventStream.new
       content.each_line do |line|
         @parser.parse(line) do |time, record|
           es.add(time, record)
