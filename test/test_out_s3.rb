@@ -29,6 +29,7 @@ class S3OutputTest < Test::Unit::TestCase
     path log
     utc
     buffer_type memory
+    time_slice_format %Y%m%d-%H
   ]
 
   def create_driver(conf = CONFIG)

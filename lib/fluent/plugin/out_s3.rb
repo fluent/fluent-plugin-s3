@@ -145,6 +145,9 @@ module Fluent::Plugin
       end
 
       @s3_object_key_format = process_s3_object_key_format
+      # For backward compatibility
+      # TODO: Remove time_slice_format when end of support compat_parameters
+      @configured_time_slice_format = conf['time_slice_format']
       @values_for_s3_object_chunk = {}
     end
 
@@ -185,19 +188,17 @@ module Fluent::Plugin
           path = extract_placeholders(@path, chunk.metadata)
 
           @values_for_s3_object_chunk[chunk.unique_id] ||= {
-            "hex_random" => hex_random(chunk),
+            "%{hex_random}" => hex_random(chunk),
           }
           values_for_s3_object_key = {
-            "path" => path,
-            "time_slice" => chunk.key,
-            "file_extension" => @compressor.ext,
-            "index" => i,
+            "%{path}" => path,
+            "%{time_slice}" => chunk.key,
+            "%{file_extension}" => @compressor.ext,
+            "%{index}" => i,
           }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
-          values_for_s3_object_key['uuid_flush'.freeze] = uuid_random if @uuid_flush_enabled
+          values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
-          s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
-            values_for_s3_object_key[expr[2...expr.size-1]]
-          }
+          s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
           if (i > 0) && (s3path == previous_path)
             if @overwrite
               log.warn "#{s3path} already exists, but will overwrite"
@@ -219,15 +220,19 @@ module Fluent::Plugin
 
         path = extract_placeholders(@path, chunk.metadata)
 
+        @values_for_s3_object_chunk[chunk.unique_id] ||= {
+          "%{hex_random}" => hex_random(chunk),
+        }
+        time_slice_format = @configured_time_slice_format || timekey_to_timeformat(@buffer_config['timekey'])
+        time_slice = Time.at(chunk.metadata.timekey).utc.strftime(time_slice_format)
         values_for_s3_object_key = {
-          "path" => path,
-          "time_slice" => chunk.unique_id,
-          "file_extension" => @compressor.ext,
-          "hms_slice" => hms_slicer,
-        }
-        s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
-          values_for_s3_object_key[expr[2...expr.size-1]]
-        }
+          "%{path}" => path,
+          "%{time_slice}" => time_slice,
+          "%{file_extension}" => @compressor.ext,
+        }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
+        values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
+
+        s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
       end
 
       tmp = Tempfile.new("s3-")
@@ -278,6 +283,17 @@ module Fluent::Plugin
 
     def uuid_random
       ::UUIDTools::UUID.random_create.to_s
+    end
+
+    # This is stolen from Fluentd
+    def timekey_to_timeformat(timekey)
+      case timekey
+      when nil          then ''
+      when 0...60       then '%Y%m%d%H%M%S' # 60 exclusive
+      when 60...3600    then '%Y%m%d%H%M'
+      when 3600...86400 then '%Y%m%d%H'
+      else                   '%Y%m%d'
+      end
     end
 
     def ensure_bucket
