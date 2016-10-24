@@ -20,7 +20,6 @@ Gem::Specification.new do |gem|
   gem.add_dependency "fluentd", [">= 0.14.2", "< 2"]
   gem.add_dependency "aws-sdk", [">= 2.3.22", "< 3"]
   gem.add_development_dependency "rake", ">= 0.9.2"
-  gem.add_development_dependency "rr", "= 1.1.2"
   gem.add_development_dependency "test-unit", ">= 3.0.8"
   gem.add_development_dependency "test-unit-rr", ">= 1.0.3"
   gem.add_development_dependency "timecop"
