@@ -182,6 +182,8 @@ module Fluent::Plugin
     def write(chunk)
       i = 0
       previous_path = nil
+      time_slice_format = @configured_time_slice_format || timekey_to_timeformat(@buffer_config['timekey'])
+      time_slice = Time.at(chunk.metadata.timekey).utc.strftime(time_slice_format)
 
       if @check_object
         begin
@@ -223,8 +225,6 @@ module Fluent::Plugin
         @values_for_s3_object_chunk[chunk.unique_id] ||= {
           "%{hex_random}" => hex_random(chunk),
         }
-        time_slice_format = @configured_time_slice_format || timekey_to_timeformat(@buffer_config['timekey'])
-        time_slice = Time.at(chunk.metadata.timekey).utc.strftime(time_slice_format)
         values_for_s3_object_key = {
           "%{path}" => path,
           "%{time_slice}" => time_slice,
