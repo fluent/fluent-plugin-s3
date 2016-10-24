@@ -278,7 +278,7 @@ class S3OutputTest < Test::Unit::TestCase
     path log
     utc
     buffer_type memory
-    log_level debug
+    @log_level debug
     check_bucket true
     check_object true
   ]
