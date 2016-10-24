@@ -521,7 +521,8 @@ class S3OutputTest < Test::Unit::TestCase
   def test_assume_role_credentials
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
-                                         role_session_name: "test_session"){
+                                         role_session_name: "test_session",
+                                         client: anything){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
