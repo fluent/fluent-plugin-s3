@@ -390,7 +390,7 @@ class S3OutputTest < Test::Unit::TestCase
     setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: s3path)
 
     d = create_time_sliced_driver(config)
-    stub(d.instance).unique_hex { unique_hex }
+    stub(Fluent::UniqueId).hex(anything) { unique_hex }
 
     time = event_time("2011-01-02 13:14:15 UTC")
     d.run(default_tag: "test") do

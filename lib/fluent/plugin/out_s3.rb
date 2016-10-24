@@ -269,14 +269,8 @@ module Fluent::Plugin
 
     private
 
-    # v0.14 has a useful Fluent::UniqueId.hex(unique_id) method, though
-    def unique_hex(chunk)
-      unique_id = chunk.unique_id
-      unique_id.unpack('C*').map {|x| x.to_s(16) }.join('')
-    end
-
     def hex_random(chunk)
-      unique_hex = unique_hex(chunk)
+      unique_hex = Fluent::UniqueId.hex(chunk.unique_id)
       unique_hex.reverse! # unique_hex is like (time_sec, time_usec, rand) => reversing gives more randomness
       unique_hex[0...@hex_random_length]
     end
