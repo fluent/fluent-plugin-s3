@@ -249,7 +249,7 @@ module Fluent::Plugin
         begin
           Open3.capture3("#{command} -V")
         rescue Errno::ENOENT
-          raise ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
+          raise Fluent::ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
         end
       end
     end
