@@ -284,7 +284,7 @@ class S3OutputTest < Test::Unit::TestCase
   ]
 
   def create_time_sliced_driver(conf = CONFIG_TIME_SLICE)
-    d = Fluent::Test::Driver::Output.new(Fluent::Plugin::S3Output) do
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::S3Output) do
       def format(tag, time, record)
         super
       end
@@ -298,7 +298,6 @@ class S3OutputTest < Test::Unit::TestCase
       def check_apikeys
       end
     end.configure(conf)
-    d
   end
 
   def test_write_with_hardened_s3_policy
