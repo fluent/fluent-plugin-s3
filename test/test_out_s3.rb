@@ -437,7 +437,7 @@ class S3OutputTest < Test::Unit::TestCase
     @s3_object = mock(Aws::S3::Object.new(bucket_name: "test_bucket",
                                           key: "test",
                                           client: @s3_client))
-    @s3_object.exists? { false }
+    @s3_object.exists?.at_least(0) { false }
     @s3_bucket.object(anything).at_least(0) { @s3_object }
     @s3_resource.bucket(anything) { @s3_bucket }
   end
