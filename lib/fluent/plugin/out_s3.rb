@@ -125,7 +125,8 @@ module Fluent::Plugin
       end
 
       begin
-        @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(buffer_type: @buffer_type, log: log)
+        buffer_type = @buffer_config[:@type]
+        @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(buffer_type: buffer_type, log: log)
       rescue
         log.warn "#{@store_as} not found. Use 'text' instead"
         @compressor = TextCompressor.new
