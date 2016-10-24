@@ -588,7 +588,7 @@ class S3OutputTest < Test::Unit::TestCase
       </instance_profile_credentials>
     ]
     d = create_time_sliced_driver(config)
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
