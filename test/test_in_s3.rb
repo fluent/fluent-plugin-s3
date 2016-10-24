@@ -215,7 +215,7 @@ class S3InputTest < Test::Unit::TestCase
       end
       [message]
     end
-    d.run(expect_emits: 3)
+    d.run(expect_emits: 1)
     events = d.events
     expected_records = [
       { "message" => "aaa\n" },
