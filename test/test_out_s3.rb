@@ -251,24 +251,6 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal(expected, d.formatted)
   end
 
-  def test_chunk_to_write
-    d = create_driver
-
-    time = event_time("2011-01-02 13:14:15 UTC")
-    d.run(default_tag: "test") do
-      d.feed(time, {"a"=>1})
-      d.feed(time, {"a"=>2})
-    end
-
-    pend
-    # TODO: S3OutputTest#write returns chunk.read
-    data = []
-
-    assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
-                 %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
-                 data.first
-  end
-
   CONFIG_TIME_SLICE = %[
     aws_key_id test_key_id
     aws_sec_key test_sec_key
