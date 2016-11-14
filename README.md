@@ -215,6 +215,34 @@ You can change key name by "message_key" option.
 
 Create S3 bucket if it does not exists. Default is true.
 
+**check_bukcet**
+
+Check mentioned bucket if it exists in AWS or not. Default is true.
+
+When it is false,
+	fluentd will not check aws s3 for the existence of the mentioned bucket. This is the
+	case where bucket will be pre-created before running fluentd.
+
+**check_object**
+
+Check object before creation if it exists or not. Default is true.
+
+When it is false,
+	s3_object_key_format will be %{path}%{date_slice}_%{time_slice}.%{file_extension}
+	where, time_slice will be in hhmmss format, so that each object will be unique.
+	Example object name, assuming it is created on 2016/16/11 3:30:54 PM
+		20161611_153054.txt (extension can be anything as per user's choice)
+
+**Example when check_bukcet=false and check_object=false**
+
+When the mentioned configuration will be made, fluentd will work with the
+minimum IAM poilcy, like:
+				"Statement": [{
+					"Effect": "Allow",
+					"Action": "s3:PutObject",
+					"Resource": ["*"]
+				}]
+
 **check_apikey_on_start**
 
 Check AWS key on start. Default is true.
