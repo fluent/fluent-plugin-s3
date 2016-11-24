@@ -301,7 +301,7 @@ class S3OutputTest < Test::Unit::TestCase
 
     begin
       require 'uuidtools'
-    rescue
+    rescue LoadError
       pend("uuidtools not found. skip this test")
     end
 
