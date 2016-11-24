@@ -251,7 +251,6 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   CONFIG_TIME_SLICE = %[
-    hostname testing.node.local
     aws_key_id test_key_id
     aws_sec_key test_sec_key
     s3_bucket test_bucket
@@ -299,11 +298,18 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def test_write_with_custom_s3_object_key_format_containing_uuid_flush_placeholder
+
+    begin
+      require 'uuidtools'
+    rescue LoadError
+      pend("uuidtools not found. skip this test")
+    end
+
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     setup_mocks(true)
 
     uuid = "5755e23f-9b54-42d8-8818-2ea38c6f279e"
-    stub(UUIDTools::UUID).random_create{ uuid }
+    stub(::UUIDTools::UUID).random_create{ uuid }
 
     s3_local_file_path = "/tmp/s3-test.txt"
     s3path = "log/events/ts=20110102-13/events_0-#{uuid}.gz"
@@ -380,7 +386,7 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def setup_s3_object_mocks(params = {})
-    s3path = params[:s3path] || "log/events/ts=20110102-13/events_0-testing.node.local.gz"
+    s3path = params[:s3path] || "log/events/ts=20110102-13/events_0-#{Socket.gethostname}.gz"
     s3_local_file_path = params[:s3_local_file_path] || "/tmp/s3-test.txt"
 
     # Assert content of event logs which are being sent to S3
