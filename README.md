@@ -85,8 +85,9 @@ The format of S3 object keys. You can use several built-in variables:
 *   %{time_slice}
 *   %{index}
 *   %{file_extension}
-*   %{uuid_flush}
 *   %{hex_random}
+*   %{uuid_flush}
+*   %{hostname}
 
 to decide keys dynamically.
 
@@ -98,7 +99,8 @@ the sequential number starts from 0, increments when multiple files are
 uploaded to S3 in the same time slice.
 * %{file_extention} is always "gz" for
 now.
-* %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed
+* %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed. If you want to use this placeholder, install `uuidtools` gem first.
+* %{hostname} is replaced with `Socket.gethostname` result. This is same as "#{Socket.gethostname}".
 * %{hex_random} a random hex string that is replaced for each buffer chunk, not
 assured to be unique. This is used to follow a way of peformance tuning, `Add
 a Hex Hash Prefix to Key Name`, written in [Request Rate and Performance
@@ -129,14 +131,6 @@ You get:
     "log/events/ts=20130111-23/events_0.gz"
     "log/events/ts=20130111-23/events_1.gz"
     "log/events/ts=20130112-00/events_0.gz"
-
-The
-[fluent-mixin-config-placeholders](https://github.com/tagomoris/fluent-mixin-config-placeholders) mixin is also incorporated, so additional variables such
-as %{hostname}, %{uuid}, etc. can be used in the s3_object_key_format. This
-could prove useful in preventing filename conflicts when writing from multiple
-servers.
-
-    s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
 
 **force_path_style**
 
