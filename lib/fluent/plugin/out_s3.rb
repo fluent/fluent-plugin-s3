@@ -1,8 +1,6 @@
 require 'fluent/output'
 
 module Fluent
-  require 'fluent/mixin/config_placeholders'
-
   class S3Output < Fluent::TimeSlicedOutput
     Fluent::Plugin.register_output('s3', self)
 
@@ -14,6 +12,7 @@ module Fluent
       require 'tempfile'
 
       @compressor = nil
+      @uuid_flush_enabled = false
     end
 
     # For fluentd v0.12.16 or earlier
@@ -102,6 +101,10 @@ module Fluent
     config_param :hex_random_length, :integer, :default => 4
     desc "Overwrite already existing path"
     config_param :overwrite, :bool, :default => false
+    desc "Check bucket if exists or not"
+    config_param :check_bucket, :bool, :default => true
+    desc "Check object before creation"
+    config_param :check_object, :bool, :default => true
     desc "Specifies the AWS KMS key ID to use for object encryption"
     config_param :ssekms_key_id, :string, :default => nil, :secret => true
     desc "Specifies the algorithm to use to when encrypting the object"
@@ -119,12 +122,7 @@ module Fluent
 
     attr_reader :bucket
 
-    include Fluent::Mixin::ConfigPlaceholders
     MAX_HEX_RANDOM_LENGTH = 16
-
-    def placeholders
-      [:percent]
-    end
 
     def configure(conf)
       super
@@ -162,6 +160,8 @@ module Fluent
         $log.warn "reduced_redundancy parameter is deprecated. Use storage_class parameter instead"
         @storage_class = "REDUCED_REDUNDANCY"
       end
+
+      @s3_object_key_format = process_s3_object_key_format
       @values_for_s3_object_chunk = {}
     end
 
@@ -179,7 +179,11 @@ module Fluent
       @bucket = @s3.bucket(@s3_bucket)
 
       check_apikeys if @check_apikey_on_start
-      ensure_bucket
+      ensure_bucket if @check_bucket
+
+      if !@check_object
+        @s3_object_key_format = "%{path}/%{date_slice}_%{hms_slice}.%{file_extension}"
+      end
 
       super
     end
@@ -192,35 +196,53 @@ module Fluent
       i = 0
       previous_path = nil
 
-      begin
-        path = @path_slicer.call(@path)
+      if @check_object
+        begin
+          path = @path_slicer.call(@path)
 
-        @values_for_s3_object_chunk[chunk.unique_id] ||= {
-          "hex_random" => hex_random(chunk),
-        }
+          @values_for_s3_object_chunk[chunk.unique_id] ||= {
+            "hex_random" => hex_random(chunk),
+          }
+          values_for_s3_object_key = {
+            "path" => path,
+            "time_slice" => chunk.key,
+            "file_extension" => @compressor.ext,
+            "index" => i,
+          }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
+          values_for_s3_object_key['uuid_flush'.freeze] = uuid_random if @uuid_flush_enabled
+
+          s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
+            values_for_s3_object_key[expr[2...expr.size-1]]
+          }
+          if (i > 0) && (s3path == previous_path)
+            if @overwrite
+              log.warn "#{s3path} already exists, but will overwrite"
+              break
+            else
+              raise "duplicated path is generated. use %{index} in s3_object_key_format: path = #{s3path}"
+            end
+          end
+
+          i += 1
+          previous_path = s3path
+        end while @bucket.object(s3path).exists?
+      else
+        if @localtime
+          hms_slicer = Time.now.strftime("%H%M%S")
+        else
+          hms_slicer = Time.now.utc.strftime("%H%M%S")
+        end
+
         values_for_s3_object_key = {
-          "path" => path,
-          "time_slice" => chunk.key,
+          "path" => @path_slicer.call(@path),
+          "date_slice" => chunk.key,
           "file_extension" => @compressor.ext,
-          "index" => i,
-          "uuid_flush" => uuid_random,
-        }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
-
+          "hms_slice" => hms_slicer,
+        }
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) { |expr|
           values_for_s3_object_key[expr[2...expr.size-1]]
         }
-        if (i > 0) && (s3path == previous_path)
-          if @overwrite
-            log.warn "#{s3path} already exists, but will overwrite"
-            break
-          else
-            raise "duplicated path is generated. use %{index} in s3_object_key_format: path = #{s3path}"
-          end
-        end
-
-        i += 1
-        previous_path = s3path
-      end while @bucket.object(s3path).exists?
+      end
 
       tmp = Tempfile.new("s3-")
       tmp.binmode
@@ -268,6 +290,10 @@ module Fluent
       unique_hex[0...@hex_random_length]
     end
 
+    def uuid_random
+      ::UUIDTools::UUID.random_create.to_s
+    end
+
     def ensure_bucket
       if !@bucket.exists?
         if @auto_create_bucket
@@ -277,6 +303,34 @@ module Fluent
           raise "The specified bucket does not exist: bucket = #{@s3_bucket}"
         end
       end
+    end
+
+    def process_s3_object_key_format
+      %W(%{uuid} %{uuid:random} %{uuid:hostname} %{uuid:timestamp}).each { |ph|
+        if @s3_object_key_format.include?(ph)
+          raise ConfigError, %!#{ph} placeholder in s3_object_key_format is removed!
+        end
+      }
+
+      if @s3_object_key_format.include?('%{uuid_flush}')
+        # test uuidtools works or not
+        begin
+          require 'uuidtools'
+        rescue LoadError
+          raise ConfigError, "uuidtools gem not found. Install uuidtools gem first"
+        end
+        begin
+          uuid_random
+        rescue => e
+          raise ConfigError, "Generating uuid doesn't work. Can't use %{uuid_flush} on this environment. #{e}"
+        end
+        @uuid_flush_enabled = true
+      end
+
+      @s3_object_key_format.gsub('%{hostname}') { |expr|
+        log.warn "%{hostname} will be removed in the future. Use \"\#{Socket.gethostname}\" instead"
+        Socket.gethostname
+      }
     end
 
     def check_apikeys
