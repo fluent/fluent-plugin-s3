@@ -52,6 +52,8 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal false, d.instance.force_path_style
     assert_equal nil, d.instance.compute_checksums
     assert_equal nil, d.instance.signature_version
+    assert_equal true, d.instance.check_bucket
+    assert_equal true, d.instance.check_object
   end
 
   def test_s3_endpoint_with_valid_endpoint
@@ -117,6 +119,14 @@ class S3OutputTest < Test::Unit::TestCase
     assert_nothing_raised do
       create_driver(conf + "\nhex_random_length 16\n")
     end
+  end
+
+  def test_configure_with_no_check_on_s3
+    conf = CONFIG.clone
+    conf << "\ncheck_bucket false\ncheck_object false\n"
+    d = create_driver(conf)
+    assert_equal false, d.instance.check_bucket
+    assert_equal false, d.instance.check_object
   end
 
   def test_path_slicing
@@ -260,6 +270,8 @@ class S3OutputTest < Test::Unit::TestCase
     utc
     buffer_type memory
     log_level debug
+    check_bucket true
+    check_object true
   ]
 
   def create_time_sliced_driver(conf = CONFIG_TIME_SLICE)
@@ -270,6 +282,37 @@ class S3OutputTest < Test::Unit::TestCase
       end
     end.configure(conf)
     d
+  end
+
+  def test_write_with_hardened_s3_policy
+    # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
+    setup_mocks_hardened_policy
+    s3_local_file_path = "/tmp/s3-test.txt"
+    # @s3_object_key_format will be hard_coded with timestamp only,
+    # as in this case, it will not check for object existence, not even bucker existence
+    # check_bukcet and check_object both of this config parameter should be false
+    # @s3_object_key_format = "%{path}/%{time_slice}_%{hms_slice}.%{file_extension}"
+    setup_s3_object_mocks_hardened_policy()
+
+    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
+    # to make assertions on chunks' keys
+    config = CONFIG_TIME_SLICE.gsub(/check_object true/, "check_object false\n")
+    config = config.gsub(/check_bucket true/, "check_bucket false\n")
+    d = create_time_sliced_driver(config)
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({"a"=>1}, time)
+    d.emit({"a"=>2}, time)
+
+    # Finally, the instance of S3Output is initialized and then invoked
+    d.run
+    Zlib::GzipReader.open(s3_local_file_path) do |gz|
+      data = gz.read
+      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                   data
+    end
+    FileUtils.rm_f(s3_local_file_path)
   end
 
   def test_write_with_custom_s3_object_key_format
@@ -402,6 +445,36 @@ class S3OutputTest < Test::Unit::TestCase
               :storage_class => "STANDARD")
 
     @s3_bucket.object(s3path) { s3obj }
+  end
+
+  def setup_mocks_hardened_policy()
+    @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
+    @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
+    mock(Aws::S3::Resource).new(:client => @s3_client) { @s3_resource }
+    @s3_bucket = mock(Aws::S3::Bucket.new(:name => "test",
+                                          :client => @s3_client))
+    @s3_object = mock(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                          :key => "test",
+                                          :client => @s3_client))
+    @s3_bucket.object(anything).at_least(0) { @s3_object }
+    @s3_resource.bucket(anything) { @s3_bucket }
+  end
+
+  def setup_s3_object_mocks_hardened_policy(params = {})
+    s3path = params[:s3path] || "log/20110102_131415.gz"
+    s3_local_file_path = params[:s3_local_file_path] || "/tmp/s3-test.txt"
+
+    # Assert content of event logs which are being sent to S3
+    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
+                                     :key => "test",
+                                     :client => @s3_client))
+
+    tempfile = File.new(s3_local_file_path, "w")
+    stub(Tempfile).new("s3-") { tempfile }
+    s3obj.put(:body => tempfile,
+              :content_type => "application/x-gzip",
+              :storage_class => "STANDARD")
   end
 
   def test_auto_create_bucket_false_with_non_existence_bucket
