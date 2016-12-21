@@ -298,12 +298,12 @@ class S3OutputTest < Test::Unit::TestCase
     config = config.gsub(/check_bucket true/, "check_bucket false\n")
     d = create_time_sliced_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
 
-    # Finally, the instance of S3Output is initialized and then invoked
-    d.run
     Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
