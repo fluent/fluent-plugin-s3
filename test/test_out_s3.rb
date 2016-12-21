@@ -77,7 +77,7 @@ class S3OutputTest < Test::Unit::TestCase
        'Asia Pacific (Tokyo)' => 's3-ap-northeast-1.amazonaws.com')
   def test_s3_endpoint_with_invalid_endpoint(endpoint)
     assert_raise(Fluent::ConfigError, "s3_endpoint parameter is not supported, use s3_region instead. This parameter is for S3 compatible services") {
-      d = create_driver(CONFIG + "s3_endpoint #{endpoint}")
+      create_driver(CONFIG + "s3_endpoint #{endpoint}")
     }
   end
 
@@ -457,7 +457,6 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def setup_s3_object_mocks_hardened_policy(params = {})
-    s3path = params[:s3path] || "log/20110102_131415.gz"
     s3_local_file_path = params[:s3_local_file_path] || "/tmp/s3-test.txt"
 
     # Assert content of event logs which are being sent to S3
