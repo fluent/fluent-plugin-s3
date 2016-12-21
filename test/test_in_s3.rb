@@ -21,7 +21,6 @@ class S3InputTest < Test::Unit::TestCase
     aws_key_id test_key_id
     aws_sec_key test_sec_key
     s3_bucket test_bucket
-    utc
     buffer_type memory
     <sqs>
       queue_name test_queue
@@ -70,7 +69,6 @@ class S3InputTest < Test::Unit::TestCase
         aws_key_id test_key_id
         aws_sec_key test_sec_key
         s3_bucket test_bucket
-        utc
       ]
       assert_raise_message("'<sqs>' sections are required") do
         create_driver(conf)
