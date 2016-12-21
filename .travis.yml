@@ -33,3 +33,5 @@ matrix:
       gemfile: Gemfile
     - rvm: 2.0
       gemfile: Gemfile
+    - rvm: 2.4.0-rc1
+      gemfile: Gemfile.v0.12
