@@ -1,3 +1,9 @@
+Release 0.8.0 - 2016/12/20
+
+  * out_s3: Add check_object / check_bucket parameters for only put permission
+  * Remove fluent-mixin-config-placeholders dependency
+
+
 Release 0.7.2 - 2016/10/20
 
   * in_s3: Replace old parser API with new one
