@@ -133,7 +133,7 @@ module Fluent::Plugin
       end
       @compressor.configure(conf)
 
-      @formatter = formatter_create(conf: conf.elements("format").first, default_type: DEFAULT_FORMAT_TYPE)
+      @formatter = formatter_create
 
       if @hex_random_length > MAX_HEX_RANDOM_LENGTH
         raise Fluent::ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
