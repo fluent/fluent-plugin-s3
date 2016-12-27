@@ -1,10 +1,8 @@
 language: ruby
 
 rvm:
-  - 1.9.3
-  - 2.0
-  - 2.1
-  - 2.2.3
+  - 2.1.10
+  - 2.2.5
   - 2.3.1
   - 2.4.0-rc1
   - ruby-head
@@ -12,7 +10,6 @@ rvm:
 
 gemfile:
  - Gemfile
- - Gemfile.v0.12
 
 branches:
   only:
@@ -25,13 +22,5 @@ sudo: false
 
 matrix:
   allow_failures:
-    - rvm: 1.9.3
     - rvm: ruby-head
     - rvm: rbx
-  exclude:
-    - rvm: 1.9.3
-      gemfile: Gemfile
-    - rvm: 2.0
-      gemfile: Gemfile
-    - rvm: 2.4.0-rc1
-      gemfile: Gemfile.v0.12

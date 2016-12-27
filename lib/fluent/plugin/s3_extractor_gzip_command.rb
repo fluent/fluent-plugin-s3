@@ -1,9 +1,9 @@
-module Fluent
+module Fluent::Plugin
   class S3Input
     class GzipCommandExtractor < Extractor
       S3Input.register_extractor('gzip_command', self)
 
-      config_param :command_parameter, :string, :default => '-dc'
+      config_param :command_parameter, :string, default: '-dc'
 
       def configure(conf)
         super

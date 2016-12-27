@@ -1,9 +1,9 @@
-module Fluent
+module Fluent::Plugin
   class S3Input
     class LZOExtractor < Extractor
       S3Input.register_extractor('lzo', self)
 
-      config_param :command_parameter, :string, :default => '-qdc'
+      config_param :command_parameter, :string, default: '-qdc'
 
       def configure(conf)
         super

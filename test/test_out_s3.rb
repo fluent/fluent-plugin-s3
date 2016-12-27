@@ -1,15 +1,21 @@
 require 'fluent/test'
+require 'fluent/test/helpers'
+require 'fluent/test/log'
+require 'fluent/test/driver/output'
+require 'aws-sdk-resources'
 require 'fluent/plugin/out_s3'
 
 require 'test/unit/rr'
 require 'zlib'
 require 'fileutils'
 require 'timecop'
+require 'uuidtools'
+
+include Fluent::Test::Helpers
 
 class S3OutputTest < Test::Unit::TestCase
   def setup
-    require 'aws-sdk-resources'
-    Fluent::Test.setup
+#    Fluent::Test.setup
   end
 
   def teardown
@@ -23,10 +29,15 @@ class S3OutputTest < Test::Unit::TestCase
     path log
     utc
     buffer_type memory
+    time_slice_format %Y%m%d-%H
   ]
 
   def create_driver(conf = CONFIG)
-    Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output) do
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::S3Output) do
+      def format(tag, time, record)
+        super
+      end
+
       def write(chunk)
         chunk.read
       end
@@ -66,7 +77,7 @@ class S3OutputTest < Test::Unit::TestCase
        'Asia Pacific (Tokyo)' => 's3-ap-northeast-1.amazonaws.com')
   def test_s3_endpoint_with_invalid_endpoint(endpoint)
     assert_raise(Fluent::ConfigError, "s3_endpoint parameter is not supported, use s3_region instead. This parameter is for S3 compatible services") {
-      d = create_driver(CONFIG + "s3_endpoint #{endpoint}")
+      create_driver(CONFIG + "s3_endpoint #{endpoint}")
     }
   end
 
@@ -129,135 +140,115 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal false, d.instance.check_object
   end
 
-  def test_path_slicing
-    config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
-    d = create_driver(config)
-    path_slicer = d.instance.instance_variable_get(:@path_slicer)
-    path = d.instance.instance_variable_get(:@path)
-    slice = path_slicer.call(path)
-    assert_equal slice, Time.now.utc.strftime("log/%Y/%m/%d")
-  end
-
-  def test_path_slicing_utc
-    config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
-    config << "\nutc\n"
-    d = create_driver(config)
-    path_slicer = d.instance.instance_variable_get(:@path_slicer)
-    path = d.instance.instance_variable_get(:@path)
-    slice = path_slicer.call(path)
-    assert_equal slice, Time.now.utc.strftime("log/%Y/%m/%d")
-  end
-
   def test_format
     d = create_driver
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n]
-    d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n]
-
-    d.run
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, { "a" => 1 })
+      d.feed(time, { "a" => 2 })
+    end
+    expected = [
+      %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n],
+      %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n]
+    ]
+    assert_equal(expected, d.formatted)
   end
 
   def test_format_included_tag_and_time
     config = [CONFIG, 'include_tag_key true', 'include_time_key true'].join("\n")
     d = create_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":1,"tag":"test","time":"2011-01-02T13:14:15Z"}\n]
-    d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":2,"tag":"test","time":"2011-01-02T13:14:15Z"}\n]
-
-    d.run
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, { "a" => 1 })
+      d.feed(time, { "a" => 2 })
+    end
+    expected = [
+      %[2011-01-02T13:14:15Z\ttest\t{"a":1,"tag":"test","time":"2011-01-02T13:14:15Z"}\n],
+      %[2011-01-02T13:14:15Z\ttest\t{"a":2,"tag":"test","time":"2011-01-02T13:14:15Z"}\n]
+    ]
+    assert_equal(expected, d.formatted)
   end
 
   def test_format_with_format_ltsv
     config = [CONFIG, 'format ltsv'].join("\n")
     d = create_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1, "b"=>1}, time)
-    d.emit({"a"=>2, "b"=>2}, time)
-
-    d.expect_format %[a:1\tb:1\n]
-    d.expect_format %[a:2\tb:2\n]
-
-    d.run
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1, "b"=>1})
+      d.feed(time, {"a"=>2, "b"=>2})
+    end
+    expected = [
+      %[a:1\tb:1\n],
+      %[a:2\tb:2\n]
+    ]
+    assert_equal(expected, d.formatted)
   end
 
   def test_format_with_format_json
     config = [CONFIG, 'format json'].join("\n")
     d = create_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    d.expect_format %[{"a":1}\n]
-    d.expect_format %[{"a":2}\n]
-
-    d.run
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+    expected = [
+      %[{"a":1}\n],
+      %[{"a":2}\n]
+    ]
+    assert_equal(expected, d.formatted)
   end
 
   def test_format_with_format_json_included_tag
     config = [CONFIG, 'format json', 'include_tag_key true'].join("\n")
     d = create_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    d.expect_format %[{"a":1,"tag":"test"}\n]
-    d.expect_format %[{"a":2,"tag":"test"}\n]
-
-    d.run
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+    expected = [
+      %[{"a":1,"tag":"test"}\n],
+      %[{"a":2,"tag":"test"}\n]
+    ]
+    assert_equal(expected, d.formatted)
   end
 
   def test_format_with_format_json_included_time
     config = [CONFIG, 'format json', 'include_time_key true'].join("\n")
     d = create_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    d.expect_format %[{"a":1,"time":"2011-01-02T13:14:15Z"}\n]
-    d.expect_format %[{"a":2,"time":"2011-01-02T13:14:15Z"}\n]
-
-    d.run
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+    expected = [
+      %[{"a":1,"time":"2011-01-02T13:14:15Z"}\n],
+      %[{"a":2,"time":"2011-01-02T13:14:15Z"}\n]
+    ]
+    assert_equal(expected, d.formatted)
   end
 
   def test_format_with_format_json_included_tag_and_time
     config = [CONFIG, 'format json', 'include_tag_key true', 'include_time_key true'].join("\n")
     d = create_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    d.expect_format %[{"a":1,"tag":"test","time":"2011-01-02T13:14:15Z"}\n]
-    d.expect_format %[{"a":2,"tag":"test","time":"2011-01-02T13:14:15Z"}\n]
-
-    d.run
-  end
-
-  def test_chunk_to_write
-    d = create_driver
-
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
-
-    # S3OutputTest#write returns chunk.read
-    data = d.run
-
-    assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
-                 %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
-                 data.first
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+    expected = [
+      %[{"a":1,"tag":"test","time":"2011-01-02T13:14:15Z"}\n],
+      %[{"a":2,"tag":"test","time":"2011-01-02T13:14:15Z"}\n]
+    ]
+    assert_equal(expected, d.formatted)
   end
 
   CONFIG_TIME_SLICE = %[
@@ -269,19 +260,26 @@ class S3OutputTest < Test::Unit::TestCase
     path log
     utc
     buffer_type memory
-    log_level debug
+    @log_level debug
     check_bucket true
     check_object true
   ]
 
   def create_time_sliced_driver(conf = CONFIG_TIME_SLICE)
-    d = Fluent::Test::TimeSlicedOutputTestDriver.new(Fluent::S3Output) do
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::S3Output) do
+      def format(tag, time, record)
+        super
+      end
+
+      def write(chunk)
+        super
+      end
+
       private
 
       def check_apikeys
       end
     end.configure(conf)
-    d
   end
 
   def test_write_with_hardened_s3_policy
@@ -300,12 +298,12 @@ class S3OutputTest < Test::Unit::TestCase
     config = config.gsub(/check_bucket true/, "check_bucket false\n")
     d = create_time_sliced_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
 
-    # Finally, the instance of S3Output is initialized and then invoked
-    d.run
     Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
@@ -321,16 +319,14 @@ class S3OutputTest < Test::Unit::TestCase
     s3_local_file_path = "/tmp/s3-test.txt"
     setup_s3_object_mocks(s3_local_file_path: s3_local_file_path)
 
-    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
-    # to make assertions on chunks' keys
     d = create_time_sliced_driver
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
 
-    # Finally, the instance of S3Output is initialized and then invoked
-    d.run
     Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
@@ -358,17 +354,15 @@ class S3OutputTest < Test::Unit::TestCase
     s3path = "log/events/ts=20110102-13/events_0-#{uuid}.gz"
     setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: s3path)
 
-    # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
-    # to make assertions on chunks' keys
     config = CONFIG_TIME_SLICE.gsub(/%{hostname}/,"%{uuid_flush}")
     d = create_time_sliced_driver(config)
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
 
-    # Finally, the instance of S3Output is initialized and then invoked
-    d.run
     Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
@@ -396,14 +390,14 @@ class S3OutputTest < Test::Unit::TestCase
     setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: s3path)
 
     d = create_time_sliced_driver(config)
-    stub(d.instance).unique_hex { unique_hex }
+    stub(Fluent::UniqueId).hex(anything) { unique_hex }
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({"a"=>1}, time)
-    d.emit({"a"=>2}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
 
-    # Finally, the instance of S3Output is initialized and then invoked
-    d.run
     Zlib::GzipReader.open(s3_local_file_path) do |gz|
       data = gz.read
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
@@ -414,16 +408,17 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def setup_mocks(exists_return = false)
-    @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    @s3_client = stub(Aws::S3::Client.new(stub_responses: true))
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
-    @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
-    mock(Aws::S3::Resource).new(:client => @s3_client) { @s3_resource }
-    @s3_bucket = mock(Aws::S3::Bucket.new(:name => "test",
-                                          :client => @s3_client))
+    @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
+    mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
+    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test",
+                                          client: @s3_client))
     @s3_bucket.exists? { exists_return }
-    @s3_object = mock(Aws::S3::Object.new(:bucket_name => "test_bucket",
-                                          :key => "test",
-                                          :client => @s3_client))
+    @s3_object = mock(Aws::S3::Object.new(bucket_name: "test_bucket",
+                                          key: "test",
+                                          client: @s3_client))
+    @s3_object.exists?.at_least(0) { false }
     @s3_bucket.object(anything).at_least(0) { @s3_object }
     @s3_resource.bucket(anything) { @s3_bucket }
   end
@@ -433,16 +428,16 @@ class S3OutputTest < Test::Unit::TestCase
     s3_local_file_path = params[:s3_local_file_path] || "/tmp/s3-test.txt"
 
     # Assert content of event logs which are being sent to S3
-    s3obj = stub(Aws::S3::Object.new(:bucket_name => "test_bucket",
-                                     :key => "test",
-                                     :client => @s3_client))
+    s3obj = stub(Aws::S3::Object.new(bucket_name: "test_bucket",
+                                     key: "test",
+                                     client: @s3_client))
     s3obj.exists? { false }
 
     tempfile = File.new(s3_local_file_path, "w")
     stub(Tempfile).new("s3-") { tempfile }
-    s3obj.put(:body => tempfile,
-              :content_type => "application/x-gzip",
-              :storage_class => "STANDARD")
+    s3obj.put(body: tempfile,
+              content_type: "application/x-gzip",
+              storage_class: "STANDARD")
 
     @s3_bucket.object(s3path) { s3obj }
   end
@@ -462,7 +457,6 @@ class S3OutputTest < Test::Unit::TestCase
   end
 
   def setup_s3_object_mocks_hardened_policy(params = {})
-    s3path = params[:s3path] || "log/20110102_131415.gz"
     s3_local_file_path = params[:s3_local_file_path] || "/tmp/s3-test.txt"
 
     # Assert content of event logs which are being sent to S3
@@ -483,22 +477,22 @@ class S3OutputTest < Test::Unit::TestCase
     config = CONFIG_TIME_SLICE + 'auto_create_bucket false'
     d = create_time_sliced_driver(config)
     assert_raise(RuntimeError, "The specified bucket does not exist: bucket = test_bucket") {
-      d.run
+      d.run {}
     }
   end
 
   def test_auto_create_bucket_true_with_non_existence_bucket
     setup_mocks
-    @s3_resource.create_bucket(:bucket => "test_bucket")
+    @s3_resource.create_bucket(bucket: "test_bucket")
 
     config = CONFIG_TIME_SLICE + 'auto_create_bucket true'
     d = create_time_sliced_driver(config)
-    assert_nothing_raised { d.run }
+    assert_nothing_raised { d.run {} }
   end
 
   def test_credentials
     d = create_time_sliced_driver
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_instance_of(Aws::Credentials, credentials)
@@ -506,8 +500,9 @@ class S3OutputTest < Test::Unit::TestCase
 
   def test_assume_role_credentials
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
-    mock(Aws::AssumeRoleCredentials).new(:role_arn => "test_arn",
-                                         :role_session_name => "test_session"){
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: anything){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -518,7 +513,7 @@ class S3OutputTest < Test::Unit::TestCase
       </assume_role_credentials>
     ]
     d = create_time_sliced_driver(config)
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
@@ -526,11 +521,11 @@ class S3OutputTest < Test::Unit::TestCase
 
   def test_assume_role_credentials_with_region
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
-    sts_client = Aws::STS::Client.new(:region => 'ap-northeast-1')
-    mock(Aws::STS::Client).new(:region => 'ap-northeast-1'){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new(:role_arn => "test_arn",
-                                         :role_session_name => "test_session",
-                                         :client => sts_client){
+    sts_client = Aws::STS::Client.new(region: 'ap-northeast-1')
+    mock(Aws::STS::Client).new(region: 'ap-northeast-1'){ sts_client }
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: sts_client){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -542,7 +537,7 @@ class S3OutputTest < Test::Unit::TestCase
       </assume_role_credentials>
     ]
     d = create_time_sliced_driver(config)
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
@@ -557,7 +552,7 @@ class S3OutputTest < Test::Unit::TestCase
       </instance_profile_credentials>
     ]
     d = create_time_sliced_driver(config)
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
@@ -574,7 +569,7 @@ class S3OutputTest < Test::Unit::TestCase
       </instance_profile_credentials>
     ]
     d = create_time_sliced_driver(config)
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
@@ -584,13 +579,13 @@ class S3OutputTest < Test::Unit::TestCase
 
   def test_instance_profile_credentials_aws_iam_retries
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
-    mock(Aws::InstanceProfileCredentials).new({}).returns(expected_credentials)
+    mock(Aws::InstanceProfileCredentials).new({ retries: 10 }).returns(expected_credentials)
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
     config += %[
       aws_iam_retries 10
     ]
     d = create_time_sliced_driver(config)
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
@@ -605,7 +600,7 @@ class S3OutputTest < Test::Unit::TestCase
       </shared_credentials>
     ]
     d = create_time_sliced_driver(config)
-    assert_nothing_raised{ d.run }
+    assert_nothing_raised { d.run {} }
     client = d.instance.instance_variable_get(:@s3).client
     credentials = client.config.credentials
     assert_equal(expected_credentials, credentials)
@@ -627,19 +622,19 @@ class S3OutputTest < Test::Unit::TestCase
     config = CONFIG_TIME_SLICE + 'warn_for_delay 1d'
     d = create_time_sliced_driver(config)
 
-    delayed_time = Time.parse("2011-01-02 13:14:15 UTC")
-    now = delayed_time + 86000 + 1
-    Timecop.freeze(now)
-
-    d.emit({"a"=>1}, delayed_time.to_i)
-    d.emit({"a"=>2}, delayed_time.to_i)
-
-    d.run
-
-    logs = d.instance.log.logs
+    delayed_time = event_time("2011-01-02 13:14:15 UTC")
+    now = delayed_time.to_i + 86000 + 1
+    d.instance.log.out.flush_logs = false
+    Timecop.freeze(Time.at(now)) do
+      d.run(default_tag: "test") do
+        d.feed(delayed_time, {"a"=>1})
+        d.feed(delayed_time, {"a"=>2})
+      end
+    end
+    logs = d.instance.log.out.logs
     assert_true logs.any? {|log| log.include?('out_s3: delayed events were put') }
-
-    Timecop.return
+    d.instance.log.out.flush_logs = true
+    d.instance.log.out.reset
     FileUtils.rm_f(s3_local_file_path)
   end
 end
