@@ -67,6 +67,8 @@ module Fluent::Plugin
     desc "The format of S3 object keys"
     config_param :s3_object_key_format, :string, default: "%{path}%{time_slice}_%{index}.%{file_extension}"
     desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
+    config_param :remove_tag_prefix, :string, :default => nil
+    desc "remove tag prefix for s3_object_key_format %{tag} key"
     config_param :force_path_style, :bool, default: false
     desc "Archive format on S3"
     config_param :store_as, :string, default: "gzip"
@@ -143,7 +145,16 @@ module Fluent::Plugin
         log.warn "reduced_redundancy parameter is deprecated. Use storage_class parameter instead"
         @storage_class = "REDUCED_REDUNDANCY"
       end
-
+ 
+      # support for %{tag}
+      if remove_tag_prefix = conf['remove_tag_prefix']
+        @remove_tag_prefix = Regexp.new('^' + Regexp.escape(remove_tag_prefix))
+      end
+      if @s3_object_key_format.include?('%{tag}')
+        @tag_mapped = true
+        @chunk_key_tag = true
+      end
+      
       @s3_object_key_format = process_s3_object_key_format
       # For backward compatibility
       # TODO: Remove time_slice_format when end of support compat_parameters
@@ -185,6 +196,13 @@ module Fluent::Plugin
       time_slice_format = @configured_time_slice_format || timekey_to_timeformat(@buffer_config['timekey'])
       time_slice = Time.at(chunk.metadata.timekey).utc.strftime(time_slice_format)
 
+      if @tag_mapped
+        tag = chunk.metadata.tag
+        tag = tag.gsub(@remove_tag_prefix, '') if @remove_tag_prefix
+      else
+        tag = ''
+      end
+      
       if @check_object
         begin
           path = extract_placeholders(@path, chunk.metadata)
@@ -197,6 +215,7 @@ module Fluent::Plugin
             "%{time_slice}" => time_slice,
             "%{file_extension}" => @compressor.ext,
             "%{index}" => i,
+            "%{tag}" => tag,
           }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
           values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
@@ -229,6 +248,7 @@ module Fluent::Plugin
           "%{path}" => path,
           "%{time_slice}" => time_slice,
           "%{file_extension}" => @compressor.ext,
+          "%{tag}" => tag,
         }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
         values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
@@ -302,7 +322,7 @@ module Fluent::Plugin
     end
 
     def process_s3_object_key_format
-      %W(%{uuid} %{uuid:random} %{uuid:hostname} %{uuid:timestamp}).each { |ph|
+      %W(%{uuid} %{uuid:random} %{uuid:hostname} %{uuid:timestamp} %{uuid:tag}).each { |ph|
         if @s3_object_key_format.include?(ph)
           raise ConfigError, %!#{ph} placeholder in s3_object_key_format is removed!
         end
