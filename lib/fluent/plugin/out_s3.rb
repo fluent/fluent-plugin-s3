@@ -64,6 +64,8 @@ module Fluent::Plugin
     config_param :s3_region, :string, default: ENV["AWS_REGION"] || "us-east-1"
     desc "Use 's3_region' instead"
     config_param :s3_endpoint, :string, default: nil
+    desc "If false, the certificate of endpoint will not be verified"
+    config_param :ssl_verify_peer, :bool, :default => true
     desc "The format of S3 object keys"
     config_param :s3_object_key_format, :string, default: "%{path}%{time_slice}_%{index}.%{file_extension}"
     desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
@@ -159,6 +161,7 @@ module Fluent::Plugin
       options[:force_path_style] = @force_path_style
       options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
       options[:signature_version] = @signature_version unless @signature_version.nil?
+      options[:ssl_verify_peer] = @ssl_verify_peer
 
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(client: s3_client)
