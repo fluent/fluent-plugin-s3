@@ -77,6 +77,10 @@ recommend using `s3_region` instead of `s3_endpoint`.
 endpoint for S3 compatible services. For example, Riak CS based storage or
 something. This option doesn't work on S3, use `s3_region` instead.
 
+**ssl_verify_peer**
+
+Verify SSL certificate of the endpoint. Default is true. Set false when you want to ignore the endpoint SSL certificate.
+
 **s3_object_key_format**
 
 The format of S3 object keys. You can use several built-in variables:
