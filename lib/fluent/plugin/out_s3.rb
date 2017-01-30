@@ -163,7 +163,8 @@ module Fluent
         @storage_class = "REDUCED_REDUNDANCY"
       end
 
-      @s3_object_key_format = process_s3_object_key_format
+      @path = process_deprecated_placeholders(@path)
+      @s3_object_key_format = process_deprecated_placeholders(@s3_object_key_format)
       @values_for_s3_object_chunk = {}
     end
 
@@ -308,14 +309,14 @@ module Fluent
       end
     end
 
-    def process_s3_object_key_format
+    def process_deprecated_placeholders(target_path)
       %W(%{uuid} %{uuid:random} %{uuid:hostname} %{uuid:timestamp}).each { |ph|
-        if @s3_object_key_format.include?(ph)
-          raise ConfigError, %!#{ph} placeholder in s3_object_key_format is removed!
+        if target_path.include?(ph)
+          raise ConfigError, %!#{ph} placeholder is removed!
         end
       }
 
-      if @s3_object_key_format.include?('%{uuid_flush}')
+      if target_path.include?('%{uuid_flush}')
         # test uuidtools works or not
         begin
           require 'uuidtools'
@@ -330,7 +331,7 @@ module Fluent
         @uuid_flush_enabled = true
       end
 
-      @s3_object_key_format.gsub('%{hostname}') { |expr|
+      target_path.gsub('%{hostname}') { |expr|
         log.warn "%{hostname} will be removed in the future. Use \"\#{Socket.gethostname}\" instead"
         Socket.gethostname
       }

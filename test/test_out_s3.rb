@@ -129,6 +129,19 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal false, d.instance.check_object
   end
 
+  def test_config_with_hostname_placeholder
+    d = create_driver(<<EOC)
+      aws_key_id test_key_id
+      aws_sec_key test_sec_key
+      s3_bucket test_bucket
+      path log/%{hostname}/test
+      s3_object_key_format %{path}%{hostname}_%{index}
+      buffer_type memory
+EOC
+    assert_match /#{Socket.gethostname}/, d.instance.s3_object_key_format
+    assert_match /#{Socket.gethostname}/, d.instance.path
+  end
+
   def test_path_slicing
     config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
     d = create_driver(config)
