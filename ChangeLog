@@ -1,3 +1,9 @@
+Release 0.8.1 - 2017/01/29
+
+  * out_s3: Add ssl_verify_peer option to disable cert check
+  * out_s3: Fix %{hostname} regression in path
+
+
 Release 0.8.0 - 2016/12/20
 
   * out_s3: Add check_object / check_bucket parameters for only put permission
