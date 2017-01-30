@@ -17,6 +17,7 @@ gemfile:
 branches:
   only:
     - master
+    - v0.12
 
 before_install: gem update bundler
 script: bundle exec rake test
