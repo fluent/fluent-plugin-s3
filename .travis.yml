@@ -6,9 +6,8 @@ rvm:
   - 2.1
   - 2.2.3
   - 2.3.1
-  - 2.4.0-rc1
+  - 2.4.0
   - ruby-head
-  - rbx
 
 gemfile:
  - Gemfile
@@ -28,11 +27,10 @@ matrix:
   allow_failures:
     - rvm: 1.9.3
     - rvm: ruby-head
-    - rvm: rbx
   exclude:
     - rvm: 1.9.3
       gemfile: Gemfile
     - rvm: 2.0
       gemfile: Gemfile
-    - rvm: 2.4.0-rc1
+    - rvm: 2.4.0
       gemfile: Gemfile.v0.12
