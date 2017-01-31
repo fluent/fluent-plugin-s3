@@ -113,6 +113,12 @@ module Fluent::Plugin
       config_set_default :@type, DEFAULT_FORMAT_TYPE
     end
 
+    config_section :buffer do
+      config_set_default :@type, 'file'
+      config_set_default :chunk_keys, ['time']
+      config_set_default :timekey, 60 * 60 * 24
+    end
+
     attr_reader :bucket
 
     MAX_HEX_RANDOM_LENGTH = 16
