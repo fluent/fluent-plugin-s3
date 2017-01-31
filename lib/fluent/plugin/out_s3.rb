@@ -153,6 +153,10 @@ module Fluent::Plugin
       @values_for_s3_object_chunk = {}
     end
 
+    def multi_workers_ready?
+      true
+    end
+
     def start
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
@@ -307,7 +311,7 @@ module Fluent::Plugin
     def process_s3_object_key_format
       %W(%{uuid} %{uuid:random} %{uuid:hostname} %{uuid:timestamp}).each { |ph|
         if @s3_object_key_format.include?(ph)
-          raise ConfigError, %!#{ph} placeholder in s3_object_key_format is removed!
+          raise Fluent::ConfigError, %!#{ph} placeholder in s3_object_key_format is removed!
         end
       }
 
@@ -316,12 +320,12 @@ module Fluent::Plugin
         begin
           require 'uuidtools'
         rescue LoadError
-          raise ConfigError, "uuidtools gem not found. Install uuidtools gem first"
+          raise Fluent::ConfigError, "uuidtools gem not found. Install uuidtools gem first"
         end
         begin
           uuid_random
         rescue => e
-          raise ConfigError, "Generating uuid doesn't work. Can't use %{uuid_flush} on this environment. #{e}"
+          raise Fluent::ConfigError, "Generating uuid doesn't work. Can't use %{uuid_flush} on this environment. #{e}"
         end
         @uuid_flush_enabled = true
       end
