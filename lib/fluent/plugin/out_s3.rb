@@ -113,12 +113,6 @@ module Fluent::Plugin
       config_set_default :@type, DEFAULT_FORMAT_TYPE
     end
 
-    config_section :buffer do
-      config_set_default :@type, 'file'
-      config_set_default :chunk_keys, ['time']
-      config_set_default :timekey, 60 * 60 * 24
-    end
-
     attr_reader :bucket
 
     MAX_HEX_RANDOM_LENGTH = 16
@@ -127,9 +121,6 @@ module Fluent::Plugin
       compat_parameters_convert(conf, :buffer, :formatter, :inject)
 
       super
-
-      placeholder_validate!(:path, @path)
-      placeholder_validate!(:s3_object_key_format, @s3_object_key_format)
 
       if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
