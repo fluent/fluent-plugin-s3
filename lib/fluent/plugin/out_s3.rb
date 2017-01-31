@@ -122,6 +122,9 @@ module Fluent::Plugin
 
       super
 
+      placeholder_validate!(:path, @path)
+      placeholder_validate!(:s3_object_key_format, @s3_object_key_format)
+
       if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
