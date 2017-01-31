@@ -251,7 +251,7 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal(expected, d.formatted)
   end
 
-  CONFIG_TIME_SLICE = %[
+  CONFIG_TIME_SLICE = <<EOC
     aws_key_id test_key_id
     aws_sec_key test_sec_key
     s3_bucket test_bucket
@@ -263,7 +263,7 @@ class S3OutputTest < Test::Unit::TestCase
     @log_level debug
     check_bucket true
     check_object true
-  ]
+EOC
 
   def create_time_sliced_driver(conf = CONFIG_TIME_SLICE)
     Fluent::Test::Driver::Output.new(Fluent::Plugin::S3Output) do
