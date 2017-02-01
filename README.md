@@ -1,4 +1,4 @@
-# Amazon S3 output plugin for [Fluentd](http://github.com/fluent/fluentd)
+# Amazon S3 plugin for [Fluentd](http://github.com/fluent/fluentd)
 
 [<img src="https://travis-ci.org/fluent/fluent-plugin-s3.svg?branch=master"
 alt="Build Status" />](https://travis-ci.org/fluent/fluent-plugin-s3) [<img
