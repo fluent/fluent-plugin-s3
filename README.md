@@ -20,13 +20,27 @@ the former one is stored in "20110102.gz" file, and latter one in
 SQS queue on the region same as S3 bucket.
 We must setup SQS queue and S3 event notification before use this plugin.
 
+## Requirements
+
+| fluent-plugin-s3  | fluentd | ruby |
+|-------------------|---------|------|
+| >= 1.0.0 | >= v0.14.0 | >= 2.1 |
+|  < 1.0.0 | >= v0.12.0 | >= 1.9 |
+
+NOTE: fluent-plugin-s3 v1.0.0 is now RC. We will release stable v1.0.0 soon.
+
 ## Installation
 
 Simply use RubyGems:
 
-    gem install fluent-plugin-s3
+    $ gem install fluent-plugin-s3 -v "~> 0.8"  --no-document # for fluentd v0.12 or later
+    $ gem install fluent-plugin-s3 -v 1.0.0.rc2 --no-document # for fluentd v0.14 or later
 
 ## Output: Configuration
+
+### v0.14 style
+
+With fluentd v0.14 and fluent-plugin-s3 v1.0.0, use new buffer configuration to dynamic parameters.
 
     <match pattern>
       @type s3
@@ -35,14 +49,55 @@ Simply use RubyGems:
       aws_sec_key YOUR_AWS_SECRET_KEY
       s3_bucket YOUR_S3_BUCKET_NAME
       s3_region ap-northeast-1
-      s3_object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
-      path logs/
-      buffer_path /var/log/fluent/s3
 
+      path logs/${tag}/%Y/%m/%d/
+      s3_object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
+
+      # if you want to use ${tag} or %Y/%m/%d/ like syntax in path / s3_object_key_format,
+      # need to specify tag for ${tag} and time for %Y/%m/%d in <buffer> argument.
+      <buffer tag,time>
+        @type file
+        path /var/log/fluent/s3
+        timekey 3600 # 1 hour partition
+        timekey_wait 10m
+        timekey_use_utc true # use utc
+      </buffer>
+      <format>
+        @type json
+      </format>
+    </match>
+
+For `<buffer>`, you can use any record field in `path` / `s3_object_key_format`.
+
+    path logs/${tag}/${foo}
+    <buffer tag,foo>
+      # parameters...
+    </buffer>
+
+This configuration doesn't work with fluentd v0.12.
+
+### v0.12 style
+
+This configuration works with both fluentd v0.12 and v0.14.
+
+    <match pattern>
+      @type s3
+
+      aws_key_id YOUR_AWS_KEY_ID
+      aws_sec_key YOUR_AWS_SECRET_KEY
+      s3_bucket YOUR_S3_BUCKET_NAME
+      s3_region ap-northeast-1
+
+      path logs/
+      s3_object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
+      buffer_path /var/log/fluent/s3
       time_slice_format %Y%m%d-%H
       time_slice_wait 10m
       utc
+      format json
     </match>
+
+If you want to embed tag in `path` / `s3_object_key_format`, you need to use `fluent-plugin-forest` plugin.
 
 **aws_key_id**
 
@@ -157,7 +212,7 @@ archive format on S3. You can use serveral format:
 
 See `Use your compression algorithm` section for adding another format.
 
-**format**
+**<format> or format**
 
 Change one line format in the S3 object. Supported formats are "out_file",
 "json", "ltsv" and "single_value". See also [official Formatter article](http://docs.fluentd.org/articles/formatter-plugin-overview).
