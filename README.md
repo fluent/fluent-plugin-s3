@@ -212,7 +212,7 @@ archive format on S3. You can use serveral format:
 
 See `Use your compression algorithm` section for adding another format.
 
-**<format> or format**
+**`<format>` or format**
 
 Change one line format in the S3 object. Supported formats are "out_file",
 "json", "ltsv" and "single_value". See also [official Formatter article](http://docs.fluentd.org/articles/formatter-plugin-overview).
