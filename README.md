@@ -527,7 +527,7 @@ Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
 ## Input: Configuration
 
     <source>
-      type s3
+      @type s3
 
       aws_key_id YOUR_AWS_KEY_ID
       aws_sec_key YOUR_AWS_SECRET_KEY
