@@ -190,10 +190,9 @@ module Fluent::Plugin
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:proxy_uri] = @proxy_uri if @proxy_uri
-      log.trace do
+      log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
-        ""
       end
 
       Aws::S3::Client.new(options)
@@ -202,10 +201,9 @@ module Fluent::Plugin
     def create_sqs_client
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
-      log.trace do
+      log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
-        ""
       end
 
       Aws::SQS::Client.new(options)

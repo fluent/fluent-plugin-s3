@@ -167,10 +167,9 @@ module Fluent::Plugin
       options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
       options[:signature_version] = @signature_version unless @signature_version.nil?
       options[:ssl_verify_peer] = @ssl_verify_peer
-      log.trace do
+      log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
-        ""
       end
 
       s3_client = Aws::S3::Client.new(options)
