@@ -159,7 +159,7 @@ uploaded to S3 in the same time slice.
 * %{file_extention} is always "gz" for
 now.
 * %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed. If you want to use this placeholder, install `uuidtools` gem first.
-* %{hostname} is replaced with `Socket.gethostname` result. This is same as "#{Socket.gethostname}".
+* %{hostname} is replaced with `Socket.gethostname` result.
 * %{hex_random} a random hex string that is replaced for each buffer chunk, not
 assured to be unique. This is used to follow a way of peformance tuning, `Add
 a Hex Hash Prefix to Key Name`, written in [Request Rate and Performance
@@ -190,6 +190,13 @@ You get:
     "log/events/ts=20130111-23/events_0.gz"
     "log/events/ts=20130111-23/events_1.gz"
     "log/events/ts=20130112-00/events_0.gz"
+
+NOTE: ${hostname} placeholder is deprecated since v0.8. You can get same result by using [configuration's embedded ruby code feature](http://docs.fluentd.org/articles/config-file#embedded-ruby-code).
+
+    s3_object_key_format %{path}%{time_slice}_%{hostname}%{index}.%{file_extension}
+    s3_object_key_format "%{path}%{time_slice}_#{Socket.gethostname}%{index}.%{file_extension}"
+
+Above two configurations are same. The important point is wrapping `""` is needed for `#{Socket.gethostname}`.
 
 **force_path_style**
 
