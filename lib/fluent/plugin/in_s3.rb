@@ -102,6 +102,7 @@ module Fluent::Plugin
       super
 
       s3_client = create_s3_client
+      log.debug("Succeeded to create S3 client")
       @s3 = Aws::S3::Resource.new(client: s3_client)
       @bucket = @s3.bucket(@s3_bucket)
 
@@ -110,8 +111,10 @@ module Fluent::Plugin
       check_apikeys if @check_apikey_on_start
 
       sqs_client = create_sqs_client
+      log.debug("Succeeded to create SQS client")
       response = sqs_client.get_queue_url(queue_name: @sqs.queue_name)
       sqs_queue_url = response.queue_url
+      log.debug("Succeeded to get SQS queue URL")
 
       @poller = Aws::SQS::QueuePoller.new(sqs_queue_url, client: sqs_client)
 
@@ -136,6 +139,7 @@ module Fluent::Plugin
       @poller.poll(options) do |message|
         begin
           body = Yajl.load(message.body)
+          log.debug(body)
           next unless body["Records"] # skip test queue
 
           process(body)
@@ -209,6 +213,7 @@ module Fluent::Plugin
 
     def check_apikeys
       @bucket.objects.first
+      log.debug("Succeeded to verify API keys")
     rescue => e
       raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration. error = #{e.inspect}"
     end
