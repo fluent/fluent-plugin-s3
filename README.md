@@ -633,14 +633,15 @@ roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/WorkingWithRoles.html)
 with a properly configured IAM policy are preferred over embedding access keys
 on EC2 instances.
 
-## Use your compression algorithm
+## Use your (de)compression algorithm
 
 s3 plugin has plugabble compression mechanizm like Fleuntd's input / output
-plugin. If you set 'store_as xxx', s3 plugin searches
-`fluent/plugin/s3_compressor_xxx.rb`. You can define your compression with
-'S3Output::Compressor' class. Compressor API is here:
+plugin. If you set 'store_as xxx', `out_s3` plugin searches
+`fluent/plugin/s3_compressor_xxx.rb` and `in_s3` plugin searches
+`fluent/plugin/s3_extractor_xxx.rb`. You can define your (de)compression with
+'S3Output::Compressor'/`S3Input::Extractor` classes. Compressor API is here:
 
-    module Fluent
+    module Fluent # Since fluent-plugin-s3 v1.0.0 or later, use Fluent::Plugin instead of Fluent
       class S3Output
         class XXXCompressor < Compressor
           S3Output.register_compressor('xxx', self)
@@ -663,7 +664,8 @@ plugin. If you set 'store_as xxx', s3 plugin searches
       end
     end
 
-See bundled Compressor classes for more detail.
+`Extractor` is similar to `Compressor`
+See bundled `Compressor`/`Extractor` classes for more detail.
 
 ## Website, license, et. al.
 
