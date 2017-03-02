@@ -1,4 +1,4 @@
-require 'fluent/output'
+require 'fluent/plugin/output'
 require 'fluent/log-ext'
 require 'aws-sdk-resources'
 require 'zlib'
@@ -6,7 +6,7 @@ require 'time'
 require 'tempfile'
 
 module Fluent::Plugin
-  class S3Output < Fluent::Plugin::Output
+  class S3Output < Output
     Fluent::Plugin.register_output('s3', self)
 
     helpers :compat_parameters, :formatter, :inject
@@ -114,6 +114,11 @@ module Fluent::Plugin
       config_set_default :@type, DEFAULT_FORMAT_TYPE
     end
 
+    config_section :buffer do
+      config_set_default :chunk_keys, ['time']
+      config_set_default :timekey, (60 * 60 * 24)
+    end
+
     attr_reader :bucket
 
     MAX_HEX_RANDOM_LENGTH = 16
@@ -193,19 +198,22 @@ module Fluent::Plugin
 
     def write(chunk)
       i = 0
+      metadata = chunk.metadata
       previous_path = nil
       time_slice_format = @configured_time_slice_format || timekey_to_timeformat(@buffer_config['timekey'])
-      time_slice = Time.at(chunk.metadata.timekey).utc.strftime(time_slice_format)
+      time_slice = if metadata.timekey.nil?
+                     ''.freeze
+                   else
+                     Time.at(metadata.timekey).utc.strftime(time_slice_format)
+                   end
 
       if @check_object
         begin
-          path = extract_placeholders(@path, chunk.metadata)
-
           @values_for_s3_object_chunk[chunk.unique_id] ||= {
             "%{hex_random}" => hex_random(chunk),
           }
           values_for_s3_object_key = {
-            "%{path}" => path,
+            "%{path}" => @path,
             "%{time_slice}" => time_slice,
             "%{file_extension}" => @compressor.ext,
             "%{index}" => i,
@@ -213,6 +221,7 @@ module Fluent::Plugin
           values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
           s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
+          s3path = extract_placeholders(s3path, metadata)
           if (i > 0) && (s3path == previous_path)
             if @overwrite
               log.warn "#{s3path} already exists, but will overwrite"
@@ -232,19 +241,18 @@ module Fluent::Plugin
           hms_slicer = Time.now.utc.strftime("%H%M%S")
         end
 
-        path = extract_placeholders(@path, chunk.metadata)
-
         @values_for_s3_object_chunk[chunk.unique_id] ||= {
           "%{hex_random}" => hex_random(chunk),
         }
         values_for_s3_object_key = {
-          "%{path}" => path,
+          "%{path}" => @path,
           "%{time_slice}" => time_slice,
           "%{file_extension}" => @compressor.ext,
         }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
         values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
+        s3path = extract_placeholders(s3path, metadata)
       end
 
       tmp = Tempfile.new("s3-")
