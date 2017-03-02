@@ -1,4 +1,4 @@
-require 'fluent/input'
+require 'fluent/plugin/input'
 require 'fluent/log-ext'
 
 require 'aws-sdk-resources'
@@ -7,7 +7,7 @@ require 'time'
 require 'tempfile'
 
 module Fluent::Plugin
-  class S3Input < Fluent::Plugin::Input
+  class S3Input < Input
     Fluent::Plugin.register_input('s3', self)
 
     helpers :compat_parameters, :parser, :thread
