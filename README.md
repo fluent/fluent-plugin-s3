@@ -74,7 +74,9 @@ For `<buffer>`, you can use any record field in `path` / `s3_object_key_format`.
       # parameters...
     </buffer>
 
-This configuration doesn't work with fluentd v0.12.
+See official article for more detail: [Buffer section configurations](http://docs.fluentd.org/v0.14/articles/buffer-section)
+
+Note that this configuration doesn't work with fluentd v0.12.
 
 ### v0.12 style
 
