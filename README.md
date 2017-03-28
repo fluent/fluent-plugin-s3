@@ -277,7 +277,7 @@ You can change key name by "message_key" option.
 
 Create S3 bucket if it does not exists. Default is true.
 
-**check_bukcet**
+**check_bucket**
 
 Check mentioned bucket if it exists in AWS or not. Default is true.
 
@@ -295,7 +295,7 @@ When it is false,
 	Example object name, assuming it is created on 2016/16/11 3:30:54 PM
 		20161611_153054.txt (extension can be anything as per user's choice)
 
-**Example when check_bukcet=false and check_object=false**
+**Example when check_bucket=false and check_object=false**
 
 When the mentioned configuration will be made, fluentd will work with the
 minimum IAM poilcy, like:
