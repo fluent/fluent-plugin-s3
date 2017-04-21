@@ -4,6 +4,7 @@ module Fluent
       S3Input.register_extractor('lzo', self)
 
       config_param :command_parameter, :string, :default => '-qdc'
+      config_param :customer_tmp_dir, :string, :default => Dir.tmpdir
 
       def configure(conf)
         super

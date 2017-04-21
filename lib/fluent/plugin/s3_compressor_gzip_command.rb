@@ -4,6 +4,7 @@ module Fluent
       S3Output.register_compressor('gzip_command', self)
 
       config_param :command_parameter, :string, :default => ''
+      config_param :customer_tmp_dir, :string, :default => Dir.tmpdir
 
       def configure(conf)
         super
