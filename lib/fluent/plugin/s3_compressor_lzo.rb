@@ -4,7 +4,6 @@ module Fluent
       S3Output.register_compressor('lzo', self)
 
       config_param :command_parameter, :string, :default => '-qf1'
-      config_param :customer_tmp_dir, :string, :default => Dir.tmpdir
 
       def configure(conf)
         super
