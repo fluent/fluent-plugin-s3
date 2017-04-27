@@ -122,8 +122,8 @@ module Fluent
     config_param :signature_version, :string, :default => nil # use nil to follow SDK default configuration
     desc "Given a threshold to treat events as delay, output warning logs if delayed events were put into s3"
     config_param :warn_for_delay, :time, :default => nil
-    desc "Custom temporary dir for temporary files, instead of system temp directory."
-    config_param :customer_tmp_dir, :string, :default => nil
+    desc "Directory for temporary files, instead of system temp directory."
+    config_param :tmp_dir, :string, :default => nil
 
     attr_reader :bucket
 
@@ -255,7 +255,7 @@ module Fluent
         }
       end
 
-      tmp = Tempfile.new("s3-", @customer_tmp_dir)
+      tmp = Tempfile.new("s3-", @tmp_dir)
       tmp.binmode
       begin
         @compressor.compress(chunk, tmp)
@@ -405,7 +405,7 @@ module Fluent
     class Compressor
       include Configurable
 
-      config_param :customer_tmp_dir, :string, :default => nil
+      config_param :tmp_dir, :string, :default => nil
 
       def initialize(opts = {})
         super()

@@ -19,7 +19,7 @@ module Fluent
       end
 
       def compress(chunk, tmp)
-        w = Tempfile.new("chunk-xz-tmp", @customer_tmp_dir)
+        w = Tempfile.new("chunk-xz-tmp", @tmp_dir)
         w.binmode
         chunk.write_to(w)
         w.close
