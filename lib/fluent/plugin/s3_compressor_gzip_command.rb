@@ -23,7 +23,7 @@ module Fluent
         path = if chunk_is_file
                  chunk.path
                else
-                 w = Tempfile.new("chunk-gzip-tmp")
+                 w = Tempfile.new("chunk-gzip-tmp", @tmp_dir)
                  w.binmode
                  chunk.write_to(w)
                  w.close

@@ -452,7 +452,7 @@ EOC
     s3obj.exists? { false }
 
     tempfile = File.new(s3_local_file_path, "w")
-    stub(Tempfile).new("s3-") { tempfile }
+    stub(Tempfile).new("s3-", nil) { tempfile }
     s3obj.put(:body => tempfile,
               :content_type => "application/x-gzip",
               :storage_class => "STANDARD")
@@ -484,7 +484,7 @@ EOC
                                      :client => @s3_client))
 
     tempfile = File.new(s3_local_file_path, "w")
-    stub(Tempfile).new("s3-") { tempfile }
+    stub(Tempfile).new("s3-", nil) { tempfile }
     s3obj.put(:body => tempfile,
               :content_type => "application/x-gzip",
               :storage_class => "STANDARD")
