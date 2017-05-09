@@ -1,4 +1,9 @@
-Release 0.8.2 - 2017/02/298
+Release 0.8.3 - 2017/05/09
+
+  * Add tmp_dir parameter to change the directory for tempfile
+
+
+Release 0.8.2 - 2017/02/29
 
   * Log debug message when `debug` or `trace` is set in `@log_level`
 
