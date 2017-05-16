@@ -248,6 +248,7 @@ module Fluent::Plugin
           "%{path}" => @path,
           "%{time_slice}" => time_slice,
           "%{file_extension}" => @compressor.ext,
+          "%{hms_slice}" => hms_slicer,
         }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
         values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
