@@ -1,5 +1,6 @@
 require 'fluent/plugin/output'
 require 'fluent/log-ext'
+require 'fluent/timezone'
 require 'aws-sdk-resources'
 require 'zlib'
 require 'time'
@@ -157,6 +158,7 @@ module Fluent::Plugin
       # TODO: Remove time_slice_format when end of support compat_parameters
       @configured_time_slice_format = conf['time_slice_format']
       @values_for_s3_object_chunk = {}
+      @time_slice_with_tz = Fluent::Timezone.formatter(@timekey_zone, @configured_time_slice_format || timekey_to_timeformat(@buffer_config['timekey']))
     end
 
     def multi_workers_ready?
@@ -200,11 +202,10 @@ module Fluent::Plugin
       i = 0
       metadata = chunk.metadata
       previous_path = nil
-      time_slice_format = @configured_time_slice_format || timekey_to_timeformat(@buffer_config['timekey'])
       time_slice = if metadata.timekey.nil?
                      ''.freeze
                    else
-                     Time.at(metadata.timekey).utc.strftime(time_slice_format)
+                     @time_slice_with_tz.call(metadata.timekey)
                    end
 
       if @check_object
