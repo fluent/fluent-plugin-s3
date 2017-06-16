@@ -5,6 +5,7 @@ require 'aws-sdk-resources'
 require 'zlib'
 require 'time'
 require 'tempfile'
+require 'uri'
 
 module Fluent::Plugin
   class S3Input < Input
@@ -218,7 +219,7 @@ module Fluent::Plugin
 
     def process(body)
       s3 = body["Records"].first["s3"]
-      key = s3["object"]["key"]
+      key = URI.unescape(s3["object"]["key"])
 
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
