@@ -185,6 +185,41 @@ class S3InputTest < Test::Unit::TestCase
     assert_equal({ "message" => "aaa" }, events.first[2])
   end
 
+  def test_one_record_url_encoded
+    setup_mocks
+    d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\n")
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body { StringIO.new("aaa") }
+    s3_object.get { s3_response }
+    @s3_bucket.object('test key').at_least(1) { s3_object }
+
+    body = {
+      "Records" => [
+        {
+          "s3" => {
+            "object" => {
+              "key" => "test+key"
+            }
+          }
+        }
+      ]
+    }
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run(expect_emits: 1)
+    events = d.events
+    assert_equal({ "message" => "aaa" }, events.first[2])
+  end
+
   def test_one_record_multi_line
     setup_mocks
     d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\n")

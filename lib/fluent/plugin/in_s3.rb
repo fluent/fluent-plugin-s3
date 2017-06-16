@@ -2,6 +2,7 @@ require 'fluent/plugin/input'
 require 'fluent/log-ext'
 
 require 'aws-sdk-resources'
+require 'cgi'
 require 'zlib'
 require 'time'
 require 'tempfile'
@@ -218,7 +219,7 @@ module Fluent::Plugin
 
     def process(body)
       s3 = body["Records"].first["s3"]
-      key = s3["object"]["key"]
+      key = CGI.unescape(s3["object"]["key"])
 
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
