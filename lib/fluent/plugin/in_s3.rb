@@ -219,8 +219,9 @@ module Fluent::Plugin
     def process(body)
       s3 = body["Records"].first["s3"]
       key = s3["object"]["key"]
+      decoded_key = URI.decode(key)
 
-      io = @bucket.object(key).get.body
+      io = @bucket.object(decoded_key).get.body
       content = @extractor.extract(io)
       es = Fluent::MultiEventStream.new
       content.each_line do |line|
