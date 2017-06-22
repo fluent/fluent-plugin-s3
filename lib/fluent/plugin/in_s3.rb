@@ -11,6 +11,7 @@ module Fluent
       require 'zlib'
       require 'time'
       require 'tempfile'
+      require 'cgi/util'
 
       @extractor = nil
     end
@@ -228,7 +229,7 @@ module Fluent
 
     def process(body)
       s3 = body["Records"].first["s3"]
-      key = s3["object"]["key"]
+      key = CGI.unescape(s3["object"]["key"])
 
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
