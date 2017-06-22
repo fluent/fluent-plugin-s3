@@ -2,7 +2,7 @@ require 'fluent/plugin/input'
 require 'fluent/log-ext'
 
 require 'aws-sdk-resources'
-require 'cgi'
+require 'cgi/util'
 require 'zlib'
 require 'time'
 require 'tempfile'
