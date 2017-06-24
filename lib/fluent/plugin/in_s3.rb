@@ -214,7 +214,7 @@ module Fluent::Plugin
       @bucket.objects.first
       log.debug("Succeeded to verify API keys")
     rescue => e
-      raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration. error = #{e.inspect}"
+      raise "can't call S3 API. Please check your credentials or s3_region configuration. error = #{e.inspect}"
     end
 
     def process(body)
