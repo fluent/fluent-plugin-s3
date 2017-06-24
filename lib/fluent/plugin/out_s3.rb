@@ -349,7 +349,7 @@ module Fluent
     rescue Aws::S3::Errors::NoSuchBucket
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
-      raise "can't call S3 API. Please check your aws_key_id / aws_sec_key or s3_region configuration. error = #{e.inspect}"
+      raise "can't call S3 API. Please check your credentials or s3_region configuration. error = #{e.inspect}"
     end
 
     def setup_credentials
