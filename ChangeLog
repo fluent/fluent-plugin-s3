@@ -1,3 +1,9 @@
+Release 0.8.4 - 2017/06/26
+
+  * in_s3: Fix object handling for URL encoded key
+  * Improve error message for startup API error
+
+
 Release 0.8.3 - 2017/05/09
 
   * Add tmp_dir parameter to change the directory for tempfile
