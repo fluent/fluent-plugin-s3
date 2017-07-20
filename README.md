@@ -166,7 +166,7 @@ now.
 * %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed. If you want to use this placeholder, install `uuidtools` gem first.
 * %{hostname} is replaced with `Socket.gethostname` result.
 * %{hex_random} a random hex string that is replaced for each buffer chunk, not
-assured to be unique. This is used to follow a way of peformance tuning, `Add
+assured to be unique. This is used to follow a way of performance tuning, `Add
 a Hex Hash Prefix to Key Name`, written in [Request Rate and Performance
 Considerations - Amazon Simple Storage
 Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-considerations.html).
@@ -211,7 +211,7 @@ as a sub-domain. See Plugins::S3BucketDns for more details.
 
 **store_as**
 
-archive format on S3. You can use serveral format:
+archive format on S3. You can use several format:
 
 *   gzip (default)
 *   json
@@ -332,7 +332,7 @@ Format of the time used as the file name. Default is '%Y%m%d'. Use
 **time_slice_wait**
 
 The time to wait old logs. Default is 10 minutes. Specify larger value if
-old logs may reache.
+old logs may reach.
 
 **utc**
 
