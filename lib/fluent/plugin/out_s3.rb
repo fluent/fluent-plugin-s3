@@ -22,6 +22,8 @@ module Fluent::Plugin
     config_param :path, :string, default: ""
     desc "The Server-side encryption algorithm used when storing this object in S3 (AES256, aws:kms)"
     config_param :use_server_side_encryption, :string, default: nil
+    desc "Use aws-sdk-ruby bundled cert"
+    config_param :use_bundled_cert, :bool, default: false
     desc "AWS access key id"
     config_param :aws_key_id, :string, default: nil, secret: true
     desc "AWS secret key."
@@ -128,6 +130,8 @@ module Fluent::Plugin
       compat_parameters_convert(conf, :buffer, :formatter, :inject)
 
       super
+
+      Aws.use_bundled_cert! if @use_bundled_cert
 
       if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
