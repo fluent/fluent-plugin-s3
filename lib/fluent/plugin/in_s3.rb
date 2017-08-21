@@ -20,6 +20,8 @@ module Fluent::Plugin
 
     DEFAULT_PARSE_TYPE = "none"
 
+    desc "Use aws-sdk-ruby bundled cert"
+    config_param :use_bundled_cert, :bool, default: false
     desc "AWS access key id"
     config_param :aws_key_id, :string, default: nil, secret: true
     desc "AWS secret key."
@@ -92,6 +94,8 @@ module Fluent::Plugin
       unless @sqs.queue_name
         raise Fluent::ConfigError, "sqs/queue_name is required"
       end
+
+      Aws.use_bundled_cert! if @use_bundled_cert
 
       @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
       @extractor.configure(conf)
