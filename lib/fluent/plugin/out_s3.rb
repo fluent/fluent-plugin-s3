@@ -111,7 +111,7 @@ module Fluent::Plugin
     desc "Given a threshold to treat events as delay, output warning logs if delayed events were put into s3"
     config_param :warn_for_delay, :time, default: nil
     desc "Arbitrary S3 metadata headers to set for the object"
-    config_param :s3_metadata, :hash
+    config_param :s3_metadata, :hash, default: nil
 
     DEFAULT_FORMAT_TYPE = "out_file"
 
@@ -281,7 +281,10 @@ module Fluent::Plugin
         put_options[:sse_customer_key] = @sse_customer_key if @sse_customer_key
         put_options[:sse_customer_key_md5] = @sse_customer_key_md5 if @sse_customer_key_md5
         put_options[:acl] = @acl if @acl
-        put_options[:metadata] = @s3_metadata if @s3_metadata
+
+        if @s3_metadata
+          put_options[:metadata] = Hash[@s3_metadata.map {|k, v| k, extract_placeholders(v, metadata)}]
+        end
         @bucket.object(s3path).put(put_options)
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)
