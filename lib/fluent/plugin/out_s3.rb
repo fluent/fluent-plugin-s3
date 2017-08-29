@@ -283,7 +283,10 @@ module Fluent::Plugin
         put_options[:acl] = @acl if @acl
 
         if @s3_metadata
-          put_options[:metadata] = Hash[@s3_metadata.map {|k, v| k, extract_placeholders(v, metadata)}]
+          put_options[:metadata] = {}
+          @s3_metadata.each do |k, v|
+            put_options[:metadata][k] = extract_placeholders(v, metadata)
+          end
         end
         @bucket.object(s3path).put(put_options)
 
