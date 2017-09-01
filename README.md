@@ -218,6 +218,7 @@ archive format on S3. You can use several format:
 *   text
 *   lzo (Need lzop command)
 *   lzma2 (Need xz command)
+*   zst (Need zstd command https://github.com/facebook/zstd)
 *   gzip_command (Need gzip command)
     *   This compressor uses an external gzip command, hence would result in
         utilizing CPU cores well compared with `gzip`
