@@ -268,7 +268,7 @@ module Fluent::Plugin
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
-        log.debug "out_s3: write chunk: {key:#{chunk.key},tsuffix:#{tsuffix(chunk)}} to s3://#{@s3_bucket}/#{s3path}"
+        log.debug "out_s3: write chunk: {unique_id:#{chunk.unique_id},tsuffix:#{tsuffix(chunk)}} to s3://#{@s3_bucket}/#{s3path}"
 
         put_options = {
           body: tmp,
