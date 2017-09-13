@@ -268,7 +268,7 @@ module Fluent::Plugin
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
-        log.debug { "out_s3: write chunk: {key:#{chunk.key},tsuffix:#{tsuffix(chunk)}} to s3://#{@s3_bucket}/#{s3path}" }
+        log.debug "out_s3: write chunk: {key:#{chunk.key},tsuffix:#{tsuffix(chunk)}} to s3://#{@s3_bucket}/#{s3path}"
 
         put_options = {
           body: tmp,
@@ -294,7 +294,7 @@ module Fluent::Plugin
 
         if @warn_for_delay
           if Time.at(chunk.metadata.timekey) < Time.now - @warn_for_delay
-            log.warn { "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}" }
+            log.warn "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}"
           end
         end
       ensure
