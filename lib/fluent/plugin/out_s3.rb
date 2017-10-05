@@ -258,7 +258,7 @@ module Fluent::Plugin
         }
         values_for_s3_object_key = {
           "%{path}" => @path,
-          "%{time_slice}" => time_slice,
+          "%{date_slice}" => time_slice,
           "%{file_extension}" => @compressor.ext,
           "%{hms_slice}" => hms_slicer,
         }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
