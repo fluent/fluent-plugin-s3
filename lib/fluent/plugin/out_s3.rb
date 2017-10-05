@@ -160,6 +160,15 @@ module Fluent::Plugin
       end
 
       @s3_object_key_format = process_s3_object_key_format
+      if !@check_object
+        if conf.has_key?('s3_object_key_format')
+          log.warn "Set 'check_object false' and s3_object_key_format is specified. Check s3_object_key_format is unique in each write. If not, existing file will be overwritten."
+        else
+          log.warn "Set 'check_object false' and s3_object_key_format is not specified. Use '%{path}/%{date_slice}_%{hms_slice}.%{file_extension}' for s3_object_key_format"
+          @s3_object_key_format = "%{path}/%{date_slice}_%{hms_slice}.%{file_extension}"
+        end
+      end
+
       # For backward compatibility
       # TODO: Remove time_slice_format when end of support compat_parameters
       @configured_time_slice_format = conf['time_slice_format']
@@ -191,10 +200,6 @@ module Fluent::Plugin
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket if @check_bucket
-
-      if !@check_object
-        @s3_object_key_format = "%{path}/%{date_slice}_%{hms_slice}.%{file_extension}"
-      end
 
       super
     end
