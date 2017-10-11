@@ -1,3 +1,8 @@
+Release 0.8.6 - 2017/10/11
+
+  * out_s3: specified s3_object_key_format is applied when check_object is false
+
+
 Release 0.8.5 - 2017/08/04
 
   * out_s3: Fix typo error in debug log message
