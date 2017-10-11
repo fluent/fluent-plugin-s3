@@ -168,6 +168,14 @@ module Fluent
 
       @path = process_deprecated_placeholders(@path)
       @s3_object_key_format = process_deprecated_placeholders(@s3_object_key_format)
+      if !@check_object
+        if conf.has_key?('s3_object_key_format')
+          log.warn "Set 'check_object false' and s3_object_key_format is specified. Check s3_object_key_format is unique in each write. If not, existing file will be overwritten."
+        else
+          log.warn "Set 'check_object false' and s3_object_key_format is not specified. Use '%{path}/%{date_slice}_%{hms_slice}.%{file_extension}' for s3_object_key_format"
+          @s3_object_key_format = "%{path}/%{date_slice}_%{hms_slice}.%{file_extension}"
+        end
+      end
       @values_for_s3_object_chunk = {}
     end
 
@@ -191,10 +199,6 @@ module Fluent
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket if @check_bucket
-
-      if !@check_object
-        @s3_object_key_format = "%{path}/%{date_slice}_%{hms_slice}.%{file_extension}"
-      end
 
       super
     end
@@ -246,6 +250,7 @@ module Fluent
 
         values_for_s3_object_key = {
           "path" => @path_slicer.call(@path),
+          "time_slice" => chunk.key,
           "date_slice" => chunk.key,
           "file_extension" => @compressor.ext,
           "hms_slice" => hms_slicer,
