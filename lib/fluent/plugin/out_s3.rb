@@ -273,7 +273,7 @@ module Fluent::Plugin
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
-        log.debug "out_s3: write chunk with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}"
+        log.debug "out_s3: write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}"
 
         put_options = {
           body: tmp,
@@ -290,7 +290,7 @@ module Fluent::Plugin
         if @s3_metadata
           put_options[:metadata] = {}
           @s3_metadata.each do |k, v|
-            put_options[:metadata][k] = extract_placeholders(v, metadata)
+            put_options[:metadata][k] = extract_placeholders(v, metadata).gsub(%r(%{[^}]+}), {"%{index}" => i - 1})
           end
         end
         @bucket.object(s3path).put(put_options)
