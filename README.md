@@ -305,7 +305,8 @@ Allows grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 This is useful for cross-account access using IAM roles.
 
 Valid values are `id="Grantee-CanonicalUserID"`. Please specify the grantee's canonical user ID.
-e.g. id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"
+
+e.g. `id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"`
 
 Note that a canonical user ID is different from an AWS account ID.
 Please refer to [AWS documentation](https://docs.aws.amazon.com/general/latest/gr/acct-identifiers.html) for more details.
@@ -314,19 +315,22 @@ Please refer to [AWS documentation](https://docs.aws.amazon.com/general/latest/g
 
 Allows grantee to read the object data and its metadata.
 Valid values are `id="Grantee-CanonicalUserID"`. Please specify the grantee's canonical user ID.
-e.g. id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"
+
+e.g. `id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"`
 
 **grant_read_acp**
 
 Allows grantee to read the object ACL.
 Valid values are `id="Grantee-CanonicalUserID"`. Please specify the grantee's canonical user ID.
-e.g. id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"
+
+e.g. `id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"`
 
 **grant_write_acp**
 
 Allows grantee to write the ACL for the applicable object.
 Valid values are `id="Grantee-CanonicalUserID"`. Please specify the grantee's canonical user ID.
-e.g. id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"
+
+e.g. `id="79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"`
 
 **hex_random_length**
 
