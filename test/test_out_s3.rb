@@ -142,6 +142,16 @@ EOC
     assert_match /#{Socket.gethostname}/, d.instance.path
   end
 
+  def test_configure_with_grant
+    conf = CONFIG.clone
+    conf << "\grant_full_control id='0123456789'\ngrant_read id='1234567890'\ngrant_read_acp id='2345678901'\ngrant_write_acp id='3456789012'\n"
+    d = create_driver(conf)
+    assert_equal "id='0123456789'", d.instance.grant_full_control
+    assert_equal "id='1234567890'", d.instance.grant_read
+    assert_equal "id='2345678901'", d.instance.grant_read_acp
+    assert_equal "id='3456789012'", d.instance.grant_write_acp
+  end
+
   def test_path_slicing
     config = CONFIG.clone.gsub(/path\slog/, "path log/%Y/%m/%d")
     d = create_driver(config)
