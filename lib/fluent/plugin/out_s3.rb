@@ -88,6 +88,14 @@ module Fluent::Plugin
     config_param :storage_class, :string, default: "STANDARD"
     desc "Permission for the object in S3"
     config_param :acl, :string, default: nil
+    desc "Allows grantee READ, READ_ACP, and WRITE_ACP permissions on the object"
+    config_param :grant_full_control, :string, default: nil
+    desc "Allows grantee to read the object data and its metadata"
+    config_param :grant_read, :string, default: nil
+    desc "Allows grantee to read the object ACL"
+    config_param :grant_read_acp, :string, default: nil
+    desc "Allows grantee to write the ACL for the applicable object"
+    config_param :grant_write_acp, :string, default: nil
     desc "The length of `%{hex_random}` placeholder(4-16)"
     config_param :hex_random_length, :integer, default: 4
     desc "Overwrite already existing path"
@@ -286,6 +294,10 @@ module Fluent::Plugin
         put_options[:sse_customer_key] = @sse_customer_key if @sse_customer_key
         put_options[:sse_customer_key_md5] = @sse_customer_key_md5 if @sse_customer_key_md5
         put_options[:acl] = @acl if @acl
+        put_options[:grant_full_control] = @grant_full_control if @grant_full_control
+        put_options[:grant_read] = @grant_read if @grant_read
+        put_options[:grant_read_acp] = @grant_read_acp if @grant_read_acp
+        put_options[:grant_write_acp] = @grant_write_acp if @grant_write_acp
 
         if @s3_metadata
           put_options[:metadata] = {}
