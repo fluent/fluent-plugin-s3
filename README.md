@@ -653,11 +653,24 @@ The long polling interval. Default is 20.
 The following is an example for a minimal IAM policy needed to write to an s3
 bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
 
-    { "Statement": [
-     { "Effect":"Allow",
-       "Action":"s3:*",
-       "Resource":"arn:aws:s3:::my-s3bucket*"
-      } ]
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:ListBucket"
+          ],
+          "Resource": "arn:aws:s3:::my-s3bucket"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:PutObject"
+          ],
+          "Resource": "arn:aws:s3:::my-s3bucket/*"
+        }
+      ]
     }
 
 Note that the bucket must already exist and **auto_create_bucket** has no
