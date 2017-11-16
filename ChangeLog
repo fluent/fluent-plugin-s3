@@ -1,3 +1,13 @@
+Release 1.0.0 - 2017/11/15
+
+  * Use v0.14 API
+  * out_s3: Support canonical user id based grant permission
+  * out_s3: Use specified s3_object_key_format even if check_object is false
+  * out_s3: Add s3_metadata parameter
+  * out_s3: Add ssl_verify_peer parameter
+  * in_s3: Unescape S3 key
+  * Add use_bundled_cert parameter
+
 Release 0.8.0 - 2016/12/20
 
   * out_s3: Add check_object / check_bucket parameters for only put permission
