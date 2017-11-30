@@ -1,7 +1,7 @@
 require 'fluent/plugin/output'
 require 'fluent/log-ext'
 require 'fluent/timezone'
-require 'aws-sdk-resources'
+require 'aws-sdk-s3'
 require 'zlib'
 require 'time'
 require 'tempfile'
