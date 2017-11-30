@@ -1,4 +1,6 @@
-require 'aws-sdk-resources'
+require 'aws-sdk-s3'
+require 'aws-sdk-sqs'
+require 'aws-sdk-sqs/queue_poller'
 
 require 'fluent/test'
 require 'fluent/test/helpers'
@@ -119,6 +121,7 @@ class S3InputTest < Test::Unit::TestCase
     mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
     @s3_bucket = mock(Aws::S3::Bucket.new(name: "test",
                                           client: @s3_client))
+    @s3_bucket.exists? { true }
     @s3_resource.bucket(anything) { @s3_bucket }
 
     test_queue_url = "http://example.com/test_queue"

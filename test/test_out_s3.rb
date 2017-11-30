@@ -2,7 +2,7 @@ require 'fluent/test'
 require 'fluent/test/helpers'
 require 'fluent/test/log'
 require 'fluent/test/driver/output'
-require 'aws-sdk-resources'
+require 'aws-sdk-s3'
 require 'fluent/plugin/out_s3'
 
 require 'test/unit/rr'
@@ -417,8 +417,18 @@ EOC
     FileUtils.rm_f(s3_local_file_path)
   end
 
+  class MockResponse
+    attr_reader :data
+
+    def initialize(data)
+      @data = data
+    end
+  end
+
   def setup_mocks(exists_return = false)
     @s3_client = stub(Aws::S3::Client.new(stub_responses: true))
+    # aws-sdk-s3 calls Client#put_object inside Object#put
+    mock(@s3_client).put_object(anything).at_least(0) { MockResponse.new({}) }
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
     @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
     mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
@@ -454,6 +464,7 @@ EOC
 
   def setup_mocks_hardened_policy()
     @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    mock(@s3_client).put_object(anything).at_least(0) { MockResponse.new({}) }
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
     @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
     mock(Aws::S3::Resource).new(:client => @s3_client) { @s3_resource }

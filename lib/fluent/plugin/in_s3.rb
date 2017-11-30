@@ -1,7 +1,9 @@
 require 'fluent/plugin/input'
 require 'fluent/log-ext'
 
-require 'aws-sdk-resources'
+require 'aws-sdk-s3'
+require 'aws-sdk-sqs'
+require 'aws-sdk-sqs/queue_poller'
 require 'cgi/util'
 require 'zlib'
 require 'time'
