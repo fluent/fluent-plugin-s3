@@ -666,7 +666,8 @@ bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
         {
           "Effect": "Allow",
           "Action": [
-            "s3:PutObject"
+            "s3:PutObject",
+			"s3:GetObject"
           ],
           "Resource": "arn:aws:s3:::my-s3bucket/*"
         }
