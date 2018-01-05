@@ -406,6 +406,10 @@ The length of `%{hex_random}` placeholder. Default is 4 as written in
 Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-considerations.html).
 The maximum length is 16.
 
+**index_format**
+
+`%{index}` is formatted by [sprintf](http://ruby-doc.org/core-2.2.0/Kernel.html#method-i-sprintf) using this format_string. Default is '%d'. Zero padding is supported e.g. `%04d` to ensure minimum length four digits. `%{index}` can be in lowercase or uppercase hex using '%x' or '%X'
+
 **overwrite**
 
 Overwrite already existing path. Default is false, which raises an error
