@@ -98,6 +98,8 @@ module Fluent::Plugin
     config_param :grant_write_acp, :string, default: nil
     desc "The length of `%{hex_random}` placeholder(4-16)"
     config_param :hex_random_length, :integer, default: 4
+    desc "`sprintf` format for `%{index}`"
+    config_param :index_format, :string, default: "%d"
     desc "Overwrite already existing path"
     config_param :overwrite, :bool, default: false
     desc "Check bucket if exists or not"
@@ -160,6 +162,10 @@ module Fluent::Plugin
 
       if @hex_random_length > MAX_HEX_RANDOM_LENGTH
         raise Fluent::ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
+      end
+
+      unless @index_format =~ /^%(0\d*)?[dxX]$/
+        raise Fluent::ConfigError, "index_format parameter should follow `%[flags][width]type`. `0` is the only supported flag, and is mandatory if width is specified. `d`, `x` and `X` are supported types" 
       end
 
       if @reduced_redundancy
@@ -236,7 +242,7 @@ module Fluent::Plugin
             "%{path}" => @path,
             "%{time_slice}" => time_slice,
             "%{file_extension}" => @compressor.ext,
-            "%{index}" => i,
+            "%{index}" => sprintf(@index_format,i),
           }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
           values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
@@ -302,7 +308,7 @@ module Fluent::Plugin
         if @s3_metadata
           put_options[:metadata] = {}
           @s3_metadata.each do |k, v|
-            put_options[:metadata][k] = extract_placeholders(v, metadata).gsub(%r(%{[^}]+}), {"%{index}" => i - 1})
+            put_options[:metadata][k] = extract_placeholders(v, metadata).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
           end
         end
         @bucket.object(s3path).put(put_options)
