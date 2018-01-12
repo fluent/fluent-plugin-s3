@@ -256,13 +256,16 @@ module Fluent::Plugin
 
     def process(body)
       s3 = body["Records"].first["s3"]
-      key = CGI.unescape(s3["object"]["key"])
+      raw_key = s3["object"]["key"]
+      key = CGI.unescape(raw_key)
 
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
       es = Fluent::MultiEventStream.new
       content.each_line do |line|
         @parser.parse(line) do |time, record|
+          record['s3_bucket'] = @s3_bucket
+          record['s3_key'] = raw_key
           es.add(time, record)
         end
       end

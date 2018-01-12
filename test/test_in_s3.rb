@@ -221,7 +221,7 @@ EOS
     end
     d.run(expect_emits: 1)
     events = d.events
-    assert_equal({ "message" => "aaa" }, events.first[2])
+    assert_equal({ "s3_bucket" => "test_bucket", "s3_key" => "test_key", "message" => "aaa" }, events.first[2])
   end
 
   def test_one_record_url_encoded
@@ -256,7 +256,7 @@ EOS
     end
     d.run(expect_emits: 1)
     events = d.events
-    assert_equal({ "message" => "aaa" }, events.first[2])
+    assert_equal({ "s3_bucket" => "test_bucket", "s3_key" => "test+key", "message" => "aaa" }, events.first[2])
   end
 
   def test_one_record_multi_line
@@ -292,9 +292,9 @@ EOS
     d.run(expect_emits: 1)
     events = d.events
     expected_records = [
-      { "message" => "aaa\n" },
-      { "message" => "bbb\n" },
-      { "message" => "ccc\n" }
+      { "s3_bucket" => "test_bucket", "s3_key" => "test_key", "message" => "aaa\n" },
+      { "s3_bucket" => "test_bucket", "s3_key" => "test_key","message" => "bbb\n" },
+      { "s3_bucket" => "test_bucket", "s3_key" => "test_key","message" => "ccc\n" }
     ]
     assert_equal(expected_records, events.map {|_tag, _time, record| record })
   end

@@ -654,6 +654,13 @@ The long polling interval. Default is 20.
 
 Interval to retry polling SQS if polling unsuccessful, in seconds. Default is 300.
 
+## Object Metadata Added To Records
+
+The name of the bucket and the key for a given object will be added to each log 
+record as `s3_bucket` and `s3_key`, respectively. This metadata can be used by
+filter plugins or other downstream processors to better identify the source of a
+given record.
+
 ## IAM Policy
 
 The following is an example for a minimal IAM policy needed to write to an s3
