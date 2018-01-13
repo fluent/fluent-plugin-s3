@@ -30,20 +30,18 @@ We must setup SQS queue and S3 event notification before use this plugin.
 | >= 1.0.0 | >= v0.14.0 | >= 2.1 |
 |  < 1.0.0 | >= v0.12.0 | >= 1.9 |
 
-NOTE: fluent-plugin-s3 v1.0.0 is now RC. We will release stable v1.0.0 soon.
-
 ## Installation
 
 Simply use RubyGems:
 
-    $ gem install fluent-plugin-s3 -v "~> 0.8"  --no-document # for fluentd v0.12 or later
-    $ gem install fluent-plugin-s3 -v 1.0.0.rc2 --no-document # for fluentd v0.14 or later
+    $ gem install fluent-plugin-s3 -v "~> 0.8" --no-document # for fluentd v0.12 or later
+    $ gem install fluent-plugin-s3 -v 1.0.0 --no-document # for fluentd v1.0 or later
 
 ## Output: Configuration
 
-### v0.14 style
+### v1.0 style
 
-With fluentd v0.14 and fluent-plugin-s3 v1.0.0, use new buffer configuration to dynamic parameters.
+With fluentd v1.0 and fluent-plugin-s3 v1.0.0, use new buffer configuration to dynamic parameters.
 
     <match pattern>
       @type s3
@@ -77,13 +75,13 @@ For `<buffer>`, you can use any record field in `path` / `s3_object_key_format`.
       # parameters...
     </buffer>
 
-See official article for more detail: [Buffer section configurations](http://docs.fluentd.org/v0.14/articles/buffer-section)
+See official article for more detail: [Buffer section configurations](http://docs.fluentd.org/v1.0/articles/buffer-section)
 
 Note that this configuration doesn't work with fluentd v0.12.
 
 ### v0.12 style
 
-This configuration works with both fluentd v0.12 and v0.14.
+This configuration works with both fluentd v0.12 and v1.0.
 
     <match pattern>
       @type s3
