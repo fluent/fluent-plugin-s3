@@ -135,6 +135,14 @@ recommend using `s3_region` instead of `s3_endpoint`.
 endpoint for S3 compatible services. For example, Riak CS based storage or
 something. This option doesn't work on S3, use `s3_region` instead.
 
+**use_bundled_cert**
+
+For cases where the default SSL certificate is unavailable (e.g. Windows), you can set this option to true in order to use the AWS SDK bundled certificate. Default is false.
+
+This fixes the following error often seen in Windows:
+
+    SSL_connect returned=1 errno=0 state=SSLv3 read server certificate B: certificate verify failed (Seahorse::Client::NetworkingError)
+
 **ssl_verify_peer**
 
 Verify SSL certificate of the endpoint. Default is true. Set false when you want to ignore the endpoint SSL certificate.
