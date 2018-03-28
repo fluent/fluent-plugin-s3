@@ -284,10 +284,23 @@ module Fluent::Plugin
         'application/x-gzip'.freeze
       end
 
+      # https://bugs.ruby-lang.org/issues/9790
+      # https://bugs.ruby-lang.org/issues/11180
+      # https://github.com/exAspArk/multiple_files_gzip_reader
       def extract(io)
-        Zlib::GzipReader.wrap(io) do |gz|
-          gz.read
+        parts = []
+        loop do
+          unused = nil
+          Zlib::GzipReader.wrap(io) do |gz|
+            parts << gz.read
+            unused = gz.unused
+            gz.finish
+          end
+          io.pos -= unused ? unused.length : 0
+          break if io.eof?
         end
+        io.close
+        parts.join
       end
     end
 
