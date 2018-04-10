@@ -238,16 +238,21 @@ module Fluent::Plugin
           @values_for_s3_object_chunk[chunk.unique_id] ||= {
             "%{hex_random}" => hex_random(chunk),
           }
-          values_for_s3_object_key = {
+          values_for_s3_object_key_pre = {
             "%{path}" => @path,
-            "%{time_slice}" => time_slice,
             "%{file_extension}" => @compressor.ext,
+          }
+          values_for_s3_object_key_post = {
+            "%{time_slice}" => time_slice,
             "%{index}" => sprintf(@index_format,i),
           }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
-          values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
+          values_for_s3_object_key_post["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
-          s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
+          s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) do |matched_key|
+            values_for_s3_object_key_pre.fetch(matched_key, matched_key)
+          end
           s3path = extract_placeholders(s3path, metadata)
+          s3path = s3path.gsub(%r(%{[^}]+}), values_for_s3_object_key_post)
           if (i > 0) && (s3path == previous_path)
             if @overwrite
               log.warn "#{s3path} already exists, but will overwrite"
@@ -270,16 +275,21 @@ module Fluent::Plugin
         @values_for_s3_object_chunk[chunk.unique_id] ||= {
           "%{hex_random}" => hex_random(chunk),
         }
-        values_for_s3_object_key = {
+        values_for_s3_object_key_pre = {
           "%{path}" => @path,
-          "%{date_slice}" => time_slice,
           "%{file_extension}" => @compressor.ext,
+        }
+        values_for_s3_object_key_post = {
+          "%{date_slice}" => time_slice,
           "%{hms_slice}" => hms_slicer,
         }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
-        values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
+        values_for_s3_object_key_post["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
-        s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
+        s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) do |matched_key|
+          values_for_s3_object_key_pre.fetch(matched_key, matched_key)
+        end
         s3path = extract_placeholders(s3path, metadata)
+        s3path = s3path.gsub(%r(%{[^}]+}), values_for_s3_object_key_post)
       end
 
       tmp = Tempfile.new("s3-")
