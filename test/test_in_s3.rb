@@ -89,6 +89,7 @@ class S3InputTest < Test::Unit::TestCase
 
     data("json" => ["json", "json", "application/json"],
          "text" => ["text", "txt", "text/plain"],
+         "gzip" => ["gzip", "gz", "application/x-gzip"],
          "gzip_command" => ["gzip_command", "gz", "application/x-gzip"],
          "lzo" => ["lzo", "lzo", "application/x-lzop"],
          "lzma2" => ["lzma2", "xz", "application/x-xz"])
@@ -259,6 +260,106 @@ class S3InputTest < Test::Unit::TestCase
       { "message" => "aaa\n" },
       { "message" => "bbb\n" },
       { "message" => "ccc\n" }
+    ]
+    assert_equal(expected_records, events.map {|_tag, _time, record| record })
+  end
+
+  def test_gzip_single_stream
+    setup_mocks
+    d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as gzip\nformat none\n")
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body {
+      io = StringIO.new
+      Zlib::GzipWriter.wrap(io) do |gz|
+        gz.write "aaa\nbbb\n"
+        gz.finish
+      end
+      io.rewind
+      io
+    }
+    s3_object.get { s3_response }
+    @s3_bucket.object(anything).at_least(1) { s3_object }
+
+    body = {
+      "Records" => [
+        {
+          "s3" => {
+            "object" => {
+              "key" => "test_key"
+            }
+          }
+        }
+      ]
+    }
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run(expect_emits: 1)
+    events = d.events
+    expected_records = [
+      { "message" => "aaa\n" },
+      { "message" => "bbb\n" }
+    ]
+    assert_equal(expected_records, events.map {|_tag, _time, record| record })
+  end
+
+  def test_gzip_multiple_steams
+    setup_mocks
+    d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as gzip\nformat none\n")
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body {
+      io = StringIO.new
+      Zlib::GzipWriter.wrap(io) do |gz|
+        gz.write "aaa\nbbb\n"
+        gz.finish
+      end
+      Zlib::GzipWriter.wrap(io) do |gz|
+        gz.write "ccc\nddd\n"
+        gz.finish
+      end
+      io.rewind
+      io
+    }
+    s3_object.get { s3_response }
+    @s3_bucket.object(anything).at_least(1) { s3_object }
+
+    body = {
+      "Records" => [
+        {
+          "s3" => {
+            "object" => {
+              "key" => "test_key"
+            }
+          }
+        }
+      ]
+    }
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run(expect_emits: 1)
+    events = d.events
+    expected_records = [
+      { "message" => "aaa\n" },
+      { "message" => "bbb\n" },
+      { "message" => "ccc\n" },
+      { "message" => "ddd\n" }
     ]
     assert_equal(expected_records, events.map {|_tag, _time, record| record })
   end
