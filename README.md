@@ -696,7 +696,7 @@ on EC2 instances.
 
 ## Use your (de)compression algorithm
 
-s3 plugin has plugabble compression mechanizm like Fleuntd's input / output
+s3 plugin has pluggable compression mechanizm like Fluentd's input / output
 plugin. If you set 'store_as xxx', `out_s3` plugin searches
 `fluent/plugin/s3_compressor_xxx.rb` and `in_s3` plugin searches
 `fluent/plugin/s3_extractor_xxx.rb`. You can define your (de)compression with
