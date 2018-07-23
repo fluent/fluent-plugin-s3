@@ -299,8 +299,8 @@ When it is false,
 Check object before creation if it exists or not. Default is true.
 
 When it is false,
-	s3_object_key_format will be %{path}%{date_slice}_%{time_slice}.%{file_extension}
-	where, time_slice will be in hhmmss format, so that each object will be unique.
+	s3_object_key_format will be %{path}%{time_slice}_%{hms_slice}.%{file_extension} by default
+	where, hms_slice will be time-slice in hhmmss format, so that each object will be unique.
 	Example object name, assuming it is created on 2016/16/11 3:30:54 PM
 		20161611_153054.txt (extension can be anything as per user's choice)
 

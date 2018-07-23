@@ -178,8 +178,8 @@ module Fluent::Plugin
         if conf.has_key?('s3_object_key_format')
           log.warn "Set 'check_object false' and s3_object_key_format is specified. Check s3_object_key_format is unique in each write. If not, existing file will be overwritten."
         else
-          log.warn "Set 'check_object false' and s3_object_key_format is not specified. Use '%{path}/%{date_slice}_%{hms_slice}.%{file_extension}' for s3_object_key_format"
-          @s3_object_key_format = "%{path}/%{date_slice}_%{hms_slice}.%{file_extension}"
+          log.warn "Set 'check_object false' and s3_object_key_format is not specified. Use '%{path}/%{time_slice}_%{hms_slice}.%{file_extension}' for s3_object_key_format"
+          @s3_object_key_format = "%{path}/%{time_slice}_%{hms_slice}.%{file_extension}"
         end
       end
 
@@ -280,7 +280,8 @@ module Fluent::Plugin
           "%{file_extension}" => @compressor.ext,
         }
         values_for_s3_object_key_post = {
-          "%{date_slice}" => time_slice,
+          "%{date_slice}" => time_slice,  # For backward compatibility
+          "%{time_slice}" => time_slice,
           "%{hms_slice}" => hms_slicer,
         }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
         values_for_s3_object_key_post["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
