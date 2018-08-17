@@ -24,6 +24,8 @@ module Fluent::Plugin
 
     desc "Use aws-sdk-ruby bundled cert"
     config_param :use_bundled_cert, :bool, default: false
+    desc "Add object metadata to the records parsed out of a given object"
+    config_param :add_object_metadata, :bool, default: false
     desc "AWS access key id"
     config_param :aws_key_id, :string, default: nil, secret: true
     desc "AWS secret key."
@@ -264,8 +266,10 @@ module Fluent::Plugin
       es = Fluent::MultiEventStream.new
       content.each_line do |line|
         @parser.parse(line) do |time, record|
-          record['s3_bucket'] = @s3_bucket
-          record['s3_key'] = raw_key
+          if @add_object_metadata
+            record['s3_bucket'] = @s3_bucket
+            record['s3_key'] = raw_key
+          end
           es.add(time, record)
         end
       end

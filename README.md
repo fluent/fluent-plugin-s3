@@ -593,11 +593,16 @@ Given a threshold to treat events as delay, output warning logs if delayed event
       aws_sec_key YOUR_AWS_SECRET_KEY
       s3_bucket YOUR_S3_BUCKET_NAME
       s3_region ap-northeast-1
+      add_object_metadata true
 
       <sqs>
         queue_name YOUR_SQS_QUEUE_NAME
       </sqs>
     </source>
+
+**add_object_metadata**
+
+Whether or not object metadata should be added to the record. Defaults to `false`. See below for details.
 
 **s3_bucket (required)**
 
@@ -656,10 +661,10 @@ Interval to retry polling SQS if polling unsuccessful, in seconds. Default is 30
 
 ## Object Metadata Added To Records
 
-The name of the bucket and the key for a given object will be added to each log 
-record as `s3_bucket` and `s3_key`, respectively. This metadata can be used by
-filter plugins or other downstream processors to better identify the source of a
-given record.
+If the `add_object_metadata` option is set to true, then the name of the bucket
+and the key for a given object will be added to each log record as `s3_bucket`
+and `s3_key`, respectively. This metadata can be used by filter plugins or other
+downstream processors to better identify the source of a given record.
 
 ## IAM Policy
 
