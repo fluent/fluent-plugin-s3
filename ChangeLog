@@ -1,3 +1,7 @@
+Release 1.1.5 - 2018/09/04
+
+  * out_s3: Improve check_apikeys performance by specifying `max_keys` parameter
+
 Release 1.1.4 - 2018/07/22
 
   * out_s3: Support time_slice in `check_object false`. date_slice is kept for backward compatibility
