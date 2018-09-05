@@ -399,7 +399,7 @@ module Fluent::Plugin
     end
 
     def check_apikeys
-      @bucket.objects(prefix: @path).first
+      @bucket.objects(prefix: @path, :max_keys => 1).first
     rescue Aws::S3::Errors::NoSuchBucket
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
