@@ -64,6 +64,12 @@ module Fluent::Plugin
     config_param :s3_bucket, :string
     desc "S3 region name"
     config_param :s3_region, :string, default: ENV["AWS_REGION"] || "us-east-1"
+    desc "Use 's3_region' instead"
+    config_param :s3_endpoint, :string, default: nil
+    desc "Use 's3_region' instead"
+    config_param :sqs_endpoint, :string, default: nil
+    desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
+    config_param :force_path_style, :bool, default: false
     desc "Archive format on S3"
     config_param :store_as, :string, default: "gzip"
     desc "Check AWS key on start"
@@ -196,6 +202,8 @@ module Fluent::Plugin
     def create_s3_client
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
+      options[:endpoint] = @s3_endpoint if @s3_endpoint
+      options[:force_path_style] = @force_path_style
       options[:proxy_uri] = @proxy_uri if @proxy_uri
       log.on_trace do
         options[:http_wire_trace] = true
@@ -208,6 +216,7 @@ module Fluent::Plugin
     def create_sqs_client
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
+      options[:endpoint] = @sqs_endpoint if @sqs_endpoint
       log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
