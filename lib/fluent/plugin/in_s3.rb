@@ -66,8 +66,6 @@ module Fluent::Plugin
     config_param :s3_region, :string, default: ENV["AWS_REGION"] || "us-east-1"
     desc "Use 's3_region' instead"
     config_param :s3_endpoint, :string, default: nil
-    desc "Use 's3_region' instead"
-    config_param :sqs_endpoint, :string, default: nil
     desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
     config_param :force_path_style, :bool, default: false
     desc "Archive format on S3"
@@ -80,6 +78,8 @@ module Fluent::Plugin
     config_section :sqs, required: true, multi: false do
       desc "SQS queue name"
       config_param :queue_name, :string, default: nil
+      desc "Use 's3_region' instead"
+      config_param :endpoint, :string, default: nil
       desc "Skip message deletion"
       config_param :skip_delete, :bool, default: false
       desc "The long polling interval."
@@ -216,7 +216,7 @@ module Fluent::Plugin
     def create_sqs_client
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
-      options[:endpoint] = @sqs_endpoint if @sqs_endpoint
+      options[:endpoint] = @sqs.endpoint if @sqs.endpoint
       log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
