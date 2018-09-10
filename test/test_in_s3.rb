@@ -112,6 +112,40 @@ class S3InputTest < Test::Unit::TestCase
     end
   end
 
+
+  def test_s3_endpoint_with_valid_endpoint
+    d = create_driver(CONFIG + 's3_endpoint riak-cs.example.com')
+    assert_equal 'riak-cs.example.com', d.instance.s3_endpoint
+  end
+
+  data('US West (Oregon)' => 's3-us-west-2.amazonaws.com',
+       'EU (Frankfurt)' => 's3.eu-central-1.amazonaws.com',
+       'Asia Pacific (Tokyo)' => 's3-ap-northeast-1.amazonaws.com')
+  def test_s3_endpoint_with_invalid_endpoint(endpoint)
+    assert_raise(Fluent::ConfigError, "s3_endpoint parameter is not supported, use s3_region instead. This parameter is for S3 compatible services") {
+      create_driver(CONFIG + "s3_endpoint #{endpoint}")
+    }
+  end
+
+  data('US West (Oregon)' => 's3-us-west-2.amazonaws.com',
+       'EU (Frankfurt)' => 's3.eu-central-1.amazonaws.com',
+       'Asia Pacific (Tokyo)' => 's3-ap-northeast-1.amazonaws.com')
+  def test_sqs_endpoint_with_invalid_endpoint(endpoint)
+    assert_raise(Fluent::ConfigError, "sqs.endpoint parameter is not supported, use s3_region instead. This parameter is for SQS compatible services") {
+      conf = <<"EOS"
+aws_key_id test_key_id
+aws_sec_key test_sec_key
+s3_bucket test_bucket
+buffer_type memory
+<sqs>
+  queue_name test_queue
+  endpoint #{endpoint}
+</sqs>
+EOS
+      create_driver(conf)
+    }
+  end
+
   Struct.new("StubResponse", :queue_url)
   Struct.new("StubMessage", :message_id, :receipt_handle, :body)
 
