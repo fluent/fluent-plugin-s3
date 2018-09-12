@@ -1,3 +1,7 @@
+Release 1.1.6 - 2018/09/11
+
+  * in_s3: Add s3_endpoint parameter to support S3 compatible service
+
 Release 1.1.5 - 2018/09/04
 
   * out_s3: Improve check_apikeys performance by specifying `max_keys` parameter
