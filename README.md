@@ -37,7 +37,134 @@ Simply use RubyGems:
     $ gem install fluent-plugin-s3 -v "~> 0.8" --no-document # for fluentd v0.12 or later
     $ gem install fluent-plugin-s3 -v 1.0.0 --no-document # for fluentd v1.0 or later
 
-## Output: Configuration
+## Configuration: credentials
+
+Both S3 input/output plugin provide several credential methods for authentication/authorization.
+
+### AWS key and secret authentication
+
+These parameters are required when your agent is not running on EC2 instance with an IAM Role. When using an IAM role, make sure to configure `instance_profile_credentials`. Usage can be found below.
+
+**aws_key_id**
+
+AWS access key id.
+
+**aws_sec_key**
+
+AWS secret key.
+
+### assume_role_credentials
+
+Typically, you use AssumeRole for cross-account access or federation.
+
+    <match *>
+      @type s3
+
+      <assume_role_credentials>
+        role_arn          ROLE_ARN
+        role_session_name ROLE_SESSION_NAME
+      </assume_role_credentials>
+    </match>
+
+See also:
+
+*   [Using IAM Roles - AWS Identity and Access
+    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html)
+*   [Aws::STS::Client](http://docs.aws.amazon.com/sdkforruby/api/Aws/STS/Client.html)
+*   [Aws::AssumeRoleCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/AssumeRoleCredentials.html)
+
+**role_arn (required)**
+
+The Amazon Resource Name (ARN) of the role to assume.
+
+**role_session_name (required)**
+
+An identifier for the assumed role session.
+
+**policy**
+
+An IAM policy in JSON format.
+
+**duration_seconds**
+
+The duration, in seconds, of the role session. The value can range from
+900 seconds (15 minutes) to 3600 seconds (1 hour). By default, the value
+is set to 3600 seconds.
+
+**external_id**
+
+A unique identifier that is used by third parties when assuming roles in
+their customers' accounts.
+
+### instance_profile_credentials
+
+Retrieve temporary security credentials via HTTP request. This is useful on
+EC2 instance.
+
+    <match *>
+      @type s3
+
+      <instance_profile_credentials>
+        ip_address IP_ADDRESS
+        port       PORT
+      </instance_profile_credentials>
+    </match>
+
+See also:
+
+*   [Aws::InstanceProfileCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/InstanceProfileCredentials.html)
+*   [Temporary Security Credentials - AWS Identity and Access
+    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html)
+*   [Instance Metadata and User Data - Amazon Elastic Compute
+    Cloud](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html)
+
+**retries**
+
+Number of times to retry when retrieving credentials. Default is 5.
+
+**ip_address**
+
+Default is 169.254.169.254.
+
+**port**
+
+Default is 80.
+
+**http_open_timeout**
+
+Default is 5.
+
+**http_read_timeout**
+
+Default is 5.
+
+### shared_credentials
+
+This loads AWS access credentials from local ini file. This is useful for
+local developing.
+
+    <match *>
+      @type s3
+
+      <shared_credentials>
+        path         PATH
+        profile_name PROFILE_NAME
+      </shared_credentials>
+    </match>
+
+See also:
+
+*   [Aws::SharedCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/SharedCredentials.html)
+
+**path**
+
+Path to the shared file. Defaults to "#{Dir.home}/.aws/credentials".
+
+**profile_name**
+
+Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
+
+## Configuration: Output
 
 ### v1.0 style
 
@@ -102,18 +229,9 @@ This configuration works with both fluentd v0.12 and v1.0.
 
 If you want to embed tag in `path` / `s3_object_key_format`, you need to use `fluent-plugin-forest` plugin.
 
-**aws_key_id**
-
-AWS access key id. This parameter is required when your agent is not
-running on EC2 instance with an IAM Role. When using an IAM role, make 
-sure to configure `instance_profile_credentials`. Usage can be found below.
-
-**aws_sec_key**
-
-AWS secret key. This parameter is required when your agent is not running
-on EC2 instance with an IAM Role.
-
 **aws_iam_retries**
+
+This parameter is deprecated. Use `instance_profile_credentials` instead.
 
 The number of attempts to make (with exponential backoff) when loading
 instance profile credentials from the EC2 metadata service using an IAM
@@ -460,117 +578,6 @@ It would be useful when you use S3 compatible storage that accepts only signatur
 
 Given a threshold to treat events as delay, output warning logs if delayed events were put into s3.
 
-### assume_role_credentials
-
-Typically, you use AssumeRole for cross-account access or federation.
-
-    <match *>
-      @type s3
-
-      <assume_role_credentials>
-        role_arn          ROLE_ARN
-        role_session_name ROLE_SESSION_NAME
-      </assume_role_credentials>
-    </match>
-
-See also:
-
-*   [Using IAM Roles - AWS Identity and Access
-    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html)
-*   [Aws::STS::Client](http://docs.aws.amazon.com/sdkforruby/api/Aws/STS/Client.html)
-*   [Aws::AssumeRoleCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/AssumeRoleCredentials.html)
-
-**role_arn (required)**
-
-The Amazon Resource Name (ARN) of the role to assume.
-
-**role_session_name (required)**
-
-An identifier for the assumed role session.
-
-**policy**
-
-An IAM policy in JSON format.
-
-**duration_seconds**
-
-The duration, in seconds, of the role session. The value can range from
-900 seconds (15 minutes) to 3600 seconds (1 hour). By default, the value
-is set to 3600 seconds.
-
-**external_id**
-
-A unique identifier that is used by third parties when assuming roles in
-their customers' accounts.
-
-### instance_profile_credentials
-
-Retrieve temporary security credentials via HTTP request. This is useful on
-EC2 instance.
-
-    <match *>
-      @type s3
-
-      <instance_profile_credentials>
-        ip_address IP_ADDRESS
-        port       PORT
-      </instance_profile_credentials>
-    </match>
-
-See also:
-
-*   [Aws::InstanceProfileCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/InstanceProfileCredentials.html)
-*   [Temporary Security Credentials - AWS Identity and Access
-    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html)
-*   [Instance Metadata and User Data - Amazon Elastic Compute
-    Cloud](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html)
-
-**retries**
-
-Number of times to retry when retrieving credentials. Default is 5.
-
-**ip_address**
-
-Default is 169.254.169.254.
-
-**port**
-
-Default is 80.
-
-**http_open_timeout**
-
-Default is 5.
-
-**http_read_timeout**
-
-Default is 5.
-
-### shared_credentials
-
-This loads AWS access credentials from local ini file. This is useful for
-local developing.
-
-    <match *>
-      @type s3
-
-      <shared_credentials>
-        path         PATH
-        profile_name PROFILE_NAME
-      </shared_credentials>
-    </match>
-
-See also:
-
-*   [Aws::SharedCredentials](http://docs.aws.amazon.com/sdkforruby/api/Aws/SharedCredentials.html)
-
-**path**
-
-Path to the shared file. Defaults to "#{Dir.home}/.aws/credentials".
-
-**profile_name**
-
-Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
-
 ## Input: Setup
 
 1. Create new [SQS](https://aws.amazon.com/documentation/sqs/) queue (use same region as S3)
@@ -579,7 +586,7 @@ Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
 4. Write configuration file such as fluent.conf
 5. Run fluentd
 
-## Input: Configuration
+## Configuration: Input
 
     <source>
       @type s3
@@ -593,19 +600,6 @@ Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
         queue_name YOUR_SQS_QUEUE_NAME
       </sqs>
     </source>
-
-**aws_key_id**
-
-AWS access key id. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
-
-**aws_sec_key**
-
-AWS secret key. This parameter is required when your agent is not running on EC2 instance with an IAM Role.
-
-**aws_iam_retries**
-
-The number of attempts to make (with exponential backoff) when loading instance profile credentials from the EC2 metadata
-service using an IAM role. Defaults to 5 retries.
 
 **s3_bucket (required)**
 
