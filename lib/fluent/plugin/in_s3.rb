@@ -187,7 +187,7 @@ module Fluent::Plugin
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         credentials_options[:external_id] = c.external_id if c.external_id
         if @s3_region
-        credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
+          credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
         end
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
       when @instance_profile_credentials
