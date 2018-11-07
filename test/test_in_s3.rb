@@ -162,7 +162,7 @@ EOS
     test_queue_url = "http://example.com/test_queue"
     @sqs_client = stub(Aws::SQS::Client.new(stub_responses: true))
     @sqs_response = stub(Struct::StubResponse.new(test_queue_url))
-    @sqs_client.get_queue_url(queue_name: "test_queue"){ @sqs_response }
+    @sqs_client.get_queue_url(queue_name: "test_queue", queue_owner_aws_account_id: "123456789123"){ @sqs_response }
     mock(Aws::SQS::Client).new(anything).once { @sqs_client }
     @real_poller = Aws::SQS::QueuePoller.new(test_queue_url, client: @sqs_client)
     @sqs_poller = stub(@real_poller)
