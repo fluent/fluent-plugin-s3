@@ -31,6 +31,7 @@ class S3InputTest < Test::Unit::TestCase
     buffer_type memory
     <sqs>
       queue_name test_queue
+      queue_owner_aws_account_id 123456789123
     </sqs>
   ]
 
