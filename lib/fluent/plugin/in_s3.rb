@@ -212,7 +212,7 @@ module Fluent::Plugin
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:force_path_style] = @force_path_style
-      options[:proxy_uri] = @proxy_uri if @proxy_uri
+      options[:http_proxy] = @proxy_uri if @proxy_uri
       log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
