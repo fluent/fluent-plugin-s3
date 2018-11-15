@@ -225,6 +225,7 @@ module Fluent::Plugin
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @sqs.endpoint if @sqs.endpoint
+      options[:http_proxy] = @proxy_uri if @proxy_uri
       log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
