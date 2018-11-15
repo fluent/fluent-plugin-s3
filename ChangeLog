@@ -1,3 +1,8 @@
+Release 1.1.7 - 2018/11/14
+
+  * in_s3: Fix the bug proxy_uri parameter setting
+  * in_s3: Support cross-acount bucket/sqs capability with AssumeRole
+
 Release 1.1.6 - 2018/09/11
 
   * in_s3: Add s3_endpoint parameter to support S3 compatible service
