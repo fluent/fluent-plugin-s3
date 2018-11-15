@@ -78,6 +78,8 @@ module Fluent::Plugin
     config_section :sqs, required: true, multi: false do
       desc "SQS queue name"
       config_param :queue_name, :string, default: nil
+      desc "SQS Owner Account ID"
+      config_param :queue_owner_aws_account_id, :string, default: nil
       desc "Use 's3_region' instead"
       config_param :endpoint, :string, default: nil
       desc "Skip message deletion"
@@ -133,7 +135,7 @@ module Fluent::Plugin
 
       sqs_client = create_sqs_client
       log.debug("Succeeded to create SQS client")
-      response = sqs_client.get_queue_url(queue_name: @sqs.queue_name)
+      response = sqs_client.get_queue_url(queue_name: @sqs.queue_name, queue_owner_aws_account_id: @sqs.queue_owner_aws_account_id)
       sqs_queue_url = response.queue_url
       log.debug("Succeeded to get SQS queue URL")
 
@@ -186,6 +188,9 @@ module Fluent::Plugin
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         credentials_options[:external_id] = c.external_id if c.external_id
+        if @s3_region
+          credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
+        end
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
       when @instance_profile_credentials
         c = @instance_profile_credentials
