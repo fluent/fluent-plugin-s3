@@ -282,11 +282,9 @@ to decide keys dynamically.
 * %{path} is exactly the value of **path** configured in the configuration file.
 E.g., "logs/" in the example configuration above.
 * %{time_slice} is the
-time-slice in text that are formatted with **time_slice_format**. %{index} is
-the sequential number starts from 0, increments when multiple files are
-uploaded to S3 in the same time slice.
-* %{file_extention} is always "gz" for
-now.
+time-slice in text that are formatted with **time_slice_format**.
+* %{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
+* %{file_extention} is always "gz" for now.
 * %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed. If you want to use this placeholder, install `uuidtools` gem first.
 * %{hostname} is replaced with `Socket.gethostname` result.
 * %{hex_random} a random hex string that is replaced for each buffer chunk, not
