@@ -650,6 +650,10 @@ When true, messages are not deleted after polling block. Default is false.
 
 The long polling interval. Default is 20.
 
+**sqs/retry_error_interval**
+
+Interval to retry polling SQS if polling unsuccessful, in seconds. Default is 300.
+
 ## IAM Policy
 
 The following is an example for a minimal IAM policy needed to write to an s3

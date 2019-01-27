@@ -86,6 +86,8 @@ module Fluent::Plugin
       config_param :skip_delete, :bool, default: false
       desc "The long polling interval."
       config_param :wait_time_seconds, :integer, default: 20
+      desc "Polling error retry interval."
+      config_param :retry_error_interval, :integer, default: 300
     end
 
     desc "Tag string"
@@ -159,18 +161,24 @@ module Fluent::Plugin
       @poller.before_request do |stats|
         throw :stop_polling unless @running
       end
-      @poller.poll(options) do |message|
-        begin
-          body = Yajl.load(message.body)
-          log.debug(body)
-          next unless body["Records"] # skip test queue
+      begin
+        @poller.poll(options) do |message|
+          begin
+            body = Yajl.load(message.body)
+            log.debug(body)
+            next unless body["Records"] # skip test queue
 
-          process(body)
-        rescue => e
-          log.warn(error: e)
-          log.warn_backtrace(e.backtrace)
-          throw :skip_delete
+            process(body)
+          rescue => e
+            log.warn(error: e)
+            log.warn_backtrace(e.backtrace)
+            throw :skip_delete
+          end
         end
+      rescue => e
+        log.warn("SQS Polling Failed. Retry in #{@sqs.retry_error_interval} seconds")
+        sleep(@sqs.retry_error_interval)
+        retry
       end
     end
 
