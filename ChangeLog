@@ -1,3 +1,8 @@
+Release 1.1.8 - 2019/01/28
+
+  * in_s3: Restart SQS polling when the error happens
+  * out_s3: Show root cause when error happens during compressor loading
+
 Release 1.1.7 - 2018/11/14
 
   * in_s3: Fix the bug proxy_uri parameter setting
