@@ -406,29 +406,16 @@ Create S3 bucket if it does not exists. Default is true.
 
 Check mentioned bucket if it exists in AWS or not. Default is true.
 
-When it is false,
-	fluentd will not check aws s3 for the existence of the mentioned bucket. This is the
-	case where bucket will be pre-created before running fluentd.
+When it is false, fluentd will not check aws s3 for the existence of the mentioned bucket.
+This is the case where bucket will be pre-created before running fluentd.
 
 **check_object**
 
 Check object before creation if it exists or not. Default is true.
 
-When it is false,
-	s3_object_key_format will be %{path}%{time_slice}_%{hms_slice}.%{file_extension} by default
-	where, hms_slice will be time-slice in hhmmss format, so that each object will be unique.
-	Example object name, assuming it is created on 2016/16/11 3:30:54 PM
-		20161611_153054.txt (extension can be anything as per user's choice)
-
-**Example when check_bucket=false and check_object=false**
-
-When the mentioned configuration will be made, fluentd will work with the
-minimum IAM poilcy, like:
-				"Statement": [{
-					"Effect": "Allow",
-					"Action": "s3:PutObject",
-					"Resource": ["*"]
-				}]
+When it is false, s3_object_key_format will be %{path}%{time_slice}_%{hms_slice}.%{file_extension} by default where,
+hms_slice will be time-slice in hhmmss format, so that each object will be unique.
+Example object name, assuming it is created on 2016/16/11 3:30:54 PM 20161611_153054.txt (extension can be anything as per user's choice)
 
 **check_apikey_on_start**
 
@@ -656,8 +643,7 @@ Interval to retry polling SQS if polling unsuccessful, in seconds. Default is 30
 
 ## IAM Policy
 
-The following is an example for a minimal IAM policy needed to write to an s3
-bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
+The following is an example for a IAM policy needed to write to an s3 bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
 
     {
       "Version": "2012-10-17",
@@ -680,8 +666,10 @@ bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
       ]
     }
 
-Note that the bucket must already exist and **auto_create_bucket** has no
-effect in this case.
+Note that the bucket must already exist and **auto_create_bucket** has no effect in this case.
+
+`s3:GetObject` is needed for object check to avoid object overwritten.
+If you set `check_object false`, `s3:GetObject` is not needed.
 
 Refer to the [AWS
 documentation](http://docs.aws.amazon.com/IAM/latest/UserGuide/ExampleIAMPolicies.html) for example policies.
@@ -690,6 +678,19 @@ Using [IAM
 roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/WorkingWithRoles.html)
 with a properly configured IAM policy are preferred over embedding access keys
 on EC2 instances.
+
+### Example when `check_bucket false` and `check_object false`
+
+When the mentioned configuration will be made, fluentd will work with the
+minimum IAM poilcy, like:
+
+
+    "Statement": [{
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": ["*"]
+    }]
+
 
 ## Use your (de)compression algorithm
 
