@@ -251,7 +251,7 @@ module Fluent::Plugin
           s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) do |matched_key|
             values_for_s3_object_key_pre.fetch(matched_key, matched_key)
           end
-          s3path = extract_placeholders(s3path, metadata)
+          s3path = extract_placeholders(s3path, chunk)
           s3path = s3path.gsub(%r(%{[^}]+}), values_for_s3_object_key_post)
           if (i > 0) && (s3path == previous_path)
             if @overwrite
@@ -289,7 +289,7 @@ module Fluent::Plugin
         s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) do |matched_key|
           values_for_s3_object_key_pre.fetch(matched_key, matched_key)
         end
-        s3path = extract_placeholders(s3path, metadata)
+        s3path = extract_placeholders(s3path, chunk)
         s3path = s3path.gsub(%r(%{[^}]+}), values_for_s3_object_key_post)
       end
 
@@ -319,7 +319,7 @@ module Fluent::Plugin
         if @s3_metadata
           put_options[:metadata] = {}
           @s3_metadata.each do |k, v|
-            put_options[:metadata][k] = extract_placeholders(v, metadata).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
+            put_options[:metadata][k] = extract_placeholders(v, chunk).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
           end
         end
         @bucket.object(s3path).put(put_options)
