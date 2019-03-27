@@ -253,6 +253,10 @@ recommend using `s3_region` instead of `s3_endpoint`.
 endpoint for S3 compatible services. For example, Riak CS based storage or
 something. This option doesn't work on S3, use `s3_region` instead.
 
+**enable_transfer_acceleration**
+
+Enable [S3 Transfer Acceleration](https://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html) for uploads. **IMPORTANT**: For this to work, you must first enable this feature on your destination S3 bucket.
+
 **use_bundled_cert**
 
 For cases where the default SSL certificate is unavailable (e.g. Windows), you can set this option to true in order to use the AWS SDK bundled certificate. Default is false.
