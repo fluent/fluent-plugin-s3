@@ -1,3 +1,7 @@
+Release 1.1.10 - 2019/05/08
+
+  * out_s3: force_path_style is deprecated
+
 Release 1.1.9 - 2019/03/26
 
   * out_s3: Add enable_transfer_acceleration parameter
