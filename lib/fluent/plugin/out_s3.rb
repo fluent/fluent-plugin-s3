@@ -75,7 +75,7 @@ module Fluent::Plugin
     desc "The format of S3 object keys"
     config_param :s3_object_key_format, :string, default: "%{path}%{time_slice}_%{index}.%{file_extension}"
     desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
-    config_param :force_path_style, :bool, default: false
+    config_param :force_path_style, :bool, default: false, deprecated: "S3 will drop path style API in 2020: See https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/"
     desc "Archive format on S3"
     config_param :store_as, :string, default: "gzip"
     desc "Create S3 bucket if it does not exists"

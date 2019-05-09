@@ -335,6 +335,8 @@ Above two configurations are same. The important point is wrapping `""` is neede
 bucket name is always left in the request URI and never moved to the host
 as a sub-domain. See Plugins::S3BucketDns for more details.
 
+This parameter is deprecated. See AWS announcement: https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
+
 **store_as**
 
 archive format on S3. You can use several format:
