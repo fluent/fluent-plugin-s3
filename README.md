@@ -202,7 +202,7 @@ For `<buffer>`, you can use any record field in `path` / `s3_object_key_format`.
       # parameters...
     </buffer>
 
-See official article for more detail: [Buffer section configurations](http://docs.fluentd.org/v1.0/articles/buffer-section)
+See official article for more detail: [Config: Buffer Section - Fluentd](https://docs.fluentd.org/configuration/buffer-section)
 
 Note that this configuration doesn't work with fluentd v0.12.
 
@@ -322,7 +322,7 @@ You get:
     "log/events/ts=20130111-23/events_1.gz"
     "log/events/ts=20130112-00/events_0.gz"
 
-NOTE: ${hostname} placeholder is deprecated since v0.8. You can get same result by using [configuration's embedded ruby code feature](http://docs.fluentd.org/articles/config-file#embedded-ruby-code).
+NOTE: ${hostname} placeholder is deprecated since v0.8. You can get same result by using [configuration's embedded ruby code feature](https://docs.fluentd.org/configuration/config-file#embedded-ruby-code).
 
     s3_object_key_format %{path}%{time_slice}_%{hostname}%{index}.%{file_extension}
     s3_object_key_format "%{path}%{time_slice}_#{Socket.gethostname}%{index}.%{file_extension}"
@@ -355,7 +355,7 @@ See `Use your compression algorithm` section for adding another format.
 **`<format>` or format**
 
 Change one line format in the S3 object. Supported formats are "out_file",
-"json", "ltsv" and "single_value". See also [official Formatter article](http://docs.fluentd.org/articles/formatter-plugin-overview).
+"json", "ltsv" and "single_value". See also [official Formatter article](https://docs.fluentd.org/formatter).
 
 * out_file (default).
 
