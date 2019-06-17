@@ -224,6 +224,41 @@ EOS
     assert_equal({ "message" => "aaa" }, events.first[2])
   end
 
+  def test_one_record_with_metadata
+    setup_mocks
+    d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\nadd_object_metadata true\n")
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body { StringIO.new("aaa") }
+    s3_object.get { s3_response }
+    @s3_bucket.object(anything).at_least(1) { s3_object }
+
+    body = {
+      "Records" => [
+        {
+          "s3" => {
+            "object" => {
+              "key" => "test_key"
+            }
+          }
+        }
+      ]
+    }
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run(expect_emits: 1)
+    events = d.events
+    assert_equal({ "s3_bucket" => "test_bucket", "s3_key" => "test_key", "message" => "aaa" }, events.first[2])
+  end
+
   def test_one_record_url_encoded
     setup_mocks
     d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\n")
@@ -257,6 +292,41 @@ EOS
     d.run(expect_emits: 1)
     events = d.events
     assert_equal({ "message" => "aaa" }, events.first[2])
+  end
+
+  def test_one_record_url_encoded_with_metadata
+    setup_mocks
+    d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\nadd_object_metadata true")
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body { StringIO.new("aaa") }
+    s3_object.get { s3_response }
+    @s3_bucket.object('test key').at_least(1) { s3_object }
+
+    body = {
+      "Records" => [
+        {
+          "s3" => {
+            "object" => {
+              "key" => "test+key"
+            }
+          }
+        }
+      ]
+    }
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run(expect_emits: 1)
+    events = d.events
+    assert_equal({ "s3_bucket" => "test_bucket", "s3_key" => "test+key", "message" => "aaa" }, events.first[2])
   end
 
   def test_one_record_multi_line
@@ -295,6 +365,46 @@ EOS
       { "message" => "aaa\n" },
       { "message" => "bbb\n" },
       { "message" => "ccc\n" }
+    ]
+    assert_equal(expected_records, events.map {|_tag, _time, record| record })
+  end
+
+  def test_one_record_multi_line_with_metadata
+    setup_mocks
+    d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\nadd_object_metadata true")
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body { StringIO.new("aaa\nbbb\nccc\n") }
+    s3_object.get { s3_response }
+    @s3_bucket.object(anything).at_least(1) { s3_object }
+
+    body = {
+      "Records" => [
+        {
+          "s3" => {
+            "object" => {
+              "key" => "test_key"
+            }
+          }
+        }
+      ]
+    }
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run(expect_emits: 1)
+    events = d.events
+    expected_records = [
+      { "s3_bucket" => "test_bucket", "s3_key" => "test_key", "message" => "aaa\n" },
+      { "s3_bucket" => "test_bucket", "s3_key" => "test_key", "message" => "bbb\n" },
+      { "s3_bucket" => "test_bucket", "s3_key" => "test_key", "message" => "ccc\n" }
     ]
     assert_equal(expected_records, events.map {|_tag, _time, record| record })
   end
