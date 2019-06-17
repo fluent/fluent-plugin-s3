@@ -1,3 +1,7 @@
+Release 1.1.11 - 2019/06/17
+
+  * in_s3: Add add_object_metadata parameter
+
 Release 1.1.10 - 2019/05/08
 
   * out_s3: force_path_style is deprecated
