@@ -5,9 +5,6 @@ alt="Build Status" />](https://travis-ci.org/fluent/fluent-plugin-s3) [<img
 src="https://codeclimate.com/github/fluent/fluent-plugin-s3/badges/gpa.svg"
 />](https://codeclimate.com/github/fluent/fluent-plugin-s3)
 
-## PR
-**it will be greatful that the plugin can push log to  owner S3 Storage like Ceph S3.**
-
 ## Overview
 
 **s3** output plugin buffers event logs in local file and upload it to S3
