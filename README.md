@@ -569,6 +569,16 @@ It would be useful when you use S3 compatible storage that accepts only signatur
 
 Given a threshold to treat events as delay, output warning logs if delayed events were put into s3.
 
+**bucket_lifecycle_rule**
+
+Specify one or more lifecycle rules for the bucket
+
+    <bucket_lifecycle_rule>
+      id UNIQUE_ID_FOR_THE_RULE
+      prefix OPTIONAL_PREFIX # Objects whose keys begin with this prefix will be affected by the rule. If not specified all objects of the bucket will be affected
+      expiration_days NUMBER_OF_DAYS # The number of days before the object will expire
+    </bucket_lifecycle_rule>
+
 ## Input: Setup
 
 1. Create new [SQS](https://aws.amazon.com/documentation/sqs/) queue (use same region as S3)

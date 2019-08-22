@@ -124,6 +124,14 @@ module Fluent::Plugin
     config_param :warn_for_delay, :time, default: nil
     desc "Arbitrary S3 metadata headers to set for the object"
     config_param :s3_metadata, :hash, default: nil
+    config_section :bucket_lifecycle_rule, param_name: :bucket_lifecycle_rules, multi: true do
+      desc "A unique ID for this rule"
+      config_param :id, :string
+      desc "Objects whose keys begin with this prefix will be affected by the rule. If not specified all objects of the bucket will be affected"
+      config_param :prefix, :string, default: ''
+      desc "The number of days before the object will expire"
+      config_param :expiration_days, :integer
+    end
 
     DEFAULT_FORMAT_TYPE = "out_file"
 
@@ -217,6 +225,7 @@ module Fluent::Plugin
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket if @check_bucket
+      ensure_bucket_lifecycle
 
       super
     end
@@ -370,6 +379,30 @@ module Fluent::Plugin
         else
           raise "The specified bucket does not exist: bucket = #{@s3_bucket}"
         end
+      end
+    end
+
+    def ensure_bucket_lifecycle
+      unless @bucket_lifecycle_rules.empty?
+        old_rules = get_bucket_lifecycle_rules
+        new_rules = @bucket_lifecycle_rules.sort_by { |rule| rule.id }.map do |rule|
+          { id: rule.id, expiration: { days: rule.expiration_days }, prefix: rule.prefix, status: "Enabled" }
+        end
+
+        unless old_rules == new_rules
+          log.info "Configuring bucket lifecycle rules for #{@s3_bucket} on #{@s3_endpoint}"
+          @bucket.lifecycle_configuration.put({ lifecycle_configuration: { rules: new_rules } })
+        end
+      end
+    end
+
+    def get_bucket_lifecycle_rules
+      begin
+        @bucket.lifecycle_configuration.rules.sort_by { |rule| rule[:id] }.map do |rule|
+          { id: rule[:id], expiration: { days: rule[:expiration][:days] }, prefix: rule[:prefix], status: rule[:status] }
+        end
+      rescue Aws::S3::Errors::NoSuchLifecycleConfiguration
+        []
       end
     end
 
