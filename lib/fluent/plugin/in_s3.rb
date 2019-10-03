@@ -261,7 +261,8 @@ module Fluent::Plugin
       raw_key = s3["object"]["key"]
       key = CGI.unescape(raw_key)
 
-      io = @bucket.object(key).get.body
+      obj = @bucket.object(key)
+      io = obj.get.body
       content = @extractor.extract(io)
       es = Fluent::MultiEventStream.new
       content.each_line do |line|
@@ -269,6 +270,10 @@ module Fluent::Plugin
           if @add_object_metadata
             record['s3_bucket'] = @s3_bucket
             record['s3_key'] = raw_key
+
+            obj.metadata.each do |key, value|
+              record[key] = value
+            end
           end
           es.add(time, record)
         end
