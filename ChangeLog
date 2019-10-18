@@ -1,3 +1,7 @@
+Release 1.2.0 - 2019/10/17
+
+  * out_s3: Add bucket_lifecycle_rule section to set bucket's lifecycle
+
 Release 1.1.11 - 2019/06/17
 
   * in_s3: Add add_object_metadata parameter
