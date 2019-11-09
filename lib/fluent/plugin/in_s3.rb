@@ -218,11 +218,7 @@ module Fluent::Plugin
         c = @shared_credentials
         credentials_options[:path] = c.path if c.path
         credentials_options[:profile_name] = c.profile_name if c.profile_name
-        if ENV["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"]
-          options[:credentials] = Aws::ECSCredentials.new(credentials_options)
-        else
-          options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
-        end
+        options[:credentials] = Aws::ECSCredentials.new(credentials_options)
       else
         # Use default credentials
         # See http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Client.html
