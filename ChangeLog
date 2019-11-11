@@ -1,3 +1,7 @@
+Release 1.2.1 - 2019/11/10
+
+  * in_s3: Support ECSCredentials
+
 Release 1.2.0 - 2019/10/17
 
   * out_s3: Add bucket_lifecycle_rule section to set bucket's lifecycle
