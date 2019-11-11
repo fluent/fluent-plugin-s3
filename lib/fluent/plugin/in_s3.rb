@@ -209,7 +209,11 @@ module Fluent::Plugin
         credentials_options[:port] = c.port if c.port
         credentials_options[:http_open_timeout] = c.http_open_timeout if c.http_open_timeout
         credentials_options[:http_read_timeout] = c.http_read_timeout if c.http_read_timeout
-        options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
+        if ENV["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"]
+          options[:credentials] = Aws::ECSCredentials.new(credentials_options)
+        else
+          options[:credentials] = Aws::InstanceProfileCredentials.new(credentials_options)
+        end
       when @shared_credentials
         c = @shared_credentials
         credentials_options[:path] = c.path if c.path
