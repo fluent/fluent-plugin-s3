@@ -296,7 +296,7 @@ Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-consi
 You can configure the length of string with a
 `hex_random_length` parameter (Default: 4).
 
-The default format is `%{path}%{time_slice}_%{index}.%{file_extension}`.
+The default format is `%{path}%{time_slice}_%{index}.%{file_extension}`. In addition, you can use [buffer placeholders](https://docs.fluentd.org/configuration/buffer-section#placeholders) in this parameter.
 
 For instance, using the example configuration above, actual object keys on S3
 will be something like:
@@ -352,7 +352,7 @@ See `Use your compression algorithm` section for adding another format.
 **`<format>` or format**
 
 Change one line format in the S3 object. Supported formats are "out_file",
-"json", "ltsv" and "single_value". See also [official Formatter article](https://docs.fluentd.org/formatter).
+"json", "ltsv", "single_value" and other formatter plugins. See also [official Formatter article](https://docs.fluentd.org/formatter).
 
 * out_file (default).
 
@@ -372,7 +372,14 @@ information to the record by setting "include_tag_key" / "tag_key" and
 "include_time_key" / "time_key" option. If you set following configuration in
 S3 output:
 
-    format json
+    # v1
+    <format>
+      @type json
+      include_time_key true
+      time_key log_time # default is time
+    </format>
+    # v0.12
+    @format json
     include_time_key true
     time_key log_time # default is time
 
@@ -430,21 +437,27 @@ uri of proxy environment.
 
 **path**
 
-path prefix of the files on S3. Default is "" (no prefix).
+path prefix of the files on S3. Default is "" (no prefix). [buffer placeholder](https://docs.fluentd.org/configuration/buffer-section#placeholders) is supported.
 
 **buffer_path (required)**
 
 path prefix of the files to buffer logs.
+
+This parameter is for v0.12. Use `<buffer>`'s `path` in v1.
 
 **time_slice_format**
 
 Format of the time used as the file name. Default is '%Y%m%d'. Use
 '%Y%m%d%H' to split files hourly.
 
+This parameter is for v0.12. Use buffer placeholder for `path` / `s3_object_key_format` in v1.
+
 **time_slice_wait**
 
 The time to wait old logs. Default is 10 minutes. Specify larger value if
 old logs may reach.
+
+This parameter is for v0.12. Use `<buffer>`'s `timekey_wait` in v1.
 
 **utc**
 
