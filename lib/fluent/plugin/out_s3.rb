@@ -188,8 +188,8 @@ module Fluent::Plugin
         if conf.has_key?('s3_object_key_format')
           log.warn "Set 'check_object false' and s3_object_key_format is specified. Check s3_object_key_format is unique in each write. If not, existing file will be overwritten."
         else
-          log.warn "Set 'check_object false' and s3_object_key_format is not specified. Use '%{path}/%{time_slice}_%{hms_slice}.%{file_extension}' for s3_object_key_format"
-          @s3_object_key_format = "%{path}/%{time_slice}_%{hms_slice}.%{file_extension}"
+          log.warn "Set 'check_object false' and s3_object_key_format is not specified. Use '%{path}%{time_slice}_%{hms_slice}.%{file_extension}' for s3_object_key_format"
+          @s3_object_key_format = "%{path}%{time_slice}_%{hms_slice}.%{file_extension}"
         end
       end
 
