@@ -165,7 +165,7 @@ Defaults to 'default' or `[ENV]('AWS_PROFILE')`.
 
 ### v1.0 style
 
-With fluentd v1.0 and fluent-plugin-s3 v1.0.0, use new buffer configuration to dynamic parameters.
+With fluentd v1 and fluent-plugin-s3 v1.0.0 or later, use new buffer configuration to dynamic parameters.
 
     <match pattern>
       @type s3
@@ -248,7 +248,9 @@ recommend using `s3_region` instead of `s3_endpoint`.
 **s3_endpoint**
 
 endpoint for S3 compatible services. For example, Riak CS based storage or
-something. This option doesn't work on S3, use `s3_region` instead.
+something. This option is deprecated for AWS S3, use `s3_region` instead.
+
+See also AWS article: [Working with Regions](https://aws.amazon.com/blogs/developer/working-with-regions/).
 
 **enable_transfer_acceleration**
 
@@ -296,7 +298,14 @@ Service](https://docs.aws.amazon.com/AmazonS3/latest/dev/request-rate-perf-consi
 You can configure the length of string with a
 `hex_random_length` parameter (Default: 4).
 
-The default format is `%{path}%{time_slice}_%{index}.%{file_extension}`. In addition, you can use [buffer placeholders](https://docs.fluentd.org/configuration/buffer-section#placeholders) in this parameter.
+The default format is `%{path}%{time_slice}_%{index}.%{file_extension}`.
+In addition, you can use [buffer placeholders](https://docs.fluentd.org/configuration/buffer-section#placeholders) in this parameter,
+so you can embed tag, time and record value like below:
+
+    s3_object_key_format %{path}/events/%Y%m%d/${tag}_%{index}.%{file_extension}
+    <buffer tag,time>
+      # buffer parameters...
+    </buffer>
 
 For instance, using the example configuration above, actual object keys on S3
 will be something like:
@@ -437,22 +446,29 @@ uri of proxy environment.
 
 **path**
 
-path prefix of the files on S3. Default is "" (no prefix). [buffer placeholder](https://docs.fluentd.org/configuration/buffer-section#placeholders) is supported.
+path prefix of the files on S3. Default is "" (no prefix).
+[buffer placeholder](https://docs.fluentd.org/configuration/buffer-section#placeholders) is supported,
+so you can embed tag, time and record value like below.
 
-**buffer_path (required)**
+    path logs/%Y%m%d/${tag}/
+    <buffer tag,time>
+      # buffer parameters...
+    </buffer>
+
+**buffer_path (for v0.12)**
 
 path prefix of the files to buffer logs.
 
 This parameter is for v0.12. Use `<buffer>`'s `path` in v1.
 
-**time_slice_format**
+**time_slice_format(for v0.12)**
 
 Format of the time used as the file name. Default is '%Y%m%d'. Use
 '%Y%m%d%H' to split files hourly.
 
 This parameter is for v0.12. Use buffer placeholder for `path` / `s3_object_key_format` in v1.
 
-**time_slice_wait**
+**time_slice_wait(for v0.12)**
 
 The time to wait old logs. Default is 10 minutes. Specify larger value if
 old logs may reach.
