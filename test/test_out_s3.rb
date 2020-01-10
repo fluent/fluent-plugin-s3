@@ -10,6 +10,7 @@ require 'zlib'
 require 'fileutils'
 require 'timecop'
 require 'uuidtools'
+require 'ostruct'
 
 include Fluent::Test::Helpers
 
@@ -427,6 +428,7 @@ EOC
 
   def setup_mocks(exists_return = false)
     @s3_client = stub(Aws::S3::Client.new(stub_responses: true))
+    stub(@s3_client).config { OpenStruct.new({region: "us-east-1"}) }
     # aws-sdk-s3 calls Client#put_object inside Object#put
     mock(@s3_client).put_object(anything).at_least(0) { MockResponse.new({}) }
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
@@ -464,6 +466,7 @@ EOC
 
   def setup_mocks_hardened_policy()
     @s3_client = stub(Aws::S3::Client.new(:stub_responses => true))
+    stub(@s3_client).config { OpenStruct.new({region: "us-east-1"}) }
     mock(@s3_client).put_object(anything).at_least(0) { MockResponse.new({}) }
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
     @s3_resource = mock(Aws::S3::Resource.new(:client => @s3_client))
