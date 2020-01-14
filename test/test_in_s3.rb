@@ -11,6 +11,7 @@ require 'fluent/plugin/in_s3'
 require 'test/unit/rr'
 require 'zlib'
 require 'fileutils'
+require 'ostruct'
 
 include Fluent::Test::Helpers
 
@@ -152,6 +153,7 @@ EOS
 
   def setup_mocks
     @s3_client = stub(Aws::S3::Client.new(stub_responses: true))
+    stub(@s3_client).config { OpenStruct.new({region: "us-east-1"}) }
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
     @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
     mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
