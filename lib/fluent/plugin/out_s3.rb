@@ -40,6 +40,20 @@ module Fluent::Plugin
       desc "A unique identifier that is used by third parties when assuming roles in their customers' accounts."
       config_param :external_id, :string, default: nil, secret: true
     end
+    # See the following link for additional params that could be added:
+    # https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/STS/Client.html#assume_role_with_web_identity-instance_method
+    config_section :web_identity_credentials, multi: false do
+      desc "The Amazon Resource Name (ARN) of the role to assume"
+      config_param :role_arn, :string # required
+      desc "An identifier for the assumed role session"
+      config_param :role_session_name, :string #required
+      desc "The absolute path to the file on disk containing the OIDC token"
+      config_param :web_identity_token_file, :string, default: nil #required
+      desc "An IAM policy in JSON format"
+      config_param :policy, :string, default: nil
+      desc "The duration, in seconds, of the role session (900-43200)"
+      config_param :duration_seconds, :integer, default: nil
+    end
     config_section :instance_profile_credentials, multi: false do
       desc "Number of times to retry when retrieving credentials"
       config_param :retries, :integer, default: nil
@@ -175,7 +189,7 @@ module Fluent::Plugin
       end
 
       unless @index_format =~ /^%(0\d*)?[dxX]$/
-        raise Fluent::ConfigError, "index_format parameter should follow `%[flags][width]type`. `0` is the only supported flag, and is mandatory if width is specified. `d`, `x` and `X` are supported types" 
+        raise Fluent::ConfigError, "index_format parameter should follow `%[flags][width]type`. `0` is the only supported flag, and is mandatory if width is specified. `d`, `x` and `X` are supported types"
       end
 
       if @reduced_redundancy
@@ -460,6 +474,19 @@ module Fluent::Plugin
           credentials_options[:client] = Aws::STS::Client.new(region: @s3_region)
         end
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
+      when @web_identity_credentials
+        c = @web_identity_credentials
+        credentials_options[:role_arn] = c.role_arn
+        credentials_options[:role_session_name] = c.role_session_name
+        credentials_options[:web_identity_token_file] = c.web_identity_token_file
+        credentials_options[:policy] = c.policy if c.policy
+        # TODO: Validation or clamping? If we go above 12 hours, the request will fail...
+        #       Is it better behavior to hard fail, or just provide the max session duration?
+        credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
+        if @s3_region
+          credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
+        end
+        options[:credentials] = Aws::AssumeRoleWebIdentityCredentials.new(credentials_options)
       when @instance_profile_credentials
         c = @instance_profile_credentials
         credentials_options[:retries] = c.retries if c.retries
