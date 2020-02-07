@@ -50,7 +50,7 @@ module Fluent::Plugin
       desc "An identifier for the assumed role session"
       config_param :role_session_name, :string #required
       desc "The absolute path to the file on disk containing the OIDC token"
-      config_param :web_identity_token_file, :string, default: nil #required
+      config_param :web_identity_token_file, :string #required
       desc "An IAM policy in JSON format"
       config_param :policy, :string, default: nil
       desc "The duration, in seconds, of the role session (900-43200)"
@@ -222,8 +222,6 @@ module Fluent::Plugin
         credentials_options[:role_session_name] = c.role_session_name
         credentials_options[:web_identity_token_file] = c.web_identity_token_file
         credentials_options[:policy] = c.policy if c.policy
-        # TODO: Validation or clamping? If we go above 12 hours, the request will fail...
-        #       Is it better behavior to hard fail, or just provide the max session duration?
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         if @s3_region
           credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
