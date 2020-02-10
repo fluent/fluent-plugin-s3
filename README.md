@@ -93,6 +93,51 @@ is set to 3600 seconds.
 A unique identifier that is used by third parties when assuming roles in
 their customers' accounts.
 
+### web_identity_credentials
+
+Similar to the assume_role_credentials, but for usage in EKS.
+
+    <match *>
+      @type s3
+
+      <web_identity_credentials>
+        role_arn          ROLE_ARN
+        role_session_name ROLE_SESSION_NAME
+        web_identity_token_file AWS_WEB_IDENTITY_TOKEN_FILE
+      </web_identity_credentials>
+    </match>
+
+See also:
+
+*   [Using IAM Roles - AWS Identity and Access
+    Management](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html)
+*   [IAM Roles For Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts-technical-overview.html)
+*   [Aws::STS::Client](http://docs.aws.amazon.com/sdkforruby/api/Aws/STS/Client.html)
+*   [Aws::AssumeRoleWebIdentityCredentials](https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/AssumeRoleWebIdentityCredentials.html)
+
+**role_arn (required)**
+
+The Amazon Resource Name (ARN) of the role to assume.
+
+**role_session_name (required)**
+
+An identifier for the assumed role session.
+
+**web_identity_token_file (required)**
+
+The absolute path to the file on disk containing the OIDC token
+
+**policy**
+
+An IAM policy in JSON format.
+
+**duration_seconds**
+
+The duration, in seconds, of the role session. The value can range from
+900 seconds (15 minutes) to 43200 seconds (12 hours). By default, the value
+is set to 3600 seconds.
+
+
 ### instance_profile_credentials
 
 Retrieve temporary security credentials via HTTP request. This is useful on
