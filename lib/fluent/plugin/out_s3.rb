@@ -53,6 +53,10 @@ module Fluent::Plugin
       config_param :policy, :string, default: nil
       desc "The duration, in seconds, of the role session (900-43200)"
       config_param :duration_seconds, :integer, default: nil
+      desc "A http proxy url for requests to aws sts service"
+      config_param :sts_http_proxy, :string, default: nil, secret: true
+      desc "A url for a regional sts api endpoint, the default is global"
+      config_param :sts_endpoint_url, :string, default: nil
     end
     config_section :instance_profile_credentials, multi: false do
       desc "Number of times to retry when retrieving credentials"
@@ -470,8 +474,19 @@ module Fluent::Plugin
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         credentials_options[:external_id] = c.external_id if c.external_id
-        if @s3_region
-          credentials_options[:client] = Aws::STS::Client.new(region: @s3_region)
+        credentials_options[:sts_endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
+        if c.sts_http_proxy and c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(http_proxy: c.sts_http_proxy, endpoint: c.sts_endpoint_url)
+        elsif @region and c.sts_http_proxy
+          credentials_options[:client] = Aws::STS::Client.new(region: @region, http_proxy: c.sts_http_proxy)
+        elsif @region and c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(region: @region, endpoint: c.sts_endpoint_url)
+        elsif c.sts_http_proxy
+          credentials_options[:client] = Aws::STS::Client.new(http_proxy: c.sts_http_proxy)
+        elsif c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(endpoint: c.sts_endpoint_url)
+        elsif @region
+          credentials_options[:client] = Aws::STS::Client.new(region: @region)
         end
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
       when @web_identity_credentials
