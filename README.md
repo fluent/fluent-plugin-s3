@@ -449,9 +449,6 @@ See also [official Inject Section article](https://docs.fluentd.org/configuratio
         key1:value1\tkey2:value2
         ...
 
-
-"ltsv" format also accepts `<inject>` options. See "json" section.
-
 * single_value
 
 
