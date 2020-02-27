@@ -431,7 +431,7 @@ S3 output:
     </format>
     <inject>
       time_key log_time
-    </inject>`
+    </inject>
     # v0.12
     @format json
     include_time_key true
