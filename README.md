@@ -422,16 +422,16 @@ Change one line format in the S3 object. Supported formats are "out_file",
 
 
 At this format, "time" and "tag" are omitted. But you can set these
-information to the record by setting "include_tag_key" / "tag_key" and
-"include_time_key" / "time_key" option. If you set following configuration in
+information to the record by setting `<inject>` option. If you set following configuration in
 S3 output:
 
     # v1
     <format>
       @type json
-      include_time_key true
-      time_key log_time # default is time
     </format>
+    <inject>
+      time_key log_time
+    </inject>
     # v0.12
     @format json
     include_time_key true
@@ -441,14 +441,13 @@ then the record has log_time field.
 
     {"log_time":"time string",...}
 
+See also [official Inject Section article](https://docs.fluentd.org/configuration/inject-section).
+
 * ltsv
 
         key1:value1\tkey2:value2
         key1:value1\tkey2:value2
         ...
-
-
-"ltsv" format also accepts "include_xxx" related options. See "json" section.
 
 * single_value
 
