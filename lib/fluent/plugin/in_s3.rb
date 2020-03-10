@@ -104,8 +104,6 @@ module Fluent::Plugin
       config_param :wait_time_seconds, :integer, default: 20
       desc "Polling error retry interval."
       config_param :retry_error_interval, :integer, default: 300
-      desc "Assume messages as SNS notifications"
-      config_param :assume_sns, :bool, default: false
     end
 
     desc "Tag string"
@@ -184,10 +182,6 @@ module Fluent::Plugin
           begin
             body = Yajl.load(message.body)
             log.debug(body)
-            if @assume_sns
-              next unless body["Message"]
-              body = Yajl.load(body["Message"])
-            end
             next unless body["Records"] # skip test queue
 
             process(body)
