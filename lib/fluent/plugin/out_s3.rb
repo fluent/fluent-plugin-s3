@@ -16,6 +16,7 @@ module Fluent::Plugin
       super
       @compressor = nil
       @uuid_flush_enabled = false
+      @use_compressed_buffer = false
     end
 
     desc "Path prefix of the files on S3"
@@ -92,6 +93,8 @@ module Fluent::Plugin
     config_param :force_path_style, :bool, default: false, deprecated: "S3 will drop path style API in 2020: See https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/"
     desc "Archive format on S3"
     config_param :store_as, :string, default: "gzip"
+    desc "Execute compression again even when buffer chunk is already compressed."
+    config_param :recompress, :bool, default: false
     desc "Create S3 bucket if it does not exists"
     config_param :auto_create_bucket, :bool, default: true
     desc "Check AWS key on start"
@@ -181,6 +184,10 @@ module Fluent::Plugin
         @compressor = TextCompressor.new
       end
       @compressor.configure(conf)
+
+      if @buffer.compress == :gzip && @store_as == 'gzip' && !@recompress
+        @use_compressed_buffer = true
+      end
 
       @formatter = formatter_create
 
@@ -319,46 +326,55 @@ module Fluent::Plugin
         s3path = s3path.gsub(%r(%{[^}]+}), values_for_s3_object_key_post)
       end
 
-      tmp = Tempfile.new("s3-")
-      tmp.binmode
-      begin
-        @compressor.compress(chunk, tmp)
-        tmp.rewind
-        log.debug "out_s3: write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}"
+      put_options = {
+        content_type: @compressor.content_type,
+        storage_class: @storage_class,
+      }
+      put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
+      put_options[:ssekms_key_id] = @ssekms_key_id if @ssekms_key_id
+      put_options[:sse_customer_algorithm] = @sse_customer_algorithm if @sse_customer_algorithm
+      put_options[:sse_customer_key] = @sse_customer_key if @sse_customer_key
+      put_options[:sse_customer_key_md5] = @sse_customer_key_md5 if @sse_customer_key_md5
+      put_options[:acl] = @acl if @acl
+      put_options[:grant_full_control] = @grant_full_control if @grant_full_control
+      put_options[:grant_read] = @grant_read if @grant_read
+      put_options[:grant_read_acp] = @grant_read_acp if @grant_read_acp
+      put_options[:grant_write_acp] = @grant_write_acp if @grant_write_acp
 
-        put_options = {
-          body: tmp,
-          content_type: @compressor.content_type,
-          storage_class: @storage_class,
-        }
-        put_options[:server_side_encryption] = @use_server_side_encryption if @use_server_side_encryption
-        put_options[:ssekms_key_id] = @ssekms_key_id if @ssekms_key_id
-        put_options[:sse_customer_algorithm] = @sse_customer_algorithm if @sse_customer_algorithm
-        put_options[:sse_customer_key] = @sse_customer_key if @sse_customer_key
-        put_options[:sse_customer_key_md5] = @sse_customer_key_md5 if @sse_customer_key_md5
-        put_options[:acl] = @acl if @acl
-        put_options[:grant_full_control] = @grant_full_control if @grant_full_control
-        put_options[:grant_read] = @grant_read if @grant_read
-        put_options[:grant_read_acp] = @grant_read_acp if @grant_read_acp
-        put_options[:grant_write_acp] = @grant_write_acp if @grant_write_acp
-
-        if @s3_metadata
-          put_options[:metadata] = {}
-          @s3_metadata.each do |k, v|
-            put_options[:metadata][k] = extract_placeholders(v, chunk).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
-          end
+      if @s3_metadata
+        put_options[:metadata] = {}
+        @s3_metadata.each do |k, v|
+          put_options[:metadata][k] = extract_placeholders(v, chunk).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
         end
-        @bucket.object(s3path).put(put_options)
+      end
 
-        @values_for_s3_object_chunk.delete(chunk.unique_id)
+      log.debug "out_s3: write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}"
 
-        if @warn_for_delay
-          if Time.at(chunk.metadata.timekey) < Time.now - @warn_for_delay
-            log.warn "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}"
-          end
+      if @use_compressed_buffer
+        chunk.open(compressed: :gzip) do |chunk_io|
+          put_options[:body] = chunk_io
+          @bucket.object(s3path).put(put_options)
         end
-      ensure
-        tmp.close(true) rescue nil
+      else
+        tmp = Tempfile.new("s3-")
+        tmp.binmode
+        begin
+          @compressor.compress(chunk, tmp)
+          tmp.rewind
+
+          put_options[:body] = tmp
+          @bucket.object(s3path).put(put_options)
+        ensure
+          tmp.close(true) rescue nil
+        end
+      end
+
+      @values_for_s3_object_chunk.delete(chunk.unique_id)
+
+      if @warn_for_delay
+        if Time.at(chunk.metadata.timekey) < Time.now - @warn_for_delay
+          log.warn "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}"
+        end
       end
     end
 

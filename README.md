@@ -461,6 +461,10 @@ log"}', then contents are
 
 You can change key name by "message_key" option.
 
+**recompress**
+
+Execute compression again even when buffer chunk is already compressed. Default is false.
+
 **auto_create_bucket**
 
 Create S3 bucket if it does not exists. Default is true.
