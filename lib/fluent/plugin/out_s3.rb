@@ -84,6 +84,8 @@ module Fluent::Plugin
     config_param :s3_endpoint, :string, default: nil
     desc "If true, S3 Transfer Acceleration will be enabled for uploads. IMPORTANT: You must first enable this feature on your destination S3 bucket"
     config_param :enable_transfer_acceleration, :bool, default: false
+    desc "If true, use Amazon S3 Dual-Stack Endpoints. Will make it possible to use either IPv4 or IPv6 when connecting to S3."
+    config_param :enable_dual_stack, :bool, default: false
     desc "If false, the certificate of endpoint will not be verified"
     config_param :ssl_verify_peer, :bool, :default => true
     desc "The format of S3 object keys"
@@ -223,6 +225,7 @@ module Fluent::Plugin
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:use_accelerate_endpoint] = @enable_transfer_acceleration
+      options[:use_dualstack_endpoint] = @enable_dual_stack
       options[:http_proxy] = @proxy_uri if @proxy_uri
       options[:force_path_style] = @force_path_style
       options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
