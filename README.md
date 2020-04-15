@@ -301,6 +301,10 @@ See also AWS article: [Working with Regions](https://aws.amazon.com/blogs/develo
 
 Enable [S3 Transfer Acceleration](https://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html) for uploads. **IMPORTANT**: For this to work, you must first enable this feature on your destination S3 bucket.
 
+**enable_dual_stack**
+
+Enable [Amazon S3 Dual-Stack Endpoints](https://docs.aws.amazon.com/AmazonS3/latest/dev/dual-stack-endpoints.html) for uploads. Will make it possible to use either IPv4 or IPv6 when connecting to S3.
+
 **use_bundled_cert**
 
 For cases where the default SSL certificate is unavailable (e.g. Windows), you can set this option to true in order to use the AWS SDK bundled certificate. Default is false.
