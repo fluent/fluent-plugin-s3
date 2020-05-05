@@ -32,7 +32,7 @@ We must setup SQS queue and S3 event notification before use this plugin.
 Simply use RubyGems:
 
     $ gem install fluent-plugin-s3 -v "~> 0.8" --no-document # for fluentd v0.12 or later
-    $ gem install fluent-plugin-s3 -v 1.0.0 --no-document # for fluentd v1.0 or later
+    $ gem install fluent-plugin-s3 -v 1.3.0 --no-document # for fluentd v1.0 or later
 
 ## Configuration: credentials
 
