@@ -209,6 +209,8 @@ module Fluent::Plugin
         end
       end
 
+      check_s3_path_safety(conf)
+
       # For backward compatibility
       # TODO: Remove time_slice_format when end of support compat_parameters
       @configured_time_slice_format = conf['time_slice_format']
@@ -449,6 +451,16 @@ module Fluent::Plugin
         log.warn "%{hostname} will be removed in the future. Use \"\#{Socket.gethostname}\" instead"
         Socket.gethostname
       }
+    end
+
+    def check_s3_path_safety(conf)
+      unless conf.has_key?('s3_object_key_format')
+        log.warn "The default value of s3_object_key_format will use ${chunk_id} instead of %{index} to avoid object conflict in v2"
+      end
+
+      if (@buffer_config.flush_thread_count > 1) && ['${chunk_id}', '%{uuid_flush}'].none? { |key| @s3_object_key_format.include?(key) }
+        log.warn "No ${chunk_id} or %{uuid_flush} in s3_object_key_format with multiple flush threads. Recommend to set ${chunk_id} or %{uuid_flush} to avoid data lost by object conflict"
+      end
     end
 
     def check_apikeys
