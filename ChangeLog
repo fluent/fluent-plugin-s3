@@ -1,3 +1,7 @@
+Release 1.3.2 - 2020/05/18
+
+  * out_s3: Show warning message for object conflict case.
+
 Release 1.3.1 - 2020/04/15
 
   * out_s3: Support S3 Dual-Stack Endpoints in output plugin via enable_dual_stack parameter
