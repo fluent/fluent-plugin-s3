@@ -687,4 +687,25 @@ EOC
     d.instance.log.out.reset
     FileUtils.rm_f(s3_local_file_path)
   end
+
+  def test_assume_role_credentials_fail
+    setup_mocks
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    mock(Aws::AssumeRoleCredentials).new(
+      role_arn: "test_arn",
+      role_session_name: "test_session",
+      client: anything
+    ) { raise Aws::STS::Errors::AccessDenied.new("a", "b") }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    d.run {}
+    # should not raise an exception
+  end
+
 end
