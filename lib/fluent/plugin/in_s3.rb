@@ -118,14 +118,6 @@ module Fluent::Plugin
     def configure(conf)
       super
 
-      if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
-        raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
-      end
-
-      if @sqs.endpoint && @sqs.endpoint.end_with?('amazonaws.com')
-        raise Fluent::ConfigError, "sqs/endpoint parameter is not supported for SQS, use s3_region instead. This parameter is for SQS compatible services"
-      end
-
       parser_config = conf.elements("parse").first
       unless @sqs.queue_name
         raise Fluent::ConfigError, "sqs/queue_name is required"

@@ -171,10 +171,6 @@ module Fluent::Plugin
 
       Aws.use_bundled_cert! if @use_bundled_cert
 
-      if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
-        raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
-      end
-
       begin
         buffer_type = @buffer_config[:@type]
         @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(buffer_type: buffer_type, log: log)
