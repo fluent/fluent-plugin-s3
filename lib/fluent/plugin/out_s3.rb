@@ -486,11 +486,10 @@ module Fluent::Plugin
         elsif c.sts_endpoint_url
           credentials_options[:client] = Aws::STS::Client.new(endpoint: c.sts_endpoint_url)
         elsif @region
-opt = @s3_region ? { region: @s3_region } : {}
-opt[:http_proxy] = c.sts_http_proxy if c.sts_http_proxy
-opt[:endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
-
-credentials_options[:client] = Aws::STS::Client.new(**opt)     
+          opt = @s3_region ? { region: @s3_region } : {}
+          opt[:http_proxy] = c.sts_http_proxy if c.sts_http_proxy
+          opt[:endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(**opt)
         end
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
       when @web_identity_credentials
