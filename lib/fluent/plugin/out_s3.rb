@@ -39,6 +39,8 @@ module Fluent::Plugin
       config_param :duration_seconds, :integer, default: nil
       desc "A unique identifier that is used by third parties when assuming roles in their customers' accounts."
       config_param :external_id, :string, default: nil, secret: true
+      desc "The region of the STS endpoint to use."
+      config_param :sts_region, :string, default: nil
     end
     # See the following link for additional params that could be added:
     # https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/STS/Client.html#assume_role_with_web_identity-instance_method
@@ -53,6 +55,8 @@ module Fluent::Plugin
       config_param :policy, :string, default: nil
       desc "The duration, in seconds, of the role session (900-43200)"
       config_param :duration_seconds, :integer, default: nil
+      desc "The region of the STS endpoint to use."
+      config_param :sts_region, :string, default: nil
     end
     config_section :instance_profile_credentials, multi: false do
       desc "Number of times to retry when retrieving credentials"
@@ -470,7 +474,9 @@ module Fluent::Plugin
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         credentials_options[:external_id] = c.external_id if c.external_id
-        if @s3_region
+        if c.sts_region
+          credentials_options[:client] = Aws::STS::Client.new(region: c.sts_region)
+        elsif @s3_region
           credentials_options[:client] = Aws::STS::Client.new(region: @s3_region)
         end
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
@@ -481,7 +487,9 @@ module Fluent::Plugin
         credentials_options[:web_identity_token_file] = c.web_identity_token_file
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
-        if @s3_region
+        if c.sts_region
+          credentials_options[:client] = Aws::STS::Client.new(:region => c.sts_region)
+        elsif @s3_region
           credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
         end
         options[:credentials] = Aws::AssumeRoleWebIdentityCredentials.new(credentials_options)
