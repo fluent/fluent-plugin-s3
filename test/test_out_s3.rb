@@ -593,6 +593,36 @@ EOC
     assert_equal(expected_credentials, credentials)
   end
 
+  def test_web_identity_credentials_with_sts_region
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    sts_client = Aws::STS::Client.new(region: 'us-east-1')
+    mock(Aws::STS::Client).new(region: 'us-east-1'){ sts_client }
+    mock(Aws::AssumeRoleWebIdentityCredentials).new(
+      role_arn: "test_arn",
+      role_session_name: "test_session",
+      web_identity_token_file: "test_file",
+      client: sts_client
+    ){
+      expected_credentials
+    }
+
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      s3_region us-west-2
+      <web_identity_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        web_identity_token_file test_file
+        sts_region us-east-1
+      </web_identity_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
   def test_instance_profile_credentials
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     mock(Aws::InstanceProfileCredentials).new({}).returns(expected_credentials)
