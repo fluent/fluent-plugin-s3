@@ -122,7 +122,7 @@ module Fluent::Plugin
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
 
-      if @sqs_endpoint && (@sqs_endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @sqs_endpoint.include?(e) })
+      if @sqs.endpoint && (@sqs.endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @sqs.endpoint.include?(e) })
         raise Fluent::ConfigError, "sqs/endpoint parameter is not supported for SQS, use s3_region instead. This parameter is for SQS compatible services"
       end
 
