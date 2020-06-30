@@ -409,6 +409,8 @@ archive format on S3. You can use several format:
 *   gzip_command (Need gzip command)
     *   This compressor uses an external gzip command, hence would result in
         utilizing CPU cores well compared with `gzip`
+*   parquet (Need columnify command)
+    *   This compressor uses an external [columnify](https://github.com/reproio/columnify) command.
 
 See `Use your compression algorithm` section for adding another format.
 
