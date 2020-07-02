@@ -31,8 +31,13 @@ We must setup SQS queue and S3 event notification before use this plugin.
 
 Simply use RubyGems:
 
-    $ gem install fluent-plugin-s3 -v "~> 0.8" --no-document # for fluentd v0.12 or later
-    $ gem install fluent-plugin-s3 -v 1.0.0 --no-document # for fluentd v1.0 or later
+    # install latest version
+    $ gem install fluent-plugin-s3 --no-document # for fluentd v1.0 or later
+    # If you need to install specifiv version, use -v option
+    $ gem install fluent-plugin-s3 -v 1.3.0 --no-document
+    # For v0.12. This is for old v0.12 users. Don't use v0.12 for new deployment
+    $ gem install fluent-plugin-s3 -v "~> 0.8" --no-document # for fluentd v0.12
+
 
 ## Configuration: credentials
 
@@ -301,6 +306,10 @@ See also AWS article: [Working with Regions](https://aws.amazon.com/blogs/develo
 
 Enable [S3 Transfer Acceleration](https://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html) for uploads. **IMPORTANT**: For this to work, you must first enable this feature on your destination S3 bucket.
 
+**enable_dual_stack**
+
+Enable [Amazon S3 Dual-Stack Endpoints](https://docs.aws.amazon.com/AmazonS3/latest/dev/dual-stack-endpoints.html) for uploads. Will make it possible to use either IPv4 or IPv6 when connecting to S3.
+
 **use_bundled_cert**
 
 For cases where the default SSL certificate is unavailable (e.g. Windows), you can set this option to true in order to use the AWS SDK bundled certificate. Default is false.
@@ -422,16 +431,16 @@ Change one line format in the S3 object. Supported formats are "out_file",
 
 
 At this format, "time" and "tag" are omitted. But you can set these
-information to the record by setting "include_tag_key" / "tag_key" and
-"include_time_key" / "time_key" option. If you set following configuration in
+information to the record by setting `<inject>` option. If you set following configuration in
 S3 output:
 
     # v1
     <format>
       @type json
-      include_time_key true
-      time_key log_time # default is time
     </format>
+    <inject>
+      time_key log_time
+    </inject>
     # v0.12
     @format json
     include_time_key true
@@ -441,14 +450,13 @@ then the record has log_time field.
 
     {"log_time":"time string",...}
 
+See also [official Inject Section article](https://docs.fluentd.org/configuration/inject-section).
+
 * ltsv
 
         key1:value1\tkey2:value2
         key1:value1\tkey2:value2
         ...
-
-
-"ltsv" format also accepts "include_xxx" related options. See "json" section.
 
 * single_value
 

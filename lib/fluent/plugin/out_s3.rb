@@ -39,6 +39,12 @@ module Fluent::Plugin
       config_param :duration_seconds, :integer, default: nil
       desc "A unique identifier that is used by third parties when assuming roles in their customers' accounts."
       config_param :external_id, :string, default: nil, secret: true
+      desc "The region of the STS endpoint to use."
+      config_param :sts_region, :string, default: nil
+      desc "A http proxy url for requests to aws sts service"
+      config_param :sts_http_proxy, :string, default: nil, secret: true
+      desc "A url for a regional sts api endpoint, the default is global"
+      config_param :sts_endpoint_url, :string, default: nil ## STS_region
     end
     # See the following link for additional params that could be added:
     # https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/STS/Client.html#assume_role_with_web_identity-instance_method
@@ -53,10 +59,8 @@ module Fluent::Plugin
       config_param :policy, :string, default: nil
       desc "The duration, in seconds, of the role session (900-43200)"
       config_param :duration_seconds, :integer, default: nil
-      desc "A http proxy url for requests to aws sts service"
-      config_param :sts_http_proxy, :string, default: nil, secret: true
-      desc "A url for a regional sts api endpoint, the default is global"
-      config_param :sts_endpoint_url, :string, default: nil
+      desc "The region of the STS endpoint to use."
+      config_param :sts_region, :string, default: nil
     end
     config_section :instance_profile_credentials, multi: false do
       desc "Number of times to retry when retrieving credentials"
@@ -88,6 +92,8 @@ module Fluent::Plugin
     config_param :s3_endpoint, :string, default: nil
     desc "If true, S3 Transfer Acceleration will be enabled for uploads. IMPORTANT: You must first enable this feature on your destination S3 bucket"
     config_param :enable_transfer_acceleration, :bool, default: false
+    desc "If true, use Amazon S3 Dual-Stack Endpoints. Will make it possible to use either IPv4 or IPv6 when connecting to S3."
+    config_param :enable_dual_stack, :bool, default: false
     desc "If false, the certificate of endpoint will not be verified"
     config_param :ssl_verify_peer, :bool, :default => true
     desc "The format of S3 object keys"
@@ -173,7 +179,7 @@ module Fluent::Plugin
 
       Aws.use_bundled_cert! if @use_bundled_cert
 
-      if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
+      if @s3_endpoint && (@s3_endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @s3_endpoint.include?(e) })
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
 
@@ -211,6 +217,8 @@ module Fluent::Plugin
         end
       end
 
+      check_s3_path_safety(conf)
+
       # For backward compatibility
       # TODO: Remove time_slice_format when end of support compat_parameters
       @configured_time_slice_format = conf['time_slice_format']
@@ -227,6 +235,7 @@ module Fluent::Plugin
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
       options[:use_accelerate_endpoint] = @enable_transfer_acceleration
+      options[:use_dualstack_endpoint] = @enable_dual_stack
       options[:http_proxy] = @proxy_uri if @proxy_uri
       options[:force_path_style] = @force_path_style
       options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
@@ -452,6 +461,16 @@ module Fluent::Plugin
       }
     end
 
+    def check_s3_path_safety(conf)
+      unless conf.has_key?('s3_object_key_format')
+        log.warn "The default value of s3_object_key_format will use ${chunk_id} instead of %{index} to avoid object conflict in v2"
+      end
+
+      if (@buffer_config.flush_thread_count > 1) && ['${chunk_id}', '%{uuid_flush}'].none? { |key| @s3_object_key_format.include?(key) }
+        log.warn "No ${chunk_id} or %{uuid_flush} in s3_object_key_format with multiple flush threads. Recommend to set ${chunk_id} or %{uuid_flush} to avoid data lost by object conflict"
+      end
+    end
+
     def check_apikeys
       @bucket.objects(prefix: @path, :max_keys => 1).first
     rescue Aws::S3::Errors::NoSuchBucket
@@ -475,6 +494,7 @@ module Fluent::Plugin
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         credentials_options[:external_id] = c.external_id if c.external_id
         credentials_options[:sts_endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
+        credentials_options[:sts_http_proxy] = c.sts_http_proxy if c.sts_http_proxy
         if c.sts_http_proxy and c.sts_endpoint_url
           credentials_options[:client] = Aws::STS::Client.new(http_proxy: c.sts_http_proxy, endpoint: c.sts_endpoint_url)
         elsif @region and c.sts_http_proxy
@@ -485,11 +505,10 @@ module Fluent::Plugin
           credentials_options[:client] = Aws::STS::Client.new(http_proxy: c.sts_http_proxy)
         elsif c.sts_endpoint_url
           credentials_options[:client] = Aws::STS::Client.new(endpoint: c.sts_endpoint_url)
-        elsif @region
-          opt = @s3_region ? { region: @s3_region } : {}
-          opt[:http_proxy] = c.sts_http_proxy if c.sts_http_proxy
-          opt[:endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
-          credentials_options[:client] = Aws::STS::Client.new(**opt)
+        elsif c.sts_region
+          credentials_options[:client] = Aws::STS::Client.new(region: c.sts_region)
+        elsif @s3_region
+          credentials_options[:client] = Aws::STS::Client.new(region: @s3_region)
         end
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
       when @web_identity_credentials
@@ -499,7 +518,9 @@ module Fluent::Plugin
         credentials_options[:web_identity_token_file] = c.web_identity_token_file
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
-        if @s3_region
+        if c.sts_region
+          credentials_options[:client] = Aws::STS::Client.new(:region => c.sts_region)
+        elsif @s3_region
           credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
         end
         options[:credentials] = Aws::AssumeRoleWebIdentityCredentials.new(credentials_options)
