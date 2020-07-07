@@ -41,6 +41,10 @@ module Fluent::Plugin
       config_param :external_id, :string, default: nil, secret: true
       desc "The region of the STS endpoint to use."
       config_param :sts_region, :string, default: nil
+      desc "A http proxy url for requests to aws sts service"
+      config_param :sts_http_proxy, :string, default: nil, secret: true
+      desc "A url for a regional sts api endpoint, the default is global"
+      config_param :sts_endpoint_url, :string, default: nil
     end
     # See the following link for additional params that could be added:
     # https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/STS/Client.html#assume_role_with_web_identity-instance_method
@@ -489,7 +493,19 @@ module Fluent::Plugin
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         credentials_options[:external_id] = c.external_id if c.external_id
-        if c.sts_region
+        credentials_options[:sts_endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
+        credentials_options[:sts_http_proxy] = c.sts_http_proxy if c.sts_http_proxy
+        if c.sts_http_proxy && c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(http_proxy: c.sts_http_proxy, endpoint: c.sts_endpoint_url)
+        elsif @region && c.sts_http_proxy
+          credentials_options[:client] = Aws::STS::Client.new(region: @region, http_proxy: c.sts_http_proxy)
+        elsif @region && c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(region: @region, endpoint: c.sts_endpoint_url)
+        elsif c.sts_http_proxy
+          credentials_options[:client] = Aws::STS::Client.new(http_proxy: c.sts_http_proxy)
+        elsif c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(endpoint: c.sts_endpoint_url)
+        elsif c.sts_region
           credentials_options[:client] = Aws::STS::Client.new(region: c.sts_region)
         elsif @s3_region
           credentials_options[:client] = Aws::STS::Client.new(region: @s3_region)
