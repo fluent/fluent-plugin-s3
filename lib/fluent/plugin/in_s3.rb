@@ -192,7 +192,7 @@ module Fluent::Plugin
           end
         end
       rescue => e
-        log.warn("SQS Polling Failed. Retry in #{@sqs.retry_error_interval} seconds")
+        log.warn("SQS Polling Failed. Retry in #{@sqs.retry_error_interval} seconds", error: e)
         sleep(@sqs.retry_error_interval)
         retry
       end
