@@ -5,6 +5,7 @@ require 'aws-sdk-s3'
 require 'zlib'
 require 'time'
 require 'tempfile'
+require 'securerandom'
 
 module Fluent::Plugin
   class S3Output < Output
@@ -384,7 +385,7 @@ module Fluent::Plugin
     end
 
     def uuid_random
-      ::UUIDTools::UUID.random_create.to_s
+      SecureRandom.uuid
     end
 
     # This is stolen from Fluentd
@@ -441,17 +442,6 @@ module Fluent::Plugin
       }
 
       if @s3_object_key_format.include?('%{uuid_flush}')
-        # test uuidtools works or not
-        begin
-          require 'uuidtools'
-        rescue LoadError
-          raise Fluent::ConfigError, "uuidtools gem not found. Install uuidtools gem first"
-        end
-        begin
-          uuid_random
-        rescue => e
-          raise Fluent::ConfigError, "Generating uuid doesn't work. Can't use %{uuid_flush} on this environment. #{e}"
-        end
         @uuid_flush_enabled = true
       end
 
