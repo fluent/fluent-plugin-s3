@@ -1,3 +1,8 @@
+Release 1.4.0 - 2020/08/02
+
+  * Remove uuidtools dependency
+  * in_s3: Add error info to polloing retry log
+
 Release 1.3.4 - 2020/07/07
 
   * Add sts_http_proxy and sts_endpoint_url to assume_role_credentials
