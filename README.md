@@ -342,7 +342,7 @@ E.g., "logs/" in the example configuration above.
 time-slice in text that are formatted with **time_slice_format**.
 * %{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
 * %{file_extension} depends on **store_as** parameter.
-* %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed. If you want to use this placeholder, install `uuidtools` gem first.
+* %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed.
 * %{hostname} is replaced with `Socket.gethostname` result.
 * %{hex_random} a random hex string that is replaced for each buffer chunk, not
 assured to be unique. This is used to follow a way of performance tuning, `Add

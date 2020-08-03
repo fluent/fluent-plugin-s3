@@ -9,7 +9,6 @@ require 'test/unit/rr'
 require 'zlib'
 require 'fileutils'
 require 'timecop'
-require 'uuidtools'
 require 'ostruct'
 
 include Fluent::Test::Helpers
@@ -349,17 +348,11 @@ EOC
 
   def test_write_with_custom_s3_object_key_format_containing_uuid_flush_placeholder
 
-    begin
-      require 'uuidtools'
-    rescue LoadError
-      pend("uuidtools not found. skip this test")
-    end
-
     # Partial mock the S3Bucket, not to make an actual connection to Amazon S3
     setup_mocks(true)
 
     uuid = "5755e23f-9b54-42d8-8818-2ea38c6f279e"
-    stub(::UUIDTools::UUID).random_create{ uuid }
+    stub(::SecureRandom).uuid{ uuid }
 
     s3_local_file_path = "/tmp/s3-test.txt"
     s3path = "log/events/ts=20110102-13/events_0-#{uuid}.gz"
