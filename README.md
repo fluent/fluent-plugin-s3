@@ -295,6 +295,16 @@ full list of regions are available here. >
 http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region. We
 recommend using `s3_region` instead of `s3_endpoint`.
 
+**s3_bucket_use_time_slice_sub**
+
+Use a time slice substring to create new buckets as time slice changes.  **auto_create_bucket** is required!
+For example: 
+bucket = MYBUCKET
+time_slice = %Y-%m-%d-%H
+s3_bucket_use_time_slice_sub = %Y-%m-%d
+
+Buckets will be created like: MYBUCKET-2020-09-25, MYBUCKET-2020-09-26 as days go by.
+
 **s3_endpoint**
 
 endpoint for S3 compatible services. For example, Riak CS based storage or
