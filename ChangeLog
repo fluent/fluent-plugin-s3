@@ -1,3 +1,7 @@
+Release 1.4.1 - 2020/09/30
+
+  * Added feature s3_bucket_timestamp_suffix
+
 Release 1.4.0 - 2020/08/02
 
   * Remove uuidtools dependency

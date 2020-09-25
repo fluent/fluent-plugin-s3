@@ -87,6 +87,8 @@ module Fluent::Plugin
     config_param :aws_iam_retries, :integer, default: nil, deprecated: "Use 'instance_profile_credentials' instead"
     desc "S3 bucket name"
     config_param :s3_bucket, :string
+    desc "Use time slice substring to rotate bucket name"
+    config_param :s3_bucket_use_time_slice_sub, :string, default: ""
     desc "S3 region name"
     config_param :s3_region, :string, default: ENV["AWS_REGION"] || "us-east-1"
     desc "Use 's3_region' instead"
@@ -249,13 +251,29 @@ module Fluent::Plugin
 
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(client: s3_client)
+      @s3_bucket_prefix = @s3_bucket
+
+      if @s3_bucket_use_time_slice_sub != ""
+        if !@configured_time_slice_format.start_with?(@s3_bucket_use_time_slice_sub)
+          raise "s3_bucket_use_time_slice_sub (" + @s3_bucket_use_time_slice_sub + ") must be a substring of time_slice (" + @configured_time_slice_format + ")"
+        end
+      end
+
+      super
+    end
+
+    def set_bucket
+      if @s3_bucket_use_time_slice_sub != ""
+        @s3_bucket = @s3_bucket_prefix + "-" + Time.new.strftime(@s3_bucket_use_time_slice_sub)
+      else
+        @s3_bucket = @s3_bucket_prefix
+      end
+
       @bucket = @s3.bucket(@s3_bucket)
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket if @check_bucket
       ensure_bucket_lifecycle
-
-      super
     end
 
     def format(tag, time, record)
@@ -272,6 +290,8 @@ module Fluent::Plugin
                    else
                      @time_slice_with_tz.call(metadata.timekey)
                    end
+      
+      set_bucket
 
       if @check_object
         begin
