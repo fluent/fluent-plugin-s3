@@ -20,6 +20,8 @@ the former one is stored in "20110102.gz" file, and latter one in
 SQS queue on the region same as S3 bucket.
 We must setup SQS queue and S3 event notification before use this plugin.
 
+:warning: Be sure to keep a close eye on S3 costs, as a few user have reported [unexpectedly high costs](https://github.com/fluent/fluent-plugin-s3/issues/160).
+
 ## Requirements
 
 | fluent-plugin-s3  | fluentd | ruby |
