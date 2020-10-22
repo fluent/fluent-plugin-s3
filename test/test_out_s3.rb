@@ -539,7 +539,7 @@ EOC
   def test_assume_role_credentials_with_region
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     sts_client = Aws::STS::Client.new(region: 'ap-northeast-1')
-    mock(Aws::STS::Client).new(region: 'ap-northeast-1'){ sts_client }
+    mock(Aws::STS::Client).new(region: 'ap-northeast-1', credentials: nil){ sts_client }
     mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
                                          role_session_name: "test_session",
                                          client: sts_client){
@@ -551,6 +551,137 @@ EOC
       <assume_role_credentials>
         role_arn test_arn
         role_session_name test_session
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_assume_role_with_iam_credentials
+    expected_credentials = Aws::Credentials.new("test_key_id", "test_sec_key")
+    sts_client = Aws::STS::Client.new(region: 'ap-northeast-1', credentials: expected_credentials)
+    mock(Aws::Credentials).new("test_key_id", "test_sec_key") { expected_credentials }
+    mock(Aws::STS::Client).new(region: 'ap-northeast-1', credentials: expected_credentials){ sts_client }
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: sts_client){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE
+    config += %[
+      s3_region ap-northeast-1
+
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_assume_role_credentials_with_region_and_sts_http_proxy
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    expected_region = "ap-northeast-1"
+    expected_sts_http_proxy = 'http://example.com'
+    sts_client = Aws::STS::Client.new(region: expected_region, http_proxy: expected_sts_http_proxy)
+    mock(Aws::STS::Client).new(region:expected_region, http_proxy: expected_sts_http_proxy, credentials: nil){ sts_client }
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: sts_client,
+                                         sts_http_proxy: expected_sts_http_proxy){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      s3_region #{expected_region}
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        sts_http_proxy #{expected_sts_http_proxy}
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_assume_role_credentials_with_sts_http_proxy
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    expected_sts_http_proxy = 'http://example.com'
+    sts_client = Aws::STS::Client.new(region: "us-east-1", http_proxy: expected_sts_http_proxy)
+    mock(Aws::STS::Client).new(region: "us-east-1", http_proxy: expected_sts_http_proxy, credentials: nil){ sts_client }
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: sts_client,
+                                         sts_http_proxy: expected_sts_http_proxy){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        sts_http_proxy #{expected_sts_http_proxy}
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_assume_role_credentials_with_sts_endpoint_url
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    expected_sts_endpoint_url = 'http://example.com'
+    sts_client = Aws::STS::Client.new(region: "us-east-1", endpoint: expected_sts_endpoint_url)
+    mock(Aws::STS::Client).new(region: "us-east-1", endpoint: expected_sts_endpoint_url, credentials: nil){ sts_client }
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: sts_client,
+                                         sts_endpoint_url: expected_sts_endpoint_url){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        sts_endpoint_url #{expected_sts_endpoint_url}
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_assume_role_credentials_with_sts_region
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    expected_sts_region = 'ap-south-1'
+    sts_client = Aws::STS::Client.new(region: expected_sts_region)
+    mock(Aws::STS::Client).new(region: expected_sts_region, credentials: nil){ sts_client }
+    mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
+                                         role_session_name: "test_session",
+                                         client: sts_client){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        sts_region #{expected_sts_region}
       </assume_role_credentials>
     ]
     d = create_time_sliced_driver(config)
