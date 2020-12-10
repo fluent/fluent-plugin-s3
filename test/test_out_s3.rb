@@ -150,6 +150,22 @@ class S3OutputTest < Test::Unit::TestCase
     assert_equal "id='3456789012'", d.instance.grant_write_acp
   end
 
+  def test_configure_with_s3_bucket_tag
+    conf = config_element(
+      'ROOT', '', {
+        '@type' => 's3',
+        's3_bucket' => 's3-${tag}'
+      }, [
+        config_element(
+          'buffer', 'tag,time', {
+            '@type' => 'file',
+            'path' => 'tmp'
+          }
+        )])
+    d = create_driver(conf)
+    assert_equal "s3-\${tag}", d.instance.s3_bucket
+  end
+
   def test_format
     d = create_driver
 
@@ -409,6 +425,30 @@ EOC
                    data
     end
     FileUtils.rm_f(s3_local_file_path)
+  end
+
+  def test_write_with_custom_s3_bucket_placeholder
+    conf = config_element(
+      'ROOT', '', {
+        '@type' => 's3',
+        's3_bucket' => 's3-${tag}',
+      }, [
+        config_element(
+          'buffer', 'tag,time', {
+            '@type' => 'file',
+            'path' => 'tmp'
+          }
+        )])
+    setup_mocks(true)
+
+    d = create_time_sliced_driver(conf)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+
+    assert_equal "s3-test", d.instance.s3_bucket
   end
 
   class MockResponse

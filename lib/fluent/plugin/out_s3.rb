@@ -249,11 +249,17 @@ module Fluent::Plugin
 
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(client: s3_client)
-      @bucket = @s3.bucket(@s3_bucket)
+      @s3_bucket_template = @s3_bucket
 
-      check_apikeys if @check_apikey_on_start
-      ensure_bucket if @check_bucket
-      ensure_bucket_lifecycle
+      unless @s3_bucket_template.match?(CHUNK_TAG_PLACEHOLDER_PATTERN)
+        @bucket = @s3.bucket(@s3_bucket)
+        check_apikeys if @check_apikey_on_start
+        ensure_bucket if @check_bucket
+        ensure_bucket_lifecycle
+        @dynamic_bucket = false
+      else
+        @dynamic_bucket = true
+      end
 
       super
     end
@@ -264,6 +270,12 @@ module Fluent::Plugin
     end
 
     def write(chunk)
+      if @dynamic_bucket
+        @s3_bucket = extract_placeholders(@s3_bucket_template, chunk)
+        @bucket = @s3.bucket(@s3_bucket)
+        ensure_bucket if @check_bucket
+        ensure_bucket_lifecycle
+      end
       i = 0
       metadata = chunk.metadata
       previous_path = nil
