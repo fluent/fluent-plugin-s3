@@ -87,6 +87,8 @@ module Fluent::Plugin
     config_param :aws_iam_retries, :integer, default: nil, deprecated: "Use 'instance_profile_credentials' instead"
     desc "S3 bucket name"
     config_param :s3_bucket, :string
+    desc "Set bucket name from a key"
+    config_param :s3_bucket_key, :string, :default => nil
     desc "S3 region name"
     config_param :s3_region, :string, default: ENV["AWS_REGION"] || "us-east-1"
     desc "Use 's3_region' instead"
@@ -249,11 +251,14 @@ module Fluent::Plugin
 
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(client: s3_client)
-      @bucket = @s3.bucket(@s3_bucket)
 
-      check_apikeys if @check_apikey_on_start
-      ensure_bucket if @check_bucket
-      ensure_bucket_lifecycle
+      # aqui
+      if not @s3_bucket_key
+        bucket = @s3.bucket(@s3_bucket)
+        check_apikeys(bucket) if @check_apikey_on_start
+        ensure_bucket(bucket) if @check_bucket
+        ensure_bucket_lifecycle(bucket)
+      end
 
       super
     end
@@ -264,6 +269,9 @@ module Fluent::Plugin
     end
 
     def write(chunk)
+
+      log.info "Iniciado write method"
+
       i = 0
       metadata = chunk.metadata
       previous_path = nil
@@ -272,6 +280,33 @@ module Fluent::Plugin
                    else
                      @time_slice_with_tz.call(metadata.timekey)
                    end
+
+      # aqui
+      bucket_name = nil
+      if @s3_bucket_key
+        begin
+          if not metadata.variables.has_key?(@s3_bucket_key.to_sym)
+            # use @s3_bucket as fallback
+            log.warn "s3_bucket_key (#{@s3_bucket_key}) not used in chunk keys. Using s3_bucket (#{@s3_bucket}) as fallback."
+            bucket_name = @s3_bucket
+          else
+            bucket_name = metadata.variables[@s3_bucket_key.to_sym]
+          end
+        rescue
+          log.warn "s3_bucket_key (#{@s3_bucket_key}) not used in chunk keys. Using s3_bucket (#{@s3_bucket}) as fallback."
+          bucket_name = @s3_bucket
+        end
+      else
+        bucket_name = @s3_bucket        
+      end
+
+      # instanciar o bucket
+      bucket = @s3.bucket(bucket_name)
+      log.info "Bucket name: #{bucket.name}"
+
+      check_apikeys(bucket) if @check_apikey_on_start
+      ensure_bucket(bucket) if @check_bucket
+      ensure_bucket_lifecycle(bucket)
 
       if @check_object
         begin
@@ -304,7 +339,7 @@ module Fluent::Plugin
 
           i += 1
           previous_path = s3path
-        end while @bucket.object(s3path).exists?
+        end while bucket.object(s3path).exists?
       else
         if @localtime
           hms_slicer = Time.now.strftime("%H%M%S")
@@ -362,18 +397,21 @@ module Fluent::Plugin
             put_options[:metadata][k] = extract_placeholders(v, chunk).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
           end
         end
-        @bucket.object(s3path).put(put_options)
+        bucket.object(s3path).put(put_options)
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)
 
         if @warn_for_delay
           if Time.at(chunk.metadata.timekey) < Time.now - @warn_for_delay
-            log.warn "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}"
+            log.warn "out_s3: delayed events were put to s3://#{bucket.name}/#{s3path}"
           end
         end
       ensure
         tmp.close(true) rescue nil
       end
+
+      log.info "Fim do write method"
+
     end
 
     private
@@ -399,40 +437,40 @@ module Fluent::Plugin
       end
     end
 
-    def ensure_bucket
-      if !@bucket.exists?
+    def ensure_bucket(bucket)
+      if !bucket.exists?
         if @auto_create_bucket
-          log.info "Creating bucket #{@s3_bucket} on #{@s3_endpoint}"
-          @s3.create_bucket(bucket: @s3_bucket)
+          log.info "Creating bucket #{bucket.name} on #{@s3_endpoint}"
+          @s3.create_bucket(bucket: bucket.name)          
         else
-          raise "The specified bucket does not exist: bucket = #{@s3_bucket}"
+          raise "The specified bucket does not exist: bucket = #{bucket.name}"
         end
       end
     end
 
-    def ensure_bucket_lifecycle
+    def ensure_bucket_lifecycle(bucket)
       unless @bucket_lifecycle_rules.empty?
-        old_rules = get_bucket_lifecycle_rules
+        old_rules = get_bucket_lifecycle_rules(bucket)
         new_rules = @bucket_lifecycle_rules.sort_by { |rule| rule.id }.map do |rule|
           { id: rule.id, expiration: { days: rule.expiration_days }, prefix: rule.prefix, status: "Enabled" }
         end
 
         unless old_rules == new_rules
-          log.info "Configuring bucket lifecycle rules for #{@s3_bucket} on #{@s3_endpoint}"
-          @bucket.lifecycle_configuration.put({ lifecycle_configuration: { rules: new_rules } })
+          log.info "Configuring bucket lifecycle rules for #{bucket.name} on #{@s3_endpoint}"
+          bucket.lifecycle_configuration.put({ lifecycle_configuration: { rules: new_rules } })
         end
       end
     end
 
-    def get_bucket_lifecycle_rules
+    def get_bucket_lifecycle_rules(bucket)
       begin
-        @bucket.lifecycle_configuration.rules.sort_by { |rule| rule[:id] }.map do |rule|
+        bucket.lifecycle_configuration.rules.sort_by { |rule| rule[:id] }.map do |rule|
           { id: rule[:id], expiration: { days: rule[:expiration][:days] }, prefix: rule[:prefix], status: rule[:status] }
         end
       rescue Aws::S3::Errors::NoSuchLifecycleConfiguration
         []
       end
-    end
+     end
 
     def process_s3_object_key_format
       %W(%{uuid} %{uuid:random} %{uuid:hostname} %{uuid:timestamp}).each { |ph|
@@ -461,8 +499,8 @@ module Fluent::Plugin
       end
     end
 
-    def check_apikeys
-      @bucket.objects(prefix: @path, :max_keys => 1).first
+    def check_apikeys(bucket)
+      bucket.objects(prefix: @path, :max_keys => 1).first
     rescue Aws::S3::Errors::NoSuchBucket
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
