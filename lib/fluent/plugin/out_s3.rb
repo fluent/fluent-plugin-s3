@@ -281,6 +281,8 @@ module Fluent::Plugin
                      @time_slice_with_tz.call(metadata.timekey)
                    end
 
+      log.warn metadata.variables
+
       # aqui
       bucket_name = nil
       if @s3_bucket_key
@@ -291,6 +293,10 @@ module Fluent::Plugin
             bucket_name = @s3_bucket
           else
             bucket_name = metadata.variables[@s3_bucket_key.to_sym]
+            if not bucket_name
+              log.warn "Field @s3_bucket_key (#{@s3_bucket_key}) not found in record. Using s3_bucket (#{@s3_bucket}) as fallback."
+              bucket_name = @s3_bucket
+            end
           end
         rescue
           log.warn "s3_bucket_key (#{@s3_bucket_key}) not used in chunk keys. Using s3_bucket (#{@s3_bucket}) as fallback."
