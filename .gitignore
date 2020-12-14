@@ -4,7 +4,7 @@
 [._]*.s[a-w][a-z]
 .DS_Store
 
-*.gem
+#*.gem
 .bundle
 Gemfile.lock
 vendor
