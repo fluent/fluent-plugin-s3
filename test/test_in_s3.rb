@@ -228,7 +228,7 @@ EOS
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
     @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
     mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
-    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test",
+    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test_bucket",
                                           client: @s3_client))
     @s3_bucket.exists? { true }
     @s3_resource.bucket(anything) { @s3_bucket }
@@ -278,6 +278,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -313,6 +316,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -348,6 +354,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test+key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -383,6 +392,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test+key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -418,6 +430,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -458,6 +473,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -506,6 +524,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -557,6 +578,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }

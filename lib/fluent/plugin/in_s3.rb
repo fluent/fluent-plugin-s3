@@ -156,8 +156,8 @@ module Fluent::Plugin
           raise "#{bucket} is not found." unless @buckets[bucket].exists?
         end
       else
-        @buckets[bucket] = @s3.bucket(@s3_buckets)
-        raise "#{bucket} is not found." unless @buckets[bucket].exists?
+        @buckets[@s3_buckets] = @s3.bucket(@s3_buckets)
+        raise "#{@s3_buckets} is not found." unless @buckets[@s3_buckets].exists?
       end
 
       check_apikeys if @check_apikey_on_start
