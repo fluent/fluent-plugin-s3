@@ -1,6 +1,6 @@
 FROM fluent/fluentd:edge
 
-ARG PLUGINVERSION=1.5.0
+ARG PLUGINVERSION=1.5.0a
 
 USER root
 
