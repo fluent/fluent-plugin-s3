@@ -252,7 +252,6 @@ module Fluent::Plugin
       s3_client = Aws::S3::Client.new(options)
       @s3 = Aws::S3::Resource.new(client: s3_client)
 
-      # aqui
       if not @s3_bucket_key
         bucket = @s3.bucket(@s3_bucket)
         check_apikeys(bucket) if @check_apikey_on_start
@@ -270,8 +269,6 @@ module Fluent::Plugin
 
     def write(chunk)
 
-      log.info "Iniciado write method"
-
       i = 0
       metadata = chunk.metadata
       previous_path = nil
@@ -281,9 +278,6 @@ module Fluent::Plugin
                      @time_slice_with_tz.call(metadata.timekey)
                    end
 
-      log.warn metadata.variables
-
-      # aqui
       bucket_name = nil
       if @s3_bucket_key
         begin
@@ -306,9 +300,7 @@ module Fluent::Plugin
         bucket_name = @s3_bucket        
       end
 
-      # instanciar o bucket
       bucket = @s3.bucket(bucket_name)
-      log.info "Bucket name: #{bucket.name}"
 
       check_apikeys(bucket) if @check_apikey_on_start
       ensure_bucket(bucket) if @check_bucket
@@ -415,8 +407,6 @@ module Fluent::Plugin
       ensure
         tmp.close(true) rescue nil
       end
-
-      log.info "Fim do write method"
 
     end
 
