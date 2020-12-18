@@ -1,3 +1,7 @@
+Release 1.5.0 - 2020/12/18
+
+  * out_s3: Fix IAM credentials handling. Prefer assume_role_credentials and region parameter bug.
+
 Release 1.4.0 - 2020/08/02
 
   * Remove uuidtools dependency
