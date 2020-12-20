@@ -44,10 +44,10 @@ class S3OutputTest < Test::Unit::TestCase
 
       private
 
-      def ensure_bucket
+      def ensure_bucket(bucket)
       end
 
-      def check_apikeys
+      def check_apikeys(bucket)
       end
     end.configure(conf)
   end
@@ -287,7 +287,7 @@ EOC
 
       private
 
-      def check_apikeys
+      def check_apikeys(bucket)
       end
     end.configure(conf)
   end
@@ -427,7 +427,7 @@ EOC
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
     @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
     mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
-    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test",
+    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test_bucket",
                                           client: @s3_client))
     @s3_bucket.exists? { exists_return }
     @s3_object = mock(Aws::S3::Object.new(bucket_name: "test_bucket",

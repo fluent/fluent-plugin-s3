@@ -11,3 +11,5 @@ vendor
 .ruby-version
 
 test/tmp/
+
+docker/
