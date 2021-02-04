@@ -285,7 +285,7 @@ module Fluent::Plugin
     end
 
     def ext_get_placeholders_time(str)
-      output = [ "%S", "%M", "%H", "%d", "%m", "%Y" ].select { |tp| str.include? tp }
+      output = [ "%S", "%M", "%H", "%d", "%m", "%Y", "%T", "%e", "%c", "%j", "%b", "%h", "%B", "%C", "%A", "%a", "%u", "%w", "%G", "%g", "%V", "%U", "%W", "%v", "%x", "%X", "%D", "%F", "%r", "%R", "%+" ].select { |tp| str.include? tp }
     end
 
     def write(chunk)
