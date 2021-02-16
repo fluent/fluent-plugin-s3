@@ -539,7 +539,7 @@ EOC
   def test_assume_role_credentials_with_region
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     sts_client = Aws::STS::Client.new(region: 'ap-northeast-1')
-    mock(Aws::STS::Client).new(region: 'ap-northeast-1', credentials: nil){ sts_client }
+    mock(Aws::STS::Client).new(region: 'ap-northeast-1'){ sts_client }
     mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
                                          role_session_name: "test_session",
                                          client: sts_client){
@@ -591,7 +591,7 @@ EOC
     expected_region = "ap-northeast-1"
     expected_sts_http_proxy = 'http://example.com'
     sts_client = Aws::STS::Client.new(region: expected_region, http_proxy: expected_sts_http_proxy)
-    mock(Aws::STS::Client).new(region:expected_region, http_proxy: expected_sts_http_proxy, credentials: nil){ sts_client }
+    mock(Aws::STS::Client).new(region:expected_region, http_proxy: expected_sts_http_proxy){ sts_client }
     mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
                                          role_session_name: "test_session",
                                          client: sts_client,
@@ -618,7 +618,7 @@ EOC
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     expected_sts_http_proxy = 'http://example.com'
     sts_client = Aws::STS::Client.new(region: "us-east-1", http_proxy: expected_sts_http_proxy)
-    mock(Aws::STS::Client).new(region: "us-east-1", http_proxy: expected_sts_http_proxy, credentials: nil){ sts_client }
+    mock(Aws::STS::Client).new(region: "us-east-1", http_proxy: expected_sts_http_proxy){ sts_client }
     mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
                                          role_session_name: "test_session",
                                          client: sts_client,
@@ -644,7 +644,7 @@ EOC
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     expected_sts_endpoint_url = 'http://example.com'
     sts_client = Aws::STS::Client.new(region: "us-east-1", endpoint: expected_sts_endpoint_url)
-    mock(Aws::STS::Client).new(region: "us-east-1", endpoint: expected_sts_endpoint_url, credentials: nil){ sts_client }
+    mock(Aws::STS::Client).new(region: "us-east-1", endpoint: expected_sts_endpoint_url){ sts_client }
     mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
                                          role_session_name: "test_session",
                                          client: sts_client,
@@ -670,7 +670,7 @@ EOC
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     expected_sts_region = 'ap-south-1'
     sts_client = Aws::STS::Client.new(region: expected_sts_region)
-    mock(Aws::STS::Client).new(region: expected_sts_region, credentials: nil){ sts_client }
+    mock(Aws::STS::Client).new(region: expected_sts_region){ sts_client }
     mock(Aws::AssumeRoleCredentials).new(role_arn: "test_arn",
                                          role_session_name: "test_session",
                                          client: sts_client){
