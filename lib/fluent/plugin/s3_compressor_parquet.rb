@@ -57,7 +57,7 @@ module Fluent::Plugin
                end
         stdout, stderr, status = columnify(path, tmp.path)
         unless status.success?
-          raise "failed to execute columnify command. stdout=#{stdout} stderr=#{stderr} status=#{status.inspect}"
+          raise Fluent::UnrecoverableError, "failed to execute columnify command. stdout=#{stdout} stderr=#{stderr} status=#{status.inspect}"
         end
       ensure
         unless chunk_is_file
