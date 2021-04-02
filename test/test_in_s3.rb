@@ -94,7 +94,8 @@ class S3InputTest < Test::Unit::TestCase
          "gzip" => ["gzip", "gz", "application/x-gzip"],
          "gzip_command" => ["gzip_command", "gz", "application/x-gzip"],
          "lzo" => ["lzo", "lzo", "application/x-lzop"],
-         "lzma2" => ["lzma2", "xz", "application/x-xz"])
+         "lzma2" => ["lzma2", "xz", "application/x-xz"],
+         "zst" => ["zst", "zst", "application/x-zst"])
     def test_extractor(data)
       store_type, ext, content_type = data
       config = CONFIG + "\nstore_as #{store_type}\n"
