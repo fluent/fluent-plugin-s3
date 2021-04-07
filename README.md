@@ -411,8 +411,54 @@ archive format on S3. You can use several format:
         utilizing CPU cores well compared with `gzip`
 *   parquet (Need columnify command)
     *   This compressor uses an external [columnify](https://github.com/reproio/columnify) command.
+    *   Use `<compress>` section to configure columnify command behavior.
 
 See `Use your compression algorithm` section for adding another format.
+
+**`<compress>`** (for parquet compressor only)
+
+**parquet_compression_codec**
+
+parquet compression codec.
+
+* uncompressed
+* snappy (default)
+* gzip
+* lzo
+* brotli
+* lz4
+* zstd
+
+**parquet_page_size**
+
+parquet file page size. default: 8192 bytes
+
+**parquet_row_group_size**
+
+parquet file row group size. default: 128 MB
+
+**record_type**
+
+record data format type.
+
+* avro
+* csv
+* jsonl
+* msgpack
+* tsv
+* msgpack (default)
+* json
+
+**schema_type**
+
+schema type.
+
+* avro (default)
+* bigquery
+
+**schema_file (required)**
+
+path to schema file.
 
 **`<format>` or format**
 
