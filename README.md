@@ -424,9 +424,9 @@ parquet compression codec.
 * uncompressed
 * snappy (default)
 * gzip
-* lzo
-* brotli
-* lz4
+* lzo (unsupported by columnify)
+* brotli (unsupported by columnify)
+* lz4 (unsupported by columnify)
 * zstd
 
 **parquet_page_size**
