@@ -1,3 +1,7 @@
+Release 1.6.0 - 2021/04/08
+
+  * out_s3: Add support for Parquet compressor. Use `<compress>` section to configure columnify command behavior.
+
 Release 1.5.1 - 2021/02/16
 
   * out_s3: Fix assume_role_credentials regression
