@@ -1,7 +1,7 @@
 # Configuration: Output
 
-With fluentd v1 and fluent-plugin-s3 v1.0.0 or later, use new buffer configuration to dynamic parameters.
-See [Configuration: credentials](credentials.md) for common comprehensive parameters.
+Here is a sample configuration and available parameters for fluentd v1 or later.
+See also [Configuration: credentials](credentials.md) for common comprehensive parameters.
 
     <match pattern>
       @type s3
@@ -223,7 +223,7 @@ schema type.
 
 path to schema file.
 
-## \<format\> section or format
+## \<format\> section
 
 Change one line format in the S3 object. Supported formats are "out_file",
 "json", "ltsv", "single_value" and other formatter plugins. See also [official Formatter article](https://docs.fluentd.org/formatter).
@@ -245,7 +245,6 @@ At this format, "time" and "tag" are omitted. But you can set these
 information to the record by setting `<inject>` option. If you set following configuration in
 S3 output:
 
-    # v1
     <format>
       @type json
     </format>

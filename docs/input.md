@@ -8,7 +8,7 @@
 
 # Configuration: Input
 
-See [Configuration: credentials](credentials.md) for common comprehensive parameters.
+See also [Configuration: credentials](credentials.md) for common comprehensive parameters.
 
     <source>
       @type s3
