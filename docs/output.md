@@ -322,6 +322,8 @@ Use UTC instead of local time.
 
 Set storage class. Possible values are `STANDARD`, `REDUCED_REDUNDANCY`, `STANDARD_IA` from [Ruby SDK](http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Object.html#storage_class-instance_method).
 
+Note that reduced redundancy is [not reccomended](https://serverfault.com/a/1010951/512362).
+
 ## reduced_redundancy
 
 Use S3 reduced redundancy storage for 33% cheaper pricing. Default is
