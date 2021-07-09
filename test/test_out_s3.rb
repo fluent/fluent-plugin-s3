@@ -297,9 +297,9 @@ EOC
     setup_mocks_hardened_policy
     s3_local_file_path = "/tmp/s3-test.txt"
     # @s3_object_key_format will be hard_coded with timestamp only,
-    # as in this case, it will not check for object existence, not even bucker existence
-    # check_bukcet and check_object both of this config parameter should be false
-    # @s3_object_key_format = "%{path}/%{time_slice}_%{hms_slice}.%{file_extension}"
+    # as in this case, it will not check for object existence, not even bucket existence
+    # check_bucket and check_object: both of these config parameters should be false
+    # @s3_object_key_format = "%{path}%{time_slice}_%{hms_slice}.%{file_extension}"
     setup_s3_object_mocks_hardened_policy()
 
     # We must use TimeSlicedOutputTestDriver instead of BufferedOutputTestDriver,
