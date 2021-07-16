@@ -152,6 +152,8 @@ NOTE: ${hostname} placeholder is deprecated since v0.8. You can get same result 
 
 Above two configurations are same. The important point is wrapping `""` is needed for `#{Socket.gethostname}`.
 
+NOTE: If `check_object` is set to `false`, Ensure the value of `s3_object_key_format` must be unique in each write, If not, existing file will be overwritten.
+
 ## force_path_style
 
 :force_path_style (Boolean) — default: false — When set to true, the
