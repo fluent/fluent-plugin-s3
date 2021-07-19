@@ -1,3 +1,110 @@
+Release 1.6.0 - 2021/04/08
+
+  * out_s3: Add support for Parquet compressor. Use `<compress>` section to configure columnify command behavior.
+
+Release 1.5.1 - 2021/02/16
+
+  * out_s3: Fix assume_role_credentials regression
+
+Release 1.5.0 - 2020/12/18
+
+  * out_s3: Fix IAM credentials handling. Prefer assume_role_credentials and region parameter bug.
+
+Release 1.4.0 - 2020/08/02
+
+  * Remove uuidtools dependency
+  * in_s3: Add error info to polloing retry log
+
+Release 1.3.4 - 2020/07/07
+
+  * Add sts_http_proxy and sts_endpoint_url to assume_role_credentials
+
+Release 1.3.3 - 2020/06/25
+
+  * Allow fips/gov included endpoint
+  * Support sts_region parameter
+
+Release 1.3.2 - 2020/05/18
+
+  * out_s3: Show warning message for object conflict case.
+
+Release 1.3.1 - 2020/04/15
+
+  * out_s3: Support S3 Dual-Stack Endpoints in output plugin via enable_dual_stack parameter
+
+Release 1.3.0 - 2020/02/10
+
+  * in_s3/out_s3: Support AssumeRoleWebIdentityCredentials via `web_identity_credentials` section for EKS.
+
+Release 1.2.1 - 2019/11/10
+
+  * in_s3: Support ECSCredentials
+
+Release 1.2.0 - 2019/10/17
+
+  * out_s3: Add bucket_lifecycle_rule section to set bucket's lifecycle
+
+Release 1.1.11 - 2019/06/17
+
+  * in_s3: Add add_object_metadata parameter
+
+Release 1.1.10 - 2019/05/08
+
+  * out_s3: force_path_style is deprecated
+
+Release 1.1.9 - 2019/03/26
+
+  * out_s3: Add enable_transfer_acceleration parameter
+  * Update fluentd dependency to v0.14.22 or later
+
+Release 1.1.8 - 2019/01/28
+
+  * in_s3: Restart SQS polling when the error happens
+  * out_s3: Show root cause when error happens during compressor loading
+
+Release 1.1.7 - 2018/11/14
+
+  * in_s3: Fix the bug proxy_uri parameter setting
+  * in_s3: Support cross-acount bucket/sqs capability with AssumeRole
+
+Release 1.1.6 - 2018/09/11
+
+  * in_s3: Add s3_endpoint parameter to support S3 compatible service
+
+Release 1.1.5 - 2018/09/04
+
+  * out_s3: Improve check_apikeys performance by specifying `max_keys` parameter
+
+Release 1.1.4 - 2018/07/22
+
+  * out_s3: Support time_slice in `check_object false`. date_slice is kept for backward compatibility
+
+Release 1.1.3 - 2018/04/15
+
+  * in_s3: Fixed extracting gzip's multiple stream.
+
+Release 1.1.2 - 2018/04/10
+
+  * out_s3: Fix memory leak when s3_object_key_format has time related placeholder
+
+Release 1.1.1 - 2018/01/10
+
+  * out_s3: Add index_format parameter
+
+Release 1.1.0 - 2017/11/29
+
+  * Use aws-sdk-s3 / aws-sdk-sqs gems instead of aws-sdk gem
+
+Release 1.0.0 - 2017/11/15
+
+  * Use v0.14 API
+  * out_s3: Support canonical user id based grant permission
+  * out_s3: Use specified s3_object_key_format even if check_object is false
+  * out_s3: Add s3_metadata parameter
+  * out_s3: Add ssl_verify_peer parameter
+  * in_s3: Unescape S3 key
+  * Add use_bundled_cert parameter
+
 Release 0.8.0 - 2016/12/20
 
   * out_s3: Add check_object / check_bucket parameters for only put permission

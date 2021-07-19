@@ -1,10 +1,11 @@
 require 'fluent/plugin/output'
 require 'fluent/log-ext'
 require 'fluent/timezone'
-require 'aws-sdk-resources'
+require 'aws-sdk-s3'
 require 'zlib'
 require 'time'
 require 'tempfile'
+require 'securerandom'
 
 module Fluent::Plugin
   class S3Output < Output
@@ -39,6 +40,28 @@ module Fluent::Plugin
       config_param :duration_seconds, :integer, default: nil
       desc "A unique identifier that is used by third parties when assuming roles in their customers' accounts."
       config_param :external_id, :string, default: nil, secret: true
+      desc "The region of the STS endpoint to use."
+      config_param :sts_region, :string, default: nil
+      desc "A http proxy url for requests to aws sts service"
+      config_param :sts_http_proxy, :string, default: nil, secret: true
+      desc "A url for a regional sts api endpoint, the default is global"
+      config_param :sts_endpoint_url, :string, default: nil
+    end
+    # See the following link for additional params that could be added:
+    # https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/STS/Client.html#assume_role_with_web_identity-instance_method
+    config_section :web_identity_credentials, multi: false do
+      desc "The Amazon Resource Name (ARN) of the role to assume"
+      config_param :role_arn, :string # required
+      desc "An identifier for the assumed role session"
+      config_param :role_session_name, :string #required
+      desc "The absolute path to the file on disk containing the OIDC token"
+      config_param :web_identity_token_file, :string #required
+      desc "An IAM policy in JSON format"
+      config_param :policy, :string, default: nil
+      desc "The duration, in seconds, of the role session (900-43200)"
+      config_param :duration_seconds, :integer, default: nil
+      desc "The region of the STS endpoint to use."
+      config_param :sts_region, :string, default: nil
     end
     config_section :instance_profile_credentials, multi: false do
       desc "Number of times to retry when retrieving credentials"
@@ -68,12 +91,16 @@ module Fluent::Plugin
     config_param :s3_region, :string, default: ENV["AWS_REGION"] || "us-east-1"
     desc "Use 's3_region' instead"
     config_param :s3_endpoint, :string, default: nil
+    desc "If true, S3 Transfer Acceleration will be enabled for uploads. IMPORTANT: You must first enable this feature on your destination S3 bucket"
+    config_param :enable_transfer_acceleration, :bool, default: false
+    desc "If true, use Amazon S3 Dual-Stack Endpoints. Will make it possible to use either IPv4 or IPv6 when connecting to S3."
+    config_param :enable_dual_stack, :bool, default: false
     desc "If false, the certificate of endpoint will not be verified"
     config_param :ssl_verify_peer, :bool, :default => true
     desc "The format of S3 object keys"
     config_param :s3_object_key_format, :string, default: "%{path}%{time_slice}_%{index}.%{file_extension}"
     desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
-    config_param :force_path_style, :bool, default: false
+    config_param :force_path_style, :bool, default: false, deprecated: "S3 will drop path style API in 2020: See https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/"
     desc "Archive format on S3"
     config_param :store_as, :string, default: "gzip"
     desc "Create S3 bucket if it does not exists"
@@ -88,8 +115,18 @@ module Fluent::Plugin
     config_param :storage_class, :string, default: "STANDARD"
     desc "Permission for the object in S3"
     config_param :acl, :string, default: nil
+    desc "Allows grantee READ, READ_ACP, and WRITE_ACP permissions on the object"
+    config_param :grant_full_control, :string, default: nil
+    desc "Allows grantee to read the object data and its metadata"
+    config_param :grant_read, :string, default: nil
+    desc "Allows grantee to read the object ACL"
+    config_param :grant_read_acp, :string, default: nil
+    desc "Allows grantee to write the ACL for the applicable object"
+    config_param :grant_write_acp, :string, default: nil
     desc "The length of `%{hex_random}` placeholder(4-16)"
     config_param :hex_random_length, :integer, default: 4
+    desc "`sprintf` format for `%{index}`"
+    config_param :index_format, :string, default: "%d"
     desc "Overwrite already existing path"
     config_param :overwrite, :bool, default: false
     desc "Check bucket if exists or not"
@@ -112,6 +149,14 @@ module Fluent::Plugin
     config_param :warn_for_delay, :time, default: nil
     desc "Arbitrary S3 metadata headers to set for the object"
     config_param :s3_metadata, :hash, default: nil
+    config_section :bucket_lifecycle_rule, param_name: :bucket_lifecycle_rules, multi: true do
+      desc "A unique ID for this rule"
+      config_param :id, :string
+      desc "Objects whose keys begin with this prefix will be affected by the rule. If not specified all objects of the bucket will be affected"
+      config_param :prefix, :string, default: ''
+      desc "The number of days before the object will expire"
+      config_param :expiration_days, :integer
+    end
 
     DEFAULT_FORMAT_TYPE = "out_file"
 
@@ -135,15 +180,15 @@ module Fluent::Plugin
 
       Aws.use_bundled_cert! if @use_bundled_cert
 
-      if @s3_endpoint && @s3_endpoint.end_with?('amazonaws.com')
+      if @s3_endpoint && (@s3_endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @s3_endpoint.include?(e) })
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
 
       begin
         buffer_type = @buffer_config[:@type]
         @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(buffer_type: buffer_type, log: log)
-      rescue
-        log.warn "#{@store_as} not found. Use 'text' instead"
+      rescue => e
+        log.warn "'#{@store_as}' not supported. Use 'text' instead: error = #{e.message}"
         @compressor = TextCompressor.new
       end
       @compressor.configure(conf)
@@ -154,12 +199,27 @@ module Fluent::Plugin
         raise Fluent::ConfigError, "hex_random_length parameter must be less than or equal to #{MAX_HEX_RANDOM_LENGTH}"
       end
 
+      unless @index_format =~ /^%(0\d*)?[dxX]$/
+        raise Fluent::ConfigError, "index_format parameter should follow `%[flags][width]type`. `0` is the only supported flag, and is mandatory if width is specified. `d`, `x` and `X` are supported types"
+      end
+
       if @reduced_redundancy
         log.warn "reduced_redundancy parameter is deprecated. Use storage_class parameter instead"
         @storage_class = "REDUCED_REDUNDANCY"
       end
 
       @s3_object_key_format = process_s3_object_key_format
+      if !@check_object
+        if conf.has_key?('s3_object_key_format')
+          log.warn "Set 'check_object false' and s3_object_key_format is specified. Check s3_object_key_format is unique in each write. If not, existing file will be overwritten."
+        else
+          log.warn "Set 'check_object false' and s3_object_key_format is not specified. Use '%{path}/%{time_slice}_%{hms_slice}.%{file_extension}' for s3_object_key_format"
+          @s3_object_key_format = "%{path}/%{time_slice}_%{hms_slice}.%{file_extension}"
+        end
+      end
+
+      check_s3_path_safety(conf)
+
       # For backward compatibility
       # TODO: Remove time_slice_format when end of support compat_parameters
       @configured_time_slice_format = conf['time_slice_format']
@@ -175,6 +235,8 @@ module Fluent::Plugin
       options = setup_credentials
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @s3_endpoint if @s3_endpoint
+      options[:use_accelerate_endpoint] = @enable_transfer_acceleration
+      options[:use_dualstack_endpoint] = @enable_dual_stack
       options[:http_proxy] = @proxy_uri if @proxy_uri
       options[:force_path_style] = @force_path_style
       options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
@@ -191,10 +253,7 @@ module Fluent::Plugin
 
       check_apikeys if @check_apikey_on_start
       ensure_bucket if @check_bucket
-
-      if !@check_object
-        @s3_object_key_format = "%{path}/%{date_slice}_%{hms_slice}.%{file_extension}"
-      end
+      ensure_bucket_lifecycle
 
       super
     end
@@ -219,16 +278,21 @@ module Fluent::Plugin
           @values_for_s3_object_chunk[chunk.unique_id] ||= {
             "%{hex_random}" => hex_random(chunk),
           }
-          values_for_s3_object_key = {
+          values_for_s3_object_key_pre = {
             "%{path}" => @path,
-            "%{time_slice}" => time_slice,
             "%{file_extension}" => @compressor.ext,
-            "%{index}" => i,
+          }
+          values_for_s3_object_key_post = {
+            "%{time_slice}" => time_slice,
+            "%{index}" => sprintf(@index_format,i),
           }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
-          values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
+          values_for_s3_object_key_post["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
-          s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
-          s3path = extract_placeholders(s3path, metadata)
+          s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) do |matched_key|
+            values_for_s3_object_key_pre.fetch(matched_key, matched_key)
+          end
+          s3path = extract_placeholders(s3path, chunk)
+          s3path = s3path.gsub(%r(%{[^}]+}), values_for_s3_object_key_post)
           if (i > 0) && (s3path == previous_path)
             if @overwrite
               log.warn "#{s3path} already exists, but will overwrite"
@@ -251,16 +315,22 @@ module Fluent::Plugin
         @values_for_s3_object_chunk[chunk.unique_id] ||= {
           "%{hex_random}" => hex_random(chunk),
         }
-        values_for_s3_object_key = {
+        values_for_s3_object_key_pre = {
           "%{path}" => @path,
-          "%{time_slice}" => time_slice,
           "%{file_extension}" => @compressor.ext,
+        }
+        values_for_s3_object_key_post = {
+          "%{date_slice}" => time_slice,  # For backward compatibility
+          "%{time_slice}" => time_slice,
           "%{hms_slice}" => hms_slicer,
         }.merge!(@values_for_s3_object_chunk[chunk.unique_id])
-        values_for_s3_object_key["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
+        values_for_s3_object_key_post["%{uuid_flush}".freeze] = uuid_random if @uuid_flush_enabled
 
-        s3path = @s3_object_key_format.gsub(%r(%{[^}]+}), values_for_s3_object_key)
-        s3path = extract_placeholders(s3path, metadata)
+        s3path = @s3_object_key_format.gsub(%r(%{[^}]+})) do |matched_key|
+          values_for_s3_object_key_pre.fetch(matched_key, matched_key)
+        end
+        s3path = extract_placeholders(s3path, chunk)
+        s3path = s3path.gsub(%r(%{[^}]+}), values_for_s3_object_key_post)
       end
 
       tmp = Tempfile.new("s3-")
@@ -268,7 +338,7 @@ module Fluent::Plugin
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
-        log.debug { "out_s3: write chunk: {key:#{chunk.key},tsuffix:#{tsuffix(chunk)}} to s3://#{@s3_bucket}/#{s3path}" }
+        log.debug "out_s3: write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}"
 
         put_options = {
           body: tmp,
@@ -281,11 +351,15 @@ module Fluent::Plugin
         put_options[:sse_customer_key] = @sse_customer_key if @sse_customer_key
         put_options[:sse_customer_key_md5] = @sse_customer_key_md5 if @sse_customer_key_md5
         put_options[:acl] = @acl if @acl
+        put_options[:grant_full_control] = @grant_full_control if @grant_full_control
+        put_options[:grant_read] = @grant_read if @grant_read
+        put_options[:grant_read_acp] = @grant_read_acp if @grant_read_acp
+        put_options[:grant_write_acp] = @grant_write_acp if @grant_write_acp
 
         if @s3_metadata
           put_options[:metadata] = {}
           @s3_metadata.each do |k, v|
-            put_options[:metadata][k] = extract_placeholders(v, metadata)
+            put_options[:metadata][k] = extract_placeholders(v, chunk).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
           end
         end
         @bucket.object(s3path).put(put_options)
@@ -294,7 +368,7 @@ module Fluent::Plugin
 
         if @warn_for_delay
           if Time.at(chunk.metadata.timekey) < Time.now - @warn_for_delay
-            log.warn { "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}" }
+            log.warn "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}"
           end
         end
       ensure
@@ -311,7 +385,7 @@ module Fluent::Plugin
     end
 
     def uuid_random
-      ::UUIDTools::UUID.random_create.to_s
+      SecureRandom.uuid
     end
 
     # This is stolen from Fluentd
@@ -336,6 +410,30 @@ module Fluent::Plugin
       end
     end
 
+    def ensure_bucket_lifecycle
+      unless @bucket_lifecycle_rules.empty?
+        old_rules = get_bucket_lifecycle_rules
+        new_rules = @bucket_lifecycle_rules.sort_by { |rule| rule.id }.map do |rule|
+          { id: rule.id, expiration: { days: rule.expiration_days }, prefix: rule.prefix, status: "Enabled" }
+        end
+
+        unless old_rules == new_rules
+          log.info "Configuring bucket lifecycle rules for #{@s3_bucket} on #{@s3_endpoint}"
+          @bucket.lifecycle_configuration.put({ lifecycle_configuration: { rules: new_rules } })
+        end
+      end
+    end
+
+    def get_bucket_lifecycle_rules
+      begin
+        @bucket.lifecycle_configuration.rules.sort_by { |rule| rule[:id] }.map do |rule|
+          { id: rule[:id], expiration: { days: rule[:expiration][:days] }, prefix: rule[:prefix], status: rule[:status] }
+        end
+      rescue Aws::S3::Errors::NoSuchLifecycleConfiguration
+        []
+      end
+    end
+
     def process_s3_object_key_format
       %W(%{uuid} %{uuid:random} %{uuid:hostname} %{uuid:timestamp}).each { |ph|
         if @s3_object_key_format.include?(ph)
@@ -344,17 +442,6 @@ module Fluent::Plugin
       }
 
       if @s3_object_key_format.include?('%{uuid_flush}')
-        # test uuidtools works or not
-        begin
-          require 'uuidtools'
-        rescue LoadError
-          raise Fluent::ConfigError, "uuidtools gem not found. Install uuidtools gem first"
-        end
-        begin
-          uuid_random
-        rescue => e
-          raise Fluent::ConfigError, "Generating uuid doesn't work. Can't use %{uuid_flush} on this environment. #{e}"
-        end
         @uuid_flush_enabled = true
       end
 
@@ -364,8 +451,18 @@ module Fluent::Plugin
       }
     end
 
+    def check_s3_path_safety(conf)
+      unless conf.has_key?('s3_object_key_format')
+        log.warn "The default value of s3_object_key_format will use ${chunk_id} instead of %{index} to avoid object conflict in v2"
+      end
+
+      if (@buffer_config.flush_thread_count > 1) && ['${chunk_id}', '%{uuid_flush}'].none? { |key| @s3_object_key_format.include?(key) }
+        log.warn "No ${chunk_id} or %{uuid_flush} in s3_object_key_format with multiple flush threads. Recommend to set ${chunk_id} or %{uuid_flush} to avoid data lost by object conflict"
+      end
+    end
+
     def check_apikeys
-      @bucket.objects(prefix: @path).first
+      @bucket.objects(prefix: @path, :max_keys => 1).first
     rescue Aws::S3::Errors::NoSuchBucket
       # ignore NoSuchBucket Error because ensure_bucket checks it.
     rescue => e
@@ -376,20 +473,60 @@ module Fluent::Plugin
       options = {}
       credentials_options = {}
       case
-      when @aws_key_id && @aws_sec_key
-        options[:access_key_id] = @aws_key_id
-        options[:secret_access_key] = @aws_sec_key
       when @assume_role_credentials
         c = @assume_role_credentials
+        iam_user_credentials = @aws_key_id && @aws_sec_key ? Aws::Credentials.new(@aws_key_id, @aws_sec_key) : nil
+        region = c.sts_region || @s3_region
         credentials_options[:role_arn] = c.role_arn
         credentials_options[:role_session_name] = c.role_session_name
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
         credentials_options[:external_id] = c.external_id if c.external_id
-        if @s3_region
-          credentials_options[:client] = Aws::STS::Client.new(region: @s3_region)
+        credentials_options[:sts_endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
+        credentials_options[:sts_http_proxy] = c.sts_http_proxy if c.sts_http_proxy
+        if c.sts_http_proxy && c.sts_endpoint_url
+          credentials_options[:client] = if iam_user_credentials
+                                           Aws::STS::Client.new(region: region, http_proxy: c.sts_http_proxy, endpoint: c.sts_endpoint_url, credentials: iam_user_credentials)
+                                         else
+                                           Aws::STS::Client.new(region: region, http_proxy: c.sts_http_proxy, endpoint: c.sts_endpoint_url)
+                                         end
+        elsif c.sts_http_proxy
+          credentials_options[:client] = if iam_user_credentials
+                                           Aws::STS::Client.new(region: region, http_proxy: c.sts_http_proxy, credentials: iam_user_credentials)
+                                         else
+                                           Aws::STS::Client.new(region: region, http_proxy: c.sts_http_proxy)
+                                         end
+        elsif c.sts_endpoint_url
+          credentials_options[:client] = if iam_user_credentials
+                                           Aws::STS::Client.new(region: region, endpoint: c.sts_endpoint_url, credentials: iam_user_credentials)
+                                         else
+                                           Aws::STS::Client.new(region: region, endpoint: c.sts_endpoint_url)
+                                         end
+        else
+          credentials_options[:client] = if iam_user_credentials
+                                           Aws::STS::Client.new(region: region, credentials: iam_user_credentials)
+                                         else
+                                           Aws::STS::Client.new(region: region)
+                                         end
         end
+
         options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
+      when @aws_key_id && @aws_sec_key
+        options[:access_key_id] = @aws_key_id
+        options[:secret_access_key] = @aws_sec_key
+      when @web_identity_credentials
+        c = @web_identity_credentials
+        credentials_options[:role_arn] = c.role_arn
+        credentials_options[:role_session_name] = c.role_session_name
+        credentials_options[:web_identity_token_file] = c.web_identity_token_file
+        credentials_options[:policy] = c.policy if c.policy
+        credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
+        if c.sts_region
+          credentials_options[:client] = Aws::STS::Client.new(:region => c.sts_region)
+        elsif @s3_region
+          credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
+        end
+        options[:credentials] = Aws::AssumeRoleWebIdentityCredentials.new(credentials_options)
       when @instance_profile_credentials
         c = @instance_profile_credentials
         credentials_options[:retries] = c.retries if c.retries
