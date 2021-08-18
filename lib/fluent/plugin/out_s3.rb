@@ -173,6 +173,11 @@ module Fluent::Plugin
 
     MAX_HEX_RANDOM_LENGTH = 16
 
+    def reject_s3_endpoint?
+      @s3_endpoint && !@s3_endpoint.end_with?('vpce.amazonaws.com') &&
+        @s3_endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @s3_endpoint.include?(e) }
+    end
+
     def configure(conf)
       compat_parameters_convert(conf, :buffer, :formatter, :inject)
 
@@ -180,7 +185,7 @@ module Fluent::Plugin
 
       Aws.use_bundled_cert! if @use_bundled_cert
 
-      if @s3_endpoint && (@s3_endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @s3_endpoint.include?(e) })
+      if reject_s3_endpoint?
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
 
