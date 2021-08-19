@@ -1,3 +1,7 @@
+Release 1.6.1 - 2021/08/19
+
+  * in_s3/out_s3: Don't raise error when s3_endpoint is used for VPC endpoint (GitHub: #384)
+
 Release 1.6.0 - 2021/04/08
 
   * out_s3: Add support for Parquet compressor. Use `<compress>` section to configure columnify command behavior.
