@@ -115,10 +115,15 @@ module Fluent::Plugin
 
     attr_reader :bucket
 
+    def reject_s3_endpoint?
+      @s3_endpoint && !@s3_endpoint.end_with?('vpce.amazonaws.com') &&
+        @s3_endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @s3_endpoint.include?(e) }
+    end
+
     def configure(conf)
       super
 
-      if @s3_endpoint && (@s3_endpoint.end_with?('amazonaws.com') && !['fips', 'gov'].any? { |e| @s3_endpoint.include?(e) })
+      if reject_s3_endpoint?
         raise Fluent::ConfigError, "s3_endpoint parameter is not supported for S3, use s3_region instead. This parameter is for S3 compatible services"
       end
 
