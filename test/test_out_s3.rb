@@ -150,6 +150,49 @@ class S3OutputTest < Test::Unit::TestCase
       assert_equal "id='2345678901'", d.instance.grant_read_acp
       assert_equal "id='3456789012'", d.instance.grant_write_acp
     end
+
+    CONFIG_WITH_OBJECTKEY_DEFAULT = %[
+      s3_object_key_format "%{path}%{time_slice}_%{index}.%{file_extension}"
+      aws_key_id test_key_id
+      aws_sec_key test_sec_key
+      s3_bucket test_bucket
+      path log
+      utc
+      buffer_type memory
+      time_slice_format %Y%m%d-%H
+    ]
+
+    CONFIG_WITH_OBJECTKEY_FIXED_FOR_MULTI_THEAD = %[
+      s3_object_key_format "%{path}%{time_slice}_${chunk_id}.%{file_extension}"
+      aws_key_id test_key_id
+      aws_sec_key test_sec_key
+      s3_bucket test_bucket
+      path log
+      utc
+      buffer_type memory
+      time_slice_format %Y%m%d-%H
+    ]
+
+    data("non_objectkey", {"expected_warning_num" => 1, "conf" => CONFIG, "workers" => 1, "with_multi_buffers" => false})
+    data("non_objectkey-multi_buffer", {"expected_warning_num" => 2, "conf" => CONFIG, "workers" => 1, "with_multi_buffers" => true})
+    data("non_objectkey-multi_worker", {"expected_warning_num" => 2, "conf" => CONFIG, "workers" => 2, "with_multi_buffers" => false})
+    data("default_objectkey", {"expected_warning_num" => 0, "conf" => CONFIG_WITH_OBJECTKEY_DEFAULT, "workers" => 1, "with_multi_buffers" => false})
+    data("default_objectkey-multi_buffer", {"expected_warning_num" => 1, "conf" => CONFIG_WITH_OBJECTKEY_DEFAULT, "workers" => 1, "with_multi_buffers" => true})
+    data("default_objectkey-multi_worker", {"expected_warning_num" => 1, "conf" => CONFIG_WITH_OBJECTKEY_DEFAULT, "workers" => 2, "with_multi_buffers" => false})
+    data("fixed_objectkey", {"expected_warning_num" => 0, "conf" => CONFIG_WITH_OBJECTKEY_FIXED_FOR_MULTI_THEAD, "workers" => 1, "with_multi_buffers" => false})
+    data("fixed_objectkey-multi_buffer", {"expected_warning_num" => 0, "conf" => CONFIG_WITH_OBJECTKEY_FIXED_FOR_MULTI_THEAD, "workers" => 1, "with_multi_buffers" => true})
+    data("fixed_objectkey-multi_worker", {"expected_warning_num" => 0, "conf" => CONFIG_WITH_OBJECTKEY_FIXED_FOR_MULTI_THEAD, "workers" => 2, "with_multi_buffers" => false})
+    def test_configure_warning_on_parallel(data)
+      conf = data["conf"].clone
+      if data["with_multi_buffers"]
+        conf << "\n<buffer>\n@type memory\nflush_thread_count 2\n</buffer>\n"
+      end
+      assert_rr do
+        d = Fluent::Test::Driver::Output.new(Fluent::Plugin::S3Output, opts: {"workers": data["workers"]})
+        mock(d.instance.log).warn(anything).times(data["expected_warning_num"])
+        d.configure(conf)
+      end
+    end
   end
 
   def test_format
