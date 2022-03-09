@@ -52,102 +52,104 @@ class S3OutputTest < Test::Unit::TestCase
     end.configure(conf)
   end
 
-  def test_configure
-    d = create_driver
-    assert_equal 'test_key_id', d.instance.aws_key_id
-    assert_equal 'test_sec_key', d.instance.aws_sec_key
-    assert_equal 'test_bucket', d.instance.s3_bucket
-    assert_equal 'log', d.instance.path
-    assert_equal 'gz', d.instance.instance_variable_get(:@compressor).ext
-    assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
-    assert_equal false, d.instance.force_path_style
-    assert_equal nil, d.instance.compute_checksums
-    assert_equal nil, d.instance.signature_version
-    assert_equal true, d.instance.check_bucket
-    assert_equal true, d.instance.check_object
-  end
-
-  def test_s3_endpoint_with_valid_endpoint
-    d = create_driver(CONFIG + 's3_endpoint riak-cs.example.com')
-    assert_equal 'riak-cs.example.com', d.instance.s3_endpoint
-  end
-
-  data('US West (Oregon)' => 's3-us-west-2.amazonaws.com',
-       'EU (Frankfurt)' => 's3.eu-central-1.amazonaws.com',
-       'Asia Pacific (Tokyo)' => 's3-ap-northeast-1.amazonaws.com')
-  def test_s3_endpoint_with_invalid_endpoint(endpoint)
-    assert_raise(Fluent::ConfigError, "s3_endpoint parameter is not supported, use s3_region instead. This parameter is for S3 compatible services") {
-      create_driver(CONFIG + "s3_endpoint #{endpoint}")
-    }
-  end
-
-  def test_configure_with_mime_type_json
-    conf = CONFIG.clone
-    conf << "\nstore_as json\n"
-    d = create_driver(conf)
-    assert_equal 'json', d.instance.instance_variable_get(:@compressor).ext
-    assert_equal 'application/json', d.instance.instance_variable_get(:@compressor).content_type
-  end
-
-  def test_configure_with_mime_type_text
-    conf = CONFIG.clone
-    conf << "\nstore_as text\n"
-    d = create_driver(conf)
-    assert_equal 'txt', d.instance.instance_variable_get(:@compressor).ext
-    assert_equal 'text/plain', d.instance.instance_variable_get(:@compressor).content_type
-  end
-
-  def test_configure_with_mime_type_lzo
-    conf = CONFIG.clone
-    conf << "\nstore_as lzo\n"
-    d = create_driver(conf)
-    assert_equal 'lzo', d.instance.instance_variable_get(:@compressor).ext
-    assert_equal 'application/x-lzop', d.instance.instance_variable_get(:@compressor).content_type
-  rescue => e
-    # TODO: replace code with disable lzop command
-    assert(e.is_a?(Fluent::ConfigError))
-  end
-
-  def test_configure_with_path_style
-    conf = CONFIG.clone
-    conf << "\nforce_path_style true\n"
-    d = create_driver(conf)
-    assert d.instance.force_path_style
-  end
-
-  def test_configure_with_compute_checksums
-    conf = CONFIG.clone
-    conf << "\ncompute_checksums false\n"
-    d = create_driver(conf)
-    assert_equal false, d.instance.compute_checksums
-  end
-
-  def test_configure_with_hex_random_length
-    conf = CONFIG.clone
-    assert_raise Fluent::ConfigError do
-      create_driver(conf + "\nhex_random_length 17\n")
+  sub_test_case "configure" do
+    def test_configure
+      d = create_driver
+      assert_equal 'test_key_id', d.instance.aws_key_id
+      assert_equal 'test_sec_key', d.instance.aws_sec_key
+      assert_equal 'test_bucket', d.instance.s3_bucket
+      assert_equal 'log', d.instance.path
+      assert_equal 'gz', d.instance.instance_variable_get(:@compressor).ext
+      assert_equal 'application/x-gzip', d.instance.instance_variable_get(:@compressor).content_type
+      assert_equal false, d.instance.force_path_style
+      assert_equal nil, d.instance.compute_checksums
+      assert_equal nil, d.instance.signature_version
+      assert_equal true, d.instance.check_bucket
+      assert_equal true, d.instance.check_object
     end
-    assert_nothing_raised do
-      create_driver(conf + "\nhex_random_length 16\n")
+
+    def test_s3_endpoint_with_valid_endpoint
+      d = create_driver(CONFIG + 's3_endpoint riak-cs.example.com')
+      assert_equal 'riak-cs.example.com', d.instance.s3_endpoint
     end
-  end
 
-  def test_configure_with_no_check_on_s3
-    conf = CONFIG.clone
-    conf << "\ncheck_bucket false\ncheck_object false\n"
-    d = create_driver(conf)
-    assert_equal false, d.instance.check_bucket
-    assert_equal false, d.instance.check_object
-  end
+    data('US West (Oregon)' => 's3-us-west-2.amazonaws.com',
+         'EU (Frankfurt)' => 's3.eu-central-1.amazonaws.com',
+         'Asia Pacific (Tokyo)' => 's3-ap-northeast-1.amazonaws.com')
+    def test_s3_endpoint_with_invalid_endpoint(endpoint)
+      assert_raise(Fluent::ConfigError, "s3_endpoint parameter is not supported, use s3_region instead. This parameter is for S3 compatible services") {
+        create_driver(CONFIG + "s3_endpoint #{endpoint}")
+      }
+    end
 
-  def test_configure_with_grant
-    conf = CONFIG.clone
-    conf << "\grant_full_control id='0123456789'\ngrant_read id='1234567890'\ngrant_read_acp id='2345678901'\ngrant_write_acp id='3456789012'\n"
-    d = create_driver(conf)
-    assert_equal "id='0123456789'", d.instance.grant_full_control
-    assert_equal "id='1234567890'", d.instance.grant_read
-    assert_equal "id='2345678901'", d.instance.grant_read_acp
-    assert_equal "id='3456789012'", d.instance.grant_write_acp
+    def test_configure_with_mime_type_json
+      conf = CONFIG.clone
+      conf << "\nstore_as json\n"
+      d = create_driver(conf)
+      assert_equal 'json', d.instance.instance_variable_get(:@compressor).ext
+      assert_equal 'application/json', d.instance.instance_variable_get(:@compressor).content_type
+    end
+
+    def test_configure_with_mime_type_text
+      conf = CONFIG.clone
+      conf << "\nstore_as text\n"
+      d = create_driver(conf)
+      assert_equal 'txt', d.instance.instance_variable_get(:@compressor).ext
+      assert_equal 'text/plain', d.instance.instance_variable_get(:@compressor).content_type
+    end
+
+    def test_configure_with_mime_type_lzo
+      conf = CONFIG.clone
+      conf << "\nstore_as lzo\n"
+      d = create_driver(conf)
+      assert_equal 'lzo', d.instance.instance_variable_get(:@compressor).ext
+      assert_equal 'application/x-lzop', d.instance.instance_variable_get(:@compressor).content_type
+    rescue => e
+      # TODO: replace code with disable lzop command
+      assert(e.is_a?(Fluent::ConfigError))
+    end
+
+    def test_configure_with_path_style
+      conf = CONFIG.clone
+      conf << "\nforce_path_style true\n"
+      d = create_driver(conf)
+      assert d.instance.force_path_style
+    end
+
+    def test_configure_with_compute_checksums
+      conf = CONFIG.clone
+      conf << "\ncompute_checksums false\n"
+      d = create_driver(conf)
+      assert_equal false, d.instance.compute_checksums
+    end
+
+    def test_configure_with_hex_random_length
+      conf = CONFIG.clone
+      assert_raise Fluent::ConfigError do
+        create_driver(conf + "\nhex_random_length 17\n")
+      end
+      assert_nothing_raised do
+        create_driver(conf + "\nhex_random_length 16\n")
+      end
+    end
+
+    def test_configure_with_no_check_on_s3
+      conf = CONFIG.clone
+      conf << "\ncheck_bucket false\ncheck_object false\n"
+      d = create_driver(conf)
+      assert_equal false, d.instance.check_bucket
+      assert_equal false, d.instance.check_object
+    end
+
+    def test_configure_with_grant
+      conf = CONFIG.clone
+      conf << "\grant_full_control id='0123456789'\ngrant_read id='1234567890'\ngrant_read_acp id='2345678901'\ngrant_write_acp id='3456789012'\n"
+      d = create_driver(conf)
+      assert_equal "id='0123456789'", d.instance.grant_full_control
+      assert_equal "id='1234567890'", d.instance.grant_read
+      assert_equal "id='2345678901'", d.instance.grant_read_acp
+      assert_equal "id='3456789012'", d.instance.grant_write_acp
+    end
   end
 
   def test_format
