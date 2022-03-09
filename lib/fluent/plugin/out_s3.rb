@@ -461,8 +461,9 @@ module Fluent::Plugin
         log.warn "The default value of s3_object_key_format will use ${chunk_id} instead of %{index} to avoid object conflict in v2"
       end
 
-      if (@buffer_config.flush_thread_count > 1) && ['${chunk_id}', '%{uuid_flush}'].none? { |key| @s3_object_key_format.include?(key) }
-        log.warn "No ${chunk_id} or %{uuid_flush} in s3_object_key_format with multiple flush threads. Recommend to set ${chunk_id} or %{uuid_flush} to avoid data lost by object conflict"
+      is_working_on_parallel = @buffer_config.flush_thread_count > 1 || system_config.workers > 1
+      if is_working_on_parallel && ['${chunk_id}', '%{uuid_flush}'].none? { |key| @s3_object_key_format.include?(key) }
+        log.warn "No ${chunk_id} or %{uuid_flush} in s3_object_key_format with multiple flush threads or multiple workers. Recommend to set ${chunk_id} or %{uuid_flush} to avoid data lost by object conflict"
       end
     end
 
