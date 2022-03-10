@@ -84,7 +84,7 @@ class S3InputTest < Test::Unit::TestCase
 
     def test_unknown_store_as
       config = CONFIG + "\nstore_as unknown"
-      assert_raise(Fluent::ConfigError) do
+      assert_raise(Fluent::NotFoundPluginError) do
         create_driver(config)
       end
     end
