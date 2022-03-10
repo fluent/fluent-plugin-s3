@@ -182,7 +182,7 @@ class S3OutputTest < Test::Unit::TestCase
     data("fixed_objectkey", {"expected_warning_num" => 0, "conf" => CONFIG_WITH_OBJECTKEY_FIXED_FOR_MULTI_THEAD, "workers" => 1, "with_multi_buffers" => false})
     data("fixed_objectkey-multi_buffer", {"expected_warning_num" => 0, "conf" => CONFIG_WITH_OBJECTKEY_FIXED_FOR_MULTI_THEAD, "workers" => 1, "with_multi_buffers" => true})
     data("fixed_objectkey-multi_worker", {"expected_warning_num" => 0, "conf" => CONFIG_WITH_OBJECTKEY_FIXED_FOR_MULTI_THEAD, "workers" => 2, "with_multi_buffers" => false})
-    def test_configure_warning_on_multi_threads(data)
+    def test_configure_warning_on_parallel(data)
       conf = data["conf"].clone
       if data["with_multi_buffers"]
         conf << "\n<buffer>\n@type memory\nflush_thread_count 2\n</buffer>\n"
