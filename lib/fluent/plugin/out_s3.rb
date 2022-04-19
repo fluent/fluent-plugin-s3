@@ -516,7 +516,7 @@ module Fluent::Plugin
                                          end
         end
 
-        options[:credentials] = Aws::AssumeRoleCredentials.new(**credentials_options)
+        options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
       when @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
@@ -532,7 +532,7 @@ module Fluent::Plugin
         elsif @s3_region
           credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
         end
-        options[:credentials] = Aws::AssumeRoleWebIdentityCredentials.new(**credentials_options)
+        options[:credentials] = Aws::AssumeRoleWebIdentityCredentials.new(credentials_options)
       when @instance_profile_credentials
         c = @instance_profile_credentials
         credentials_options[:retries] = c.retries if c.retries
