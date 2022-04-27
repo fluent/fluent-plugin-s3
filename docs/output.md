@@ -438,6 +438,10 @@ It would be useful when you use S3 compatible storage that accepts only signatur
 
 Given a threshold to treat events as delay, output warning logs if delayed events were put into s3.
 
+## tagging
+
+The S3 tag-set for the object. The tag-set must be encoded as URL Query parameters. (For example, "Key1=Value1").
+
 ## \<bucket_lifecycle_rule\> section
 
 Specify one or more lifecycle rules for the bucket

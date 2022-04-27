@@ -147,6 +147,8 @@ module Fluent::Plugin
     config_param :signature_version, :string, default: nil # use nil to follow SDK default configuration
     desc "Given a threshold to treat events as delay, output warning logs if delayed events were put into s3"
     config_param :warn_for_delay, :time, default: nil
+    desc "Arbitrary S3 tag-set for the object"
+    config_param :tagging, :string, default: nil
     desc "Arbitrary S3 metadata headers to set for the object"
     config_param :s3_metadata, :hash, default: nil
     config_section :bucket_lifecycle_rule, param_name: :bucket_lifecycle_rules, multi: true do
@@ -360,6 +362,7 @@ module Fluent::Plugin
         put_options[:grant_read] = @grant_read if @grant_read
         put_options[:grant_read_acp] = @grant_read_acp if @grant_read_acp
         put_options[:grant_write_acp] = @grant_write_acp if @grant_write_acp
+        put_options[:tagging] = @tagging if @tagging
 
         if @s3_metadata
           put_options[:metadata] = {}
