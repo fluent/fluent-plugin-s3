@@ -90,6 +90,8 @@ module Fluent::Plugin
     config_param :check_apikey_on_start, :bool, default: true
     desc "URI of proxy environment"
     config_param :proxy_uri, :string, default: nil
+    desc "Optional RegEx to match incoming messages"
+    config_param :match_regexp, :regexp, default: nil
 
     config_section :sqs, required: true, multi: false do
       desc "SQS queue name"
@@ -204,7 +206,13 @@ module Fluent::Plugin
             body = Yajl.load(message.body)
             log.debug(body)
             next unless body["Records"] # skip test queue
-
+            if @match_regexp
+              s3 = body["Records"].first["s3"]
+              raw_key = s3["object"]["key"]
+              key = CGI.unescape(raw_key)
+              match_regexp = Regexp.new(@match_regexp)
+              next unless match_regexp.match?(key) 
+            end
             process(body)
           rescue => e
             log.warn(error: e)

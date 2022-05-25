@@ -18,6 +18,7 @@ See also [Configuration: credentials](credentials.md) for common comprehensive p
       s3_bucket YOUR_S3_BUCKET_NAME
       s3_region ap-northeast-1
       add_object_metadata true
+      match_regexp production_.*
 
       <sqs>
         queue_name YOUR_SQS_QUEUE_NAME
@@ -27,6 +28,10 @@ See also [Configuration: credentials](credentials.md) for common comprehensive p
 ## add_object_metadata
 
 Whether or not object metadata should be added to the record. Defaults to `false`. See below for details.
+
+## match_regexp
+
+If provided, process the S3 object only if its keys matches the regular expression
 
 ## s3_bucket (required)
 
