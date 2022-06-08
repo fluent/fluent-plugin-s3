@@ -140,6 +140,14 @@ module Fluent::Plugin
         raise Fluent::ConfigError, "sqs/queue_name is required"
       end
 
+      if !!@aws_key_id ^ !!@aws_sec_key
+        raise Fluent::ConfigError, "aws_key_id or aws_sec_key is missing"
+      end
+
+      if !!@sqs.aws_key_id ^ !!@sqs.aws_sec_key
+        raise Fluent::ConfigError, "sqs/aws_key_id or sqs/aws_sec_key is missing"
+      end
+
       Aws.use_bundled_cert! if @use_bundled_cert
 
       @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
