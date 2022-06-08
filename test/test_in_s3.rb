@@ -153,6 +153,104 @@ EOS
     }
   end
 
+  def test_sqs_with_invalid_keys_missing_secret_key
+    assert_raise(Fluent::ConfigError, "sqs/aws_key_id or sqs/aws_sec_key is missing") {
+      conf = <<"EOS"
+aws_key_id test_key_id
+aws_sec_key test_sec_key
+s3_bucket test_bucket
+buffer_type memory
+<sqs>
+  queue_name test_queue
+  endpoint eu-west-1
+  aws_key_id sqs_test_key_id
+</sqs>
+EOS
+        create_driver(conf)
+      }
+    end
+
+  def test_sqs_with_invalid_aws_keys_missing_key_id
+    assert_raise(Fluent::ConfigError, "sqs/aws_key_id or sqs/aws_sec_key is missing") {
+      conf = <<"EOS"
+aws_key_id test_key_id
+aws_sec_key test_sec_key
+s3_bucket test_bucket
+buffer_type memory
+<sqs>
+  queue_name test_queue
+  endpoint eu-west-1
+  aws_sec_key sqs_test_sec_key
+</sqs>
+EOS
+      create_driver(conf)
+    }
+  end
+
+  def test_sqs_with_valid_aws_keys_complete_pair
+    conf = <<"EOS"
+aws_key_id test_key_id
+aws_sec_key test_sec_key
+s3_bucket test_bucket
+buffer_type memory
+<sqs>
+  queue_name test_queue
+  endpoint eu-west-1
+  aws_key_id sqs_test_key_id
+  aws_sec_key sqs_test_sec_key
+</sqs>
+EOS
+    d = create_driver(conf)
+    assert_equal 'sqs_test_key_id', d.instance.sqs.aws_key_id
+    assert_equal 'sqs_test_sec_key', d.instance.sqs.aws_sec_key
+  end
+
+  def test_with_invalid_aws_keys_missing_secret_key
+    assert_raise(Fluent::ConfigError, "aws_key_id or aws_sec_key is missing") {
+      conf = <<"EOS"
+aws_key_id test_key_id
+s3_bucket test_bucket
+buffer_type memory
+<sqs>
+  queue_name test_queue
+  endpoint eu-west-1
+</sqs>
+EOS
+      create_driver(conf)
+    }
+  end
+
+  def test_with_invalid_aws_keys_missing_key_id
+    assert_raise(Fluent::ConfigError, "aws_key_id or aws_sec_key is missing") {
+      conf = <<"EOS"
+aws_sec_key test_sec_key
+s3_bucket test_bucket
+buffer_type memory
+<sqs>
+  queue_name test_queue
+  endpoint eu-west-1
+</sqs>
+EOS
+      create_driver(conf)
+    }
+  end
+
+  def test_with_valid_aws_keys_complete_pair
+    conf = <<"EOS"
+aws_key_id test_key_id
+aws_sec_key test_sec_key
+s3_bucket test_bucket
+buffer_type memory
+<sqs>
+  queue_name test_queue
+  endpoint eu-west-1
+</sqs>
+EOS
+    d = create_driver(conf)
+    assert_equal 'test_key_id', d.instance.aws_key_id
+    assert_equal 'test_sec_key', d.instance.aws_sec_key
+  end
+
   Struct.new("StubResponse", :queue_url)
   Struct.new("StubMessage", :message_id, :receipt_handle, :body)
 

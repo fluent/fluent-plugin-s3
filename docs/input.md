@@ -77,6 +77,14 @@ SQS queue name. Need to create SQS queue on the region same as S3 bucket.
 
 SQS Owner Account ID
 
+### aws_key_id
+
+Alternative aws key id for SQS
+
+### aws_sec_key
+
+Alternative aws key secret for SQS
+
 ### skip_delete
 
 When true, messages are not deleted after polling block. Default is false.

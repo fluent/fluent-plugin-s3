@@ -98,6 +98,10 @@ module Fluent::Plugin
       config_param :queue_owner_aws_account_id, :string, default: nil
       desc "Use 's3_region' instead"
       config_param :endpoint, :string, default: nil
+      desc "AWS access key id for SQS user"
+      config_param :aws_key_id, :string, default: nil, secret: true
+      desc "AWS secret key for SQS user."
+      config_param :aws_sec_key, :string, default: nil, secret: true
       desc "Skip message deletion"
       config_param :skip_delete, :bool, default: false
       desc "The long polling interval."
@@ -134,6 +138,14 @@ module Fluent::Plugin
       parser_config = conf.elements("parse").first
       unless @sqs.queue_name
         raise Fluent::ConfigError, "sqs/queue_name is required"
+      end
+
+      if !!@aws_key_id ^ !!@aws_sec_key
+        raise Fluent::ConfigError, "aws_key_id or aws_sec_key is missing"
+      end
+
+      if !!@sqs.aws_key_id ^ !!@sqs.aws_sec_key
+        raise Fluent::ConfigError, "sqs/aws_key_id or sqs/aws_sec_key is missing"
       end
 
       Aws.use_bundled_cert! if @use_bundled_cert
@@ -275,6 +287,10 @@ module Fluent::Plugin
       options[:region] = @s3_region if @s3_region
       options[:endpoint] = @sqs.endpoint if @sqs.endpoint
       options[:http_proxy] = @proxy_uri if @proxy_uri
+      if @sqs.aws_key_id && @sqs.aws_sec_key
+        options[:access_key_id] = @sqs.aws_key_id
+        options[:secret_access_key] = @sqs.aws_sec_key
+      end
       log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
