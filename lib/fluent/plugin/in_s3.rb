@@ -282,6 +282,7 @@ module Fluent::Plugin
       if @sqs.aws_key_id && @sqs.aws_sec_key
         options[:access_key_id] = @sqs.aws_key_id
         options[:secret_access_key] = @sqs.aws_sec_key
+      end
       log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
