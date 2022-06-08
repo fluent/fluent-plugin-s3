@@ -156,6 +156,10 @@ module Fluent::Plugin
       @parser = parser_create(conf: parser_config, default_type: DEFAULT_PARSE_TYPE)
     end
 
+    def multi_workers_ready?
+      true
+    end
+
     def start
       super
 
