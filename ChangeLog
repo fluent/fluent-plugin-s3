@@ -1,3 +1,10 @@
+Release 1.7.0 - 2022/06/14
+
+  * in_s3: Allow multi workers
+  * in_s3: Support alternative AWS key ID and secret for SQS
+  * out_s3: Add warning for multi workers
+  * out_s3: Support object tagging
+
 Release 1.6.1 - 2021/08/19
 
   * in_s3/out_s3: Don't raise error when s3_endpoint is used for VPC endpoint (GitHub: #384)
