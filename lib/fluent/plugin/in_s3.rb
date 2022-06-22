@@ -210,8 +210,7 @@ module Fluent::Plugin
               s3 = body["Records"].first["s3"]
               raw_key = s3["object"]["key"]
               key = CGI.unescape(raw_key)
-              match_regexp = Regexp.new(@match_regexp)
-              next unless match_regexp.match?(key) 
+              next unless @match_regexp.match?(key) 
             end
             process(body)
           rescue => e

@@ -673,10 +673,6 @@ EOS
       end
       [message]
     end
-    # d.run(expect_emits: 1)
-    # events = d.events
-    # expected_records = []
-    # assert_equal(expected_records, events.map {|_tag, _time, record| record })
     assert_nothing_raised do
       d.run {}
     end
