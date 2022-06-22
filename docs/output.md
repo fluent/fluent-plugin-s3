@@ -81,6 +81,14 @@ This fixes the following error often seen in Windows:
 
     SSL_connect returned=1 errno=0 state=SSLv3 read server certificate B: certificate verify failed (Seahorse::Client::NetworkingError)
 
+## ssl_ca_bundle
+
+Full path to the SSL certificate authority bundle file that should be used when verifying peer certificates. If you do not pass `ssl_ca_bundle` or `ssl_ca_directory` the the system default will be used if available.
+
+## ssl_ca_directory
+
+Full path of the directory that contains the unbundled SSL certificate authority files for verifying peer certificates. If you do not pass `ssl_ca_bundle` or `ssl_ca_directory` the the system default will be used if available.
+
 ## ssl_verify_peer
 
 Verify SSL certificate of the endpoint. Default is true. Set false when you want to ignore the endpoint SSL certificate.

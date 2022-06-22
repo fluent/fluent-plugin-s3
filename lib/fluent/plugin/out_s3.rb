@@ -97,6 +97,10 @@ module Fluent::Plugin
     config_param :enable_dual_stack, :bool, default: false
     desc "If false, the certificate of endpoint will not be verified"
     config_param :ssl_verify_peer, :bool, :default => true
+    desc "Full path to the SSL certificate authority bundle file that should be used when verifying peer certificates. If unspecified, defaults to the system CA if available."
+    config_param :ssl_ca_bundle, :string, :default => nil
+    desc "Full path of the directory that contains the unbundled SSL certificate authority files for verifying peer certificates. If you do not pass ssl_ca_bundle or ssl_ca_directory the the system default will be used if available."
+    config_param :ssl_ca_directory, :string, :default => nil
     desc "The format of S3 object keys"
     config_param :s3_object_key_format, :string, default: "%{path}%{time_slice}_%{index}.%{file_extension}"
     desc "If true, the bucket name is always left in the request URI and never moved to the host as a sub-domain"
@@ -249,6 +253,8 @@ module Fluent::Plugin
       options[:compute_checksums] = @compute_checksums unless @compute_checksums.nil?
       options[:signature_version] = @signature_version unless @signature_version.nil?
       options[:ssl_verify_peer] = @ssl_verify_peer
+      options[:ssl_ca_bundle] = @ssl_ca_bundle if @ssl_ca_bundle
+      options[:ssl_ca_directory] = @ssl_ca_directory if @ssl_ca_directory
       log.on_trace do
         options[:http_wire_trace] = true
         options[:logger] = log
