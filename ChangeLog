@@ -1,3 +1,8 @@
+Release 1.7.1 - 2022/07/15
+
+  * in_s3: Add `match_regexp` parameter to selectively download S3 files based on the object key
+  * out_s3: Support `ssl_ca_bundle` and `ssl_ca_directory` parameter
+
 Release 1.7.0 - 2022/06/14
 
   * in_s3: Allow multi workers
