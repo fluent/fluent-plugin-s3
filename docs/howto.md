@@ -7,7 +7,7 @@ downstream processors to better identify the source of a given record.
 
 # IAM Policy
 
-The following is an example for a IAM policy needed to write to an s3 bucket (matches my-s3bucket/logs, my-s3bucket-test, etc.).
+The following is an example for a IAM policy needed to write to an s3 bucket (matches my-s3bucket/logs, my-s3bucket/test, etc.).
 
     {
       "Version": "2012-10-17",
