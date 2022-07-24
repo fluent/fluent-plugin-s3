@@ -45,6 +45,28 @@ Simply use RubyGems:
 
 Both S3 input/output plugin provide several credential methods for authentication/authorization.
 
+## Minimum required permission for plugin to work
+
+    {
+       "Version": "2012-10-17",
+       "Statement":[
+          {
+             "Effect":"Allow",
+             "Action":[
+                "s3:ListBucket"
+             ],
+             "Resource":"arn:aws:s3:::muf-k8s-kops-work-space-bucket"
+          },
+          {
+             "Effect":"Allow",
+             "Action":[
+                "s3:PutObject"
+             ],
+             "Resource":"arn:aws:s3:::muf-k8s-kops-work-space-bucket/*"
+          }
+       ]
+    }
+
 See [Configuration: credentials](docs/credentials.md) about details.
 
 ## Output Plugin
