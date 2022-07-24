@@ -57,14 +57,14 @@ See [Configuration: credentials](docs/credentials.md) about details.
              "Action":[
                 "s3:ListBucket"
              ],
-             "Resource":"arn:aws:s3:::muf-k8s-kops-work-space-bucket"
+             "Resource":"arn:aws:s3:::<buckuet_name>"
           },
           {
              "Effect":"Allow",
              "Action":[
                 "s3:PutObject"
              ],
-             "Resource":"arn:aws:s3:::muf-k8s-kops-work-space-bucket/*"
+             "Resource":"arn:aws:s3:::<buckuet_name>/*"
           }
        ]
     }
