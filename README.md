@@ -45,6 +45,8 @@ Simply use RubyGems:
 
 Both S3 input/output plugin provide several credential methods for authentication/authorization.
 
+See [Configuration: credentials](docs/credentials.md) about details.
+
 ## Minimum required permission for plugin to work
 
     {
@@ -66,9 +68,7 @@ Both S3 input/output plugin provide several credential methods for authenticatio
           }
        ]
     }
-
-See [Configuration: credentials](docs/credentials.md) about details.
-
+    
 ## Output Plugin
 
 See [Configuration: Output](docs/output.md) about details.
