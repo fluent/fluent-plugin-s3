@@ -47,6 +47,28 @@ Both S3 input/output plugin provide several credential methods for authenticatio
 
 See [Configuration: credentials](docs/credentials.md) about details.
 
+## Minimum required AWS IAM permission for plugin to work
+
+    {
+       "Version": "2012-10-17",
+       "Statement":[
+          {
+             "Effect":"Allow",
+             "Action":[
+                "s3:ListBucket"
+             ],
+             "Resource":"arn:aws:s3:::<buckuet_name>"
+          },
+          {
+             "Effect":"Allow",
+             "Action":[
+                "s3:PutObject"
+             ],
+             "Resource":"arn:aws:s3:::<buckuet_name>/*"
+          }
+       ]
+    }
+
 ## Output Plugin
 
 See [Configuration: Output](docs/output.md) about details.
