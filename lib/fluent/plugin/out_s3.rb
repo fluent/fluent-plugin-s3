@@ -471,8 +471,8 @@ module Fluent::Plugin
       end
 
       is_working_on_parallel = @buffer_config.flush_thread_count > 1 || system_config.workers > 1
-      if is_working_on_parallel && ['${chunk_id}', '%{uuid_flush}'].none? { |key| @s3_object_key_format.include?(key) }
-        log.warn "No ${chunk_id} or %{uuid_flush} in s3_object_key_format with multiple flush threads or multiple workers. Recommend to set ${chunk_id} or %{uuid_flush} to avoid data lost by object conflict"
+      if is_working_on_parallel && ['${chunk_id}', '%{uuid_flush}', '%{hex_random}'].none? { |key| @s3_object_key_format.include?(key) }
+        log.warn "No ${chunk_id}, %{uuid_flush} or %{hex_random} in s3_object_key_format with multiple flush threads or multiple workers. Recommend to set ${chunk_id}, %{uuid_flush} or %{hex_random} to avoid data lost by object conflict"
       end
     end
 
