@@ -28,7 +28,7 @@ class S3InputTest < Test::Unit::TestCase
   CONFIG = %[
     aws_key_id test_key_id
     aws_sec_key test_sec_key
-    s3_bucket test_bucket
+    s3_buckets test_bucket
     buffer_type memory
     <sqs>
       queue_name test_queue
@@ -47,7 +47,7 @@ class S3InputTest < Test::Unit::TestCase
       actual = {
         aws_key_id: d.instance.aws_key_id,
         aws_sec_key: d.instance.aws_sec_key,
-        s3_bucket: d.instance.s3_bucket,
+        s3_buckets: d.instance.s3_buckets,
         s3_region: d.instance.s3_region,
         sqs_queue_name: d.instance.sqs.queue_name,
         extractor_ext: extractor.ext,
@@ -56,11 +56,82 @@ class S3InputTest < Test::Unit::TestCase
       expected = {
         aws_key_id: "test_key_id",
         aws_sec_key: "test_sec_key",
-        s3_bucket: "test_bucket",
+        s3_buckets: "test_bucket",
         s3_region: "us-east-1",
         sqs_queue_name: "test_queue",
         extractor_ext: "gz",
         extractor_content_type: "application/x-gzip"
+      }
+      assert_equal(expected, actual)
+    end
+
+    def test_with_multiple_buckets
+      conf = %[
+        aws_key_id test_key_id
+        aws_sec_key test_sec_key
+        s3_buckets test_bucket1,test_bucket2
+        buffer_type memory
+        <sqs>
+          queue_name test_queue
+          queue_owner_aws_account_id 123456789123
+        </sqs>
+      ]
+      d = create_driver(conf)
+      extractor = d.instance.instance_variable_get(:@extractor)
+      actual = {
+        aws_key_id: d.instance.aws_key_id,
+        aws_sec_key: d.instance.aws_sec_key,
+        s3_buckets: d.instance.s3_buckets,
+        s3_region: d.instance.s3_region,
+        sqs_queue_name: d.instance.sqs.queue_name,
+        extractor_ext: extractor.ext,
+        extractor_content_type: extractor.content_type
+      }
+      expected = {
+        aws_key_id: "test_key_id",
+        aws_sec_key: "test_sec_key",
+        s3_buckets: "test_bucket1,test_bucket2",
+        s3_region: "us-east-1",
+        sqs_queue_name: "test_queue",
+        extractor_ext: "gz",
+        extractor_content_type: "application/x-gzip"
+      }
+      assert_equal(expected, actual)
+    end
+
+    def test_with_multiple_buckets_and_sqs_queue_url_override
+      conf = %[
+        aws_key_id test_key_id
+        aws_sec_key test_sec_key
+        s3_buckets test_bucket1,test_bucket2
+        buffer_type memory
+        <sqs>
+          queue_name test_queue
+          queue_owner_aws_account_id 123456789123
+          queue_url https://sqs.us-east-1.amazonaws.com/345678912345/test_override_queue
+        </sqs>
+      ]
+      d = create_driver(conf)
+      extractor = d.instance.instance_variable_get(:@extractor)
+      actual = {
+        aws_key_id: d.instance.aws_key_id,
+        aws_sec_key: d.instance.aws_sec_key,
+        s3_buckets: d.instance.s3_buckets,
+        s3_region: d.instance.s3_region,
+        sqs_queue_name: d.instance.sqs.queue_name,
+        extractor_ext: extractor.ext,
+        extractor_content_type: extractor.content_type,
+        sqs_queue_url: d.instance.sqs.queue_url
+      }
+      expected = {
+        aws_key_id: "test_key_id",
+        aws_sec_key: "test_sec_key",
+        s3_buckets: "test_bucket1,test_bucket2",
+        s3_region: "us-east-1",
+        sqs_queue_name: "test_queue",
+        extractor_ext: "gz",
+        extractor_content_type: "application/x-gzip",
+        sqs_queue_url: "https://sqs.us-east-1.amazonaws.com/345678912345/test_override_queue"
       }
       assert_equal(expected, actual)
     end
@@ -75,7 +146,7 @@ class S3InputTest < Test::Unit::TestCase
       conf = %[
         aws_key_id test_key_id
         aws_sec_key test_sec_key
-        s3_bucket test_bucket
+        s3_buckets test_bucket
       ]
       assert_raise_message("'<sqs>' sections are required") do
         create_driver(conf)
@@ -142,7 +213,7 @@ class S3InputTest < Test::Unit::TestCase
       conf = <<"EOS"
 aws_key_id test_key_id
 aws_sec_key test_sec_key
-s3_bucket test_bucket
+s3_buckets test_bucket
 buffer_type memory
 <sqs>
   queue_name test_queue
@@ -260,7 +331,7 @@ EOS
     mock(Aws::S3::Client).new(anything).at_least(0) { @s3_client }
     @s3_resource = mock(Aws::S3::Resource.new(client: @s3_client))
     mock(Aws::S3::Resource).new(client: @s3_client) { @s3_resource }
-    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test",
+    @s3_bucket = mock(Aws::S3::Bucket.new(name: "test_bucket",
                                           client: @s3_client))
     @s3_bucket.exists? { true }
     @s3_resource.bucket(anything) { @s3_bucket }
@@ -310,6 +381,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -345,6 +419,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -380,6 +457,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test+key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -415,6 +495,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test+key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -450,6 +533,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -490,6 +576,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -538,6 +627,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }
@@ -589,6 +681,9 @@ EOS
           "s3" => {
             "object" => {
               "key" => "test_key"
+            },
+            "bucket" => {
+              "name"=> "test_bucket"
             }
           }
         }

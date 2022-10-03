@@ -76,8 +76,8 @@ module Fluent::Plugin
       desc "Profile name. Default to 'default' or ENV['AWS_PROFILE']"
       config_param :profile_name, :string, default: nil
     end
-    desc "S3 bucket name"
-    config_param :s3_bucket, :string
+    desc "S3 bucket name(s) separated by commas in case of multiple bucket names"
+    config_param :s3_buckets, :string
     desc "S3 region name"
     config_param :s3_region, :string, default: ENV["AWS_REGION"] || "us-east-1"
     desc "Use 's3_region' instead"
@@ -98,6 +98,8 @@ module Fluent::Plugin
       config_param :queue_name, :string, default: nil
       desc "SQS Owner Account ID"
       config_param :queue_owner_aws_account_id, :string, default: nil
+      desc "SQS queue url, when passed it'll not get the queue URL by name & account ID"
+      config_param :queue_url, :string, default: nil
       desc "Use 's3_region' instead"
       config_param :endpoint, :string, default: nil
       desc "AWS access key id for SQS user"
@@ -112,6 +114,7 @@ module Fluent::Plugin
       config_param :retry_error_interval, :integer, default: 300
     end
 
+    # Default tag will include input.s3.bucket_name  ###Check the function process(body)
     desc "Tag string"
     config_param :tag, :string, default: "input.s3"
 
@@ -168,16 +171,29 @@ module Fluent::Plugin
       s3_client = create_s3_client
       log.debug("Succeeded to create S3 client")
       @s3 = Aws::S3::Resource.new(client: s3_client)
-      @bucket = @s3.bucket(@s3_bucket)
-
-      raise "#{@bucket.name} is not found." unless @bucket.exists?
+      @buckets = {}
+      if (@s3_buckets.include?(","))
+        splitted_buckets = @s3_buckets.split(',')
+        splitted_buckets.each do | bucket |
+          @buckets[bucket] = @s3.bucket(bucket)
+          raise "#{bucket} is not found." unless @buckets[bucket].exists?
+        end
+      else
+        @buckets[@s3_buckets] = @s3.bucket(@s3_buckets)
+        raise "#{@s3_buckets} is not found." unless @buckets[@s3_buckets].exists?
+      end
 
       check_apikeys if @check_apikey_on_start
 
       sqs_client = create_sqs_client
       log.debug("Succeeded to create SQS client")
-      response = sqs_client.get_queue_url(queue_name: @sqs.queue_name, queue_owner_aws_account_id: @sqs.queue_owner_aws_account_id)
-      sqs_queue_url = response.queue_url
+      sqs_queue_url = nil
+      if (@sqs.queue_url.nil?)
+        response = sqs_client.get_queue_url(queue_name: @sqs.queue_name, queue_owner_aws_account_id: @sqs.queue_owner_aws_account_id)
+        sqs_queue_url = response.queue_url
+      else
+        sqs_queue_url = @sqs.queue_url
+      end
       log.debug("Succeeded to get SQS queue URL")
 
       @poller = Aws::SQS::QueuePoller.new(sqs_queue_url, client: sqs_client)
@@ -311,8 +327,10 @@ module Fluent::Plugin
     end
 
     def check_apikeys
-      @bucket.objects.first
-      log.debug("Succeeded to verify API keys")
+      @buckets.each do | bucket_name, bucket_object |
+        bucket_object.objects.first
+        log.debug("Succeeded to verify API keys for bucket #{bucket_name}")
+      end
     rescue => e
       raise "can't call S3 API. Please check your credentials or s3_region configuration. error = #{e.inspect}"
     end
@@ -320,19 +338,27 @@ module Fluent::Plugin
     def process(body)
       s3 = body["Records"].first["s3"]
       raw_key = s3["object"]["key"]
+      raw_bucket_name = s3["bucket"]["name"]
       key = CGI.unescape(raw_key)
 
-      io = @bucket.object(key).get.body
+      if (!@buckets.key?(raw_bucket_name))
+        raise "S3 bucket name: #{raw_bucket_name} returned from SQS was not provided in the input configuration as one of the s3 fluentd sources."
+      end
+
+      io = @buckets[raw_bucket_name].object(key).get.body
       content = @extractor.extract(io)
       es = Fluent::MultiEventStream.new
       content.each_line do |line|
         @parser.parse(line) do |time, record|
           if @add_object_metadata
-            record['s3_bucket'] = @s3_bucket
+            record['s3_bucket'] = raw_bucket_name
             record['s3_key'] = raw_key
           end
           es.add(time, record)
         end
+      end
+      if (@tag == "input.s3")
+        @tag = "input.s3.#{raw_bucket_name}"
       end
       router.emit_stream(@tag, es)
     end
