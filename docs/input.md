@@ -101,3 +101,7 @@ The long polling interval. Default is 20.
 ### retry_error_interval
 
 Interval to retry polling SQS if polling unsuccessful, in seconds. Default is 300.
+
+### event_bridge_mode
+When true, Amazon S3 Event Notification should be configured using the EventBridge integration. Default is false.
+See [Configure S3 event notification using EventBridge](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html) for additional information.
