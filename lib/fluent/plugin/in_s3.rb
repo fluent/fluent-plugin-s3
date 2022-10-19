@@ -110,6 +110,8 @@ module Fluent::Plugin
       config_param :wait_time_seconds, :integer, default: 20
       desc "Polling error retry interval."
       config_param :retry_error_interval, :integer, default: 300
+      desc "Event bridge mode"
+      config_param :event_bridge_mode, :bool, default: false
     end
 
     desc "Tag string"
@@ -205,10 +207,9 @@ module Fluent::Plugin
           begin
             body = Yajl.load(message.body)
             log.debug(body)
-            next unless body["Records"] # skip test queue
+            next unless is_valid_queue(body) # skip test queue
             if @match_regexp
-              s3 = body["Records"].first["s3"]
-              raw_key = s3["object"]["key"]
+              raw_key = get_raw_key(body)
               key = CGI.unescape(raw_key)
               next unless @match_regexp.match?(key) 
             end
@@ -224,6 +225,24 @@ module Fluent::Plugin
         sleep(@sqs.retry_error_interval)
         retry
       end
+    end
+
+    def is_valid_queue(body)
+      if @sqs.event_bridge_mode
+        log.debug("checking for eventbridge property")
+        !!body["detail"]
+      else 
+        log.debug("checking for Records property")
+        !!body["Records"]
+      end
+    end
+
+    def get_raw_key(body)
+      if @sqs.event_bridge_mode
+        body["detail"]["object"]["key"]
+      else
+        body["Records"].first["s3"]["object"]["key"]
+      end     
     end
 
     def setup_credentials
@@ -318,8 +337,7 @@ module Fluent::Plugin
     end
 
     def process(body)
-      s3 = body["Records"].first["s3"]
-      raw_key = s3["object"]["key"]
+      raw_key = get_raw_key(body)
       key = CGI.unescape(raw_key)
 
       io = @bucket.object(key).get.body

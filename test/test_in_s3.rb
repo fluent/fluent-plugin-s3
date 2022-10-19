@@ -166,9 +166,9 @@ buffer_type memory
   aws_key_id sqs_test_key_id
 </sqs>
 EOS
-        create_driver(conf)
-      }
-    end
+      create_driver(conf)
+    }
+  end
 
   def test_sqs_with_invalid_aws_keys_missing_key_id
     assert_raise(Fluent::ConfigError, "sqs/aws_key_id or sqs/aws_sec_key is missing") {
@@ -677,4 +677,50 @@ EOS
       d.run {}
     end
   end
+
+  def test_event_bridge_mode
+    setup_mocks
+    d = create_driver("
+      aws_key_id test_key_id
+      aws_sec_key test_sec_key
+      s3_bucket test_bucket
+      buffer_type memory
+      check_apikey_on_start false
+      store_as text
+      format none
+      <sqs>
+        event_bridge_mode true
+        queue_name test_queue
+        queue_owner_aws_account_id 123456789123
+      </sqs>
+    ")
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body { StringIO.new("aaa") }
+    s3_object.get { s3_response }
+    @s3_bucket.object(anything).at_least(1) { s3_object }
+
+    body = {
+      "detail" => {
+        "object" => {
+          "key" => "test_key"
+        }
+      }
+    }
+    
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run(expect_emits: 1)
+    events = d.events
+    assert_equal({ "message" => "aaa" }, events.first[2])
+  end
+
 end
