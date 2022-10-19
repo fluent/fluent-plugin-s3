@@ -1,3 +1,8 @@
+Release 1.7.2 - 2022/10/19
+
+  * in_s3: Add `event_bridge_mode` parameter
+  * out_s3: Fix `s3_object_key_format` check to allow `%{hex_random}` as well as `%{uuid_flush}` or `${chunk_id}`
+
 Release 1.7.1 - 2022/07/15
 
   * in_s3: Add `match_regexp` parameter to selectively download S3 files based on the object key
