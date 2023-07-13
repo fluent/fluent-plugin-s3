@@ -126,7 +126,7 @@ See also:
 
 ### retries
 
-Number of times to retry when retrieving credentials. Default is 5.
+Number of times to retry when retrieving credentials. Default is nil.
 
 ### ip_address
 
