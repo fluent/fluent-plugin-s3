@@ -40,7 +40,6 @@ Simply use RubyGems:
     # For v0.12. This is for old v0.12 users. Don't use v0.12 for new deployment
     $ gem install fluent-plugin-s3 -v "~> 0.8" --no-document # for fluentd v0.12
 
-
 ## Configuration: credentials
 
 Both S3 input/output plugin provide several credential methods for authentication/authorization.
