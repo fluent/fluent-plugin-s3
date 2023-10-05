@@ -154,6 +154,8 @@ module Fluent::Plugin
     desc "Arbitrary S3 tag-set for the object"
     config_param :tagging, :string, default: nil
     desc "Arbitrary S3 metadata headers to set for the object"
+    config_param :checksum_algorithm, :string, default: nil
+    desc "Indicates the algorithm you want Amazon S3 to use to create the checksum for the object (CRC32,CRC32C,SHA1,SHA256)"
     config_param :s3_metadata, :hash, default: nil
     config_section :bucket_lifecycle_rule, param_name: :bucket_lifecycle_rules, multi: true do
       desc "A unique ID for this rule"
@@ -368,6 +370,7 @@ module Fluent::Plugin
         put_options[:grant_read] = @grant_read if @grant_read
         put_options[:grant_read_acp] = @grant_read_acp if @grant_read_acp
         put_options[:grant_write_acp] = @grant_write_acp if @grant_write_acp
+        put_options[:checksum_algorithm] = @checksum_algorithm if @checksum_algorithm
         put_options[:tagging] = @tagging if @tagging
 
         if @s3_metadata
