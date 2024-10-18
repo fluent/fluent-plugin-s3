@@ -93,6 +93,7 @@ class S3InputTest < Test::Unit::TestCase
          "text" => ["text", "txt", "text/plain"],
          "gzip" => ["gzip", "gz", "application/x-gzip"],
          "gzip_command" => ["gzip_command", "gz", "application/x-gzip"],
+         "zstd" => ["zstd", "zst", "application/x-zstd"],
          "lzo" => ["lzo", "lzo", "application/x-lzop"],
          "lzma2" => ["lzma2", "xz", "application/x-xz"])
     def test_extractor(data)

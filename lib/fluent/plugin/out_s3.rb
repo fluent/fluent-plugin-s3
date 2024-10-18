@@ -6,6 +6,7 @@ require 'zlib'
 require 'time'
 require 'tempfile'
 require 'securerandom'
+require 'zstd-ruby'
 
 module Fluent::Plugin
   class S3Output < Output
@@ -630,6 +631,28 @@ module Fluent::Plugin
       end
     end
 
+    class ZstdCompressor < Compressor
+      def ext
+        'zst'.freeze
+      end
+
+      def content_type
+        'application/x-zst'.freeze
+      end
+
+      def compress(chunk, tmp)
+        uncompressed_data = ''
+        chunk.open do |io|
+          uncompressed_data = io.read
+        end
+        compressed_data = Zstd.compress(uncompressed_data, level: @level)
+        tmp.write(compressed_data)
+      rescue => e
+        log.warn "zstd compression failed: #{e.message}"
+        raise e
+      end
+    end
+
     class TextCompressor < Compressor
       def ext
         'txt'.freeze
@@ -658,7 +681,8 @@ module Fluent::Plugin
     {
       'gzip' => GzipCompressor,
       'json' => JsonCompressor,
-      'text' => TextCompressor
+      'text' => TextCompressor,
+      'zstd' => ZstdCompressor
     }.each { |name, compressor|
       COMPRESSOR_REGISTRY.register(name, compressor)
     }

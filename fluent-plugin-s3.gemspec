@@ -26,4 +26,5 @@ Gem::Specification.new do |gem|
   # aws-sdk-core requires one of ox, oga, libxml, nokogiri or rexml,
   # and rexml is no longer default gem as of Ruby 3.0.
   gem.add_development_dependency "rexml"
+  gem.add_development_dependency 'zstd-ruby'
 end
