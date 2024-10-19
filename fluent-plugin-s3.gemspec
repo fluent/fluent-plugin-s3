@@ -19,6 +19,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency "fluentd", [">= 0.14.22", "< 2"]
   gem.add_dependency "aws-sdk-s3", "~> 1.60"
   gem.add_dependency "aws-sdk-sqs", "~> 1.23"
+  gem.add_dependency 'zstd-ruby'
   gem.add_development_dependency "rake", ">= 0.9.2"
   gem.add_development_dependency "test-unit", ">= 3.0.8"
   gem.add_development_dependency "test-unit-rr", ">= 1.0.3"
@@ -26,5 +27,4 @@ Gem::Specification.new do |gem|
   # aws-sdk-core requires one of ox, oga, libxml, nokogiri or rexml,
   # and rexml is no longer default gem as of Ruby 3.0.
   gem.add_development_dependency "rexml"
-  gem.add_development_dependency 'zstd-ruby'
 end
