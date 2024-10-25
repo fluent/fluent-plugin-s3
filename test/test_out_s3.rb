@@ -109,6 +109,14 @@ class S3OutputTest < Test::Unit::TestCase
       assert(e.is_a?(Fluent::ConfigError))
     end
 
+    def test_configure_with_mime_type_zstd
+      conf = CONFIG.clone
+      conf << "\nstore_as zstd\n"
+      d = create_driver(conf)
+      assert_equal 'zst', d.instance.instance_variable_get(:@compressor).ext
+      assert_equal 'application/x-zst', d.instance.instance_variable_get(:@compressor).content_type
+    end
+
     def test_configure_with_path_style
       conf = CONFIG.clone
       conf << "\nforce_path_style true\n"
@@ -452,6 +460,33 @@ EOC
       assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
                    %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
                    data
+    end
+    FileUtils.rm_f(s3_local_file_path)
+  end
+
+  def test_write_with_zstd
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.zst"
+  
+    expected_s3path = "log/events/ts=20110102-13/events_0-#{Socket.gethostname}.zst"
+  
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: expected_s3path)
+  
+    config = CONFIG_TIME_SLICE + "\nstore_as zstd\n"
+    d = create_time_sliced_driver(config)
+  
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, { "a" => 1 })
+      d.feed(time, { "a" => 2 })
+    end
+  
+    File.open(s3_local_file_path, 'rb') do |file|
+      compressed_data = file.read
+      uncompressed_data = Zstd.decompress(compressed_data)
+      expected_data = %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                      %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n]
+      assert_equal expected_data, uncompressed_data
     end
     FileUtils.rm_f(s3_local_file_path)
   end
