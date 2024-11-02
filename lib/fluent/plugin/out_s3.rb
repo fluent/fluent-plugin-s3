@@ -641,11 +641,7 @@ module Fluent::Plugin
       end
 
       def compress(chunk, tmp)
-        uncompressed_data = ''
-        chunk.open do |io|
-          uncompressed_data = io.read
-        end
-        compressed_data = Zstd.compress(uncompressed_data, level: @level)
+        compressed_data = Zstd.compress(chunk.read, level: @level)
         tmp.write(compressed_data)
       rescue => e
         log.warn "zstd compression failed: #{e.message}"
