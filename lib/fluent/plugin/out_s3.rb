@@ -632,20 +632,31 @@ module Fluent::Plugin
     end
 
     class ZstdCompressor < Compressor
+      DEFAULT_LEVEL = 3
+    
+      def initialize(level = nil)
+        @level = level || DEFAULT_LEVEL
+      end
+    
       def ext
         'zst'.freeze
       end
-
+    
       def content_type
         'application/x-zst'.freeze
       end
-
+    
       def compress(chunk, tmp)
-        compressed_data = Zstd.compress(chunk.read, level: @level)
-        tmp.write(compressed_data)
-      rescue => e
-        log.warn "zstd compression failed: #{e.message}"
-        raise e
+        data = chunk.read
+        begin
+          compressed = Zstd.compress(data, level: @level)
+          tmp.binmode
+          tmp.write(compressed)
+          tmp.close
+        rescue => e
+          log.warn "zstd compression failed: #{e.message}"
+          raise e
+        end
       end
     end
 
