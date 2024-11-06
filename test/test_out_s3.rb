@@ -109,12 +109,16 @@ class S3OutputTest < Test::Unit::TestCase
       assert(e.is_a?(Fluent::ConfigError))
     end
 
-    def test_configure_with_mime_type_zstd
+    data('level default' => nil,
+         'level 1' => 1)
+    def test_configure_with_mime_type_zstd(level)
       conf = CONFIG.clone
       conf << "\nstore_as zstd\n"
+      conf << "\n<compress>\nlevel #{level}\n</compress>\n" if level
       d = create_driver(conf)
       assert_equal 'zst', d.instance.instance_variable_get(:@compressor).ext
       assert_equal 'application/x-zst', d.instance.instance_variable_get(:@compressor).content_type
+      assert_equal (level || 3), d.instance.instance_variable_get(:@compressor).instance_variable_get(:@compress_config).level
     end
 
     def test_configure_with_path_style
