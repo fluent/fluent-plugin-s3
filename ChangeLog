@@ -1,3 +1,7 @@
+Release 1.8.0 - 2024/11/06
+
+  * out_s3: Add zstd compression support
+
 Release 1.7.2 - 2022/10/19
 
   * in_s3: Add `event_bridge_mode` parameter
