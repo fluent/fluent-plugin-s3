@@ -19,14 +19,8 @@ module Fluent::Plugin
       end
 
       def compress(chunk, tmp)
-        w = StringIO.new
-        chunk.write_to(w)
-        w.rewind
-        compressed = Zstd.compress(w.read, level: @compress_config.level)
-        tmp.binmode
-        tmp.rewind
+        compressed = Zstd.compress(chunk.read, level: @compress_config.level)
         tmp.write(compressed)
-        tmp.rewind
       rescue => e
         log.warn "zstd compression failed: #{e.message}"
         raise
