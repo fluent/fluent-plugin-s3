@@ -1,5 +1,3 @@
-require 'zstd-ruby'
-
 module Fluent::Plugin
   class S3Output
     class ZstdCompressor < Compressor
@@ -8,6 +6,14 @@ module Fluent::Plugin
       config_section :compress, param_name: :compress_config, init: true, multi: false do
         desc "Compression level for zstd (1-22)"
         config_param :level, :integer, default: 3
+      end
+
+      def initialize(opts = {})
+        super
+        require 'zstd-ruby'
+      rescue LoadError => e
+        log.error "failed to load zstd-ruby gem. You need to manually install 'zstd-ruby' gem to use 'zstd'.", error: e.message
+        raise Fluent::ConfigError, "failed to load 'zstd-ruby' gem"
       end
 
       def ext
