@@ -1,3 +1,7 @@
+Release 1.8.1 - 2024/11/15
+
+  * dependency: Remove zstd-ruby
+
 Release 1.8.0 - 2024/11/06
 
   * out_s3: Add zstd compression support
