@@ -1,6 +1,6 @@
 Release 1.8.1 - 2024/11/15
 
-  * dependency: Remove zstd-ruby
+  * dependency: Change zstd-ruby dependency optional. Install zstd-ruby manually if you want to enable Zstd compression feature.
 
 Release 1.8.0 - 2024/11/06
 
