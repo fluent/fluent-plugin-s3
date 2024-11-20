@@ -388,7 +388,11 @@ module Fluent::Plugin
           end
         end
       ensure
-        tmp.close(true) rescue nil
+        begin
+          tmp.close(true)
+        rescue => e
+          log.info "out_s3: Tempfile#close caused unexpected error", error: e
+        end
       end
     end
 
