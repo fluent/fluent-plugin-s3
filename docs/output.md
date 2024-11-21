@@ -430,6 +430,18 @@ Specifies the AWS KMS key ID to use for object encryption.
 
 Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 
+## checksum_algorithm
+
+AWS allows to calculate the integrity checksum server side. The additional checksum is
+used to validate the data during upload or download. The following 4 SHA and CRC algorithms are supported:
+
+* CRC32
+* CRC32C
+* SHA1
+* SHA256
+
+For more info refer to [object integrity](https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html).
+
 ## compute_checksums
 
 AWS SDK uses MD5 for API request/response by default. On FIPS enabled environment,
