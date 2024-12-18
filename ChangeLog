@@ -1,3 +1,8 @@
+Release 1.8.2 - 2024/12/18
+
+  * out_s3: Add more logging to identify unexpected error of Tempfile#close.
+  * out_s3: Support `checksum_algorithm` parameter to validate the data with checksum (CRC32, CRC32C, SHA1 and SHA256) during upload/download.
+
 Release 1.8.1 - 2024/11/15
 
   * dependency: Change zstd-ruby dependency optional. Install zstd-ruby manually if you want to enable Zstd compression feature.
