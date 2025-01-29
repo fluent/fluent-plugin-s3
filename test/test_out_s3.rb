@@ -803,6 +803,92 @@ EOC
     assert_equal(expected_credentials, credentials)
   end
 
+  def test_web_identity_credentials_with_region_and_sts_http_proxy
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    expected_region = "ap-northeast-1"
+    expected_sts_http_proxy = 'http://example.com'
+    sts_client = Aws::STS::Client.new(region: expected_region, http_proxy: expected_sts_http_proxy)
+    mock(Aws::STS::Client).new(region:expected_region, http_proxy: expected_sts_http_proxy){ sts_client }
+    mock(Aws::AssumeRoleWebIdentityCredentials).new({ role_arn: "test_arn",
+                                           role_session_name: "test_session",
+                                           web_identity_token_file: "test_file",
+                                           client: sts_client,
+                                           sts_http_proxy: expected_sts_http_proxy }){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      s3_region #{expected_region}
+      <web_identity_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        web_identity_token_file test_file
+        sts_http_proxy #{expected_sts_http_proxy}
+      </web_identity_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_web_identity_credentials_with_sts_http_proxy
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    expected_sts_http_proxy = 'http://example.com'
+    sts_client = Aws::STS::Client.new(region: "us-east-1", http_proxy: expected_sts_http_proxy)
+    mock(Aws::STS::Client).new(region: "us-east-1", http_proxy: expected_sts_http_proxy){ sts_client }
+    mock(Aws::AssumeRoleWebIdentityCredentials).new({ role_arn: "test_arn",
+                                           role_session_name: "test_session",
+                                           web_identity_token_file: "test_file",
+                                           client: sts_client,
+                                           sts_http_proxy: expected_sts_http_proxy }){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <web_identity_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        web_identity_token_file test_file
+        sts_http_proxy #{expected_sts_http_proxy}
+      </web_identity_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+  def test_web_identity_credentials_with_sts_endpoint_url
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    expected_sts_endpoint_url = 'http://example.com'
+    sts_client = Aws::STS::Client.new(region: "us-east-1", endpoint: expected_sts_endpoint_url)
+    mock(Aws::STS::Client).new(region: "us-east-1", endpoint: expected_sts_endpoint_url){ sts_client }
+    mock(Aws::AssumeRoleWebIdentityCredentials).new({ role_arn: "test_arn",
+                                           role_session_name: "test_session",
+                                           web_identity_token_file: "test_file",
+                                           client: sts_client,
+                                           sts_endpoint_url: expected_sts_endpoint_url }){
+      expected_credentials
+    }
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <web_identity_credentials>
+        role_arn test_arn
+        role_session_name test_session
+        web_identity_token_file test_file
+        sts_endpoint_url #{expected_sts_endpoint_url}
+      </web_identity_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
   def test_web_identity_credentials_with_sts_region
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     sts_client = Aws::STS::Client.new(region: 'us-east-1')

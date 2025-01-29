@@ -62,6 +62,10 @@ module Fluent::Plugin
       config_param :duration_seconds, :integer, default: nil
       desc "The region of the STS endpoint to use."
       config_param :sts_region, :string, default: nil
+      desc "A http proxy url for requests to aws sts service"
+      config_param :sts_http_proxy, :string, default: nil, secret: true
+      desc "A url for a regional sts api endpoint, the default is global"
+      config_param :sts_endpoint_url, :string, default: nil
     end
     config_section :instance_profile_credentials, multi: false do
       desc "Number of times to retry when retrieving credentials"
@@ -540,15 +544,22 @@ module Fluent::Plugin
         options[:secret_access_key] = @aws_sec_key
       when @web_identity_credentials
         c = @web_identity_credentials
+        region = c.sts_region || @s3_region
         credentials_options[:role_arn] = c.role_arn
         credentials_options[:role_session_name] = c.role_session_name
         credentials_options[:web_identity_token_file] = c.web_identity_token_file
         credentials_options[:policy] = c.policy if c.policy
         credentials_options[:duration_seconds] = c.duration_seconds if c.duration_seconds
-        if c.sts_region
-          credentials_options[:client] = Aws::STS::Client.new(:region => c.sts_region)
-        elsif @s3_region
-          credentials_options[:client] = Aws::STS::Client.new(:region => @s3_region)
+        credentials_options[:sts_endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
+        credentials_options[:sts_http_proxy] = c.sts_http_proxy if c.sts_http_proxy
+        if c.sts_http_proxy && c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(region: region, http_proxy: c.sts_http_proxy, endpoint: c.sts_endpoint_url)
+        elsif c.sts_http_proxy
+          credentials_options[:client] = Aws::STS::Client.new(region: region, http_proxy: c.sts_http_proxy)
+        elsif c.sts_endpoint_url
+          credentials_options[:client] = Aws::STS::Client.new(region: region, endpoint: c.sts_endpoint_url)
+        else
+          credentials_options[:client] = Aws::STS::Client.new(region: region)
         end
         options[:credentials] = Aws::AssumeRoleWebIdentityCredentials.new(credentials_options)
       when @instance_profile_credentials
