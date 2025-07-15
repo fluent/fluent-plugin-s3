@@ -601,9 +601,9 @@ EOC
 
   def test_assume_role_credentials
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
-    mock(Aws::AssumeRoleCredentials).new({ role_arn: "test_arn",
-                                           role_session_name: "test_session",
-                                           client: anything }){
+    mock(Fluent::Plugin::EtleapAssumeRoleCredentials).new({ role_arn: "test_arn",
+                                                            role_session_name: "test_session",
+                                                            client: anything }){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -620,13 +620,41 @@ EOC
     assert_equal(expected_credentials, credentials)
   end
 
+  def test_assume_role_credentials_end_to_end
+    expected_credentials = Aws::Credentials.new("test_key", "test_secret")
+    any_instance_of(Aws::STS::Client) do |klass|
+      stub(klass).assume_role({:role_arn => "test_arn", :role_session_name => "test_session"}) {
+        return Aws::STS::Types::AssumeRoleResponse.new({
+          credentials: Aws::Credentials.new("test_key", "test_secret"),
+          assumed_role_user: Aws::STS::Types::AssumedRoleUser.new({
+            arn: "arn:aws:sts::123456789012:assumed-role/test_arn/test_session",
+            assumed_role_id: "AROAEXAMPLEID:test_session"
+          })
+        })
+      }
+    end
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+      </assume_role_credentials>
+    ]
+    d = create_time_sliced_driver(config)
+    assert_nothing_raised { d.run {} }
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_equal(expected_credentials, credentials)
+  end
+
+
   def test_assume_role_credentials_with_region
     expected_credentials = Aws::Credentials.new("test_key", "test_secret")
     sts_client = Aws::STS::Client.new(region: 'ap-northeast-1')
     mock(Aws::STS::Client).new(region: 'ap-northeast-1'){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new({ role_arn: "test_arn",
-                                           role_session_name: "test_session",
-                                           client: sts_client }){
+    mock(Fluent::Plugin::EtleapAssumeRoleCredentials).new({ role_arn: "test_arn",
+                                                      role_session_name: "test_session",
+                                                      client: sts_client }){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -649,9 +677,9 @@ EOC
     sts_client = Aws::STS::Client.new(region: 'ap-northeast-1', credentials: expected_credentials)
     mock(Aws::Credentials).new("test_key_id", "test_sec_key") { expected_credentials }
     mock(Aws::STS::Client).new(region: 'ap-northeast-1', credentials: expected_credentials){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new({ role_arn: "test_arn",
-                                           role_session_name: "test_session",
-                                           client: sts_client } ){
+    mock(Fluent::Plugin::EtleapAssumeRoleCredentials).new({ role_arn: "test_arn",
+                                                            role_session_name: "test_session",
+                                                            client: sts_client } ){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE
@@ -676,10 +704,10 @@ EOC
     expected_sts_http_proxy = 'http://example.com'
     sts_client = Aws::STS::Client.new(region: expected_region, http_proxy: expected_sts_http_proxy)
     mock(Aws::STS::Client).new(region:expected_region, http_proxy: expected_sts_http_proxy){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new({ role_arn: "test_arn",
-                                           role_session_name: "test_session",
-                                           client: sts_client,
-                                           sts_http_proxy: expected_sts_http_proxy }){
+    mock(Fluent::Plugin::EtleapAssumeRoleCredentials).new({ role_arn: "test_arn",
+                                                            role_session_name: "test_session",
+                                                            client: sts_client,
+                                                            sts_http_proxy: expected_sts_http_proxy }){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -703,10 +731,10 @@ EOC
     expected_sts_http_proxy = 'http://example.com'
     sts_client = Aws::STS::Client.new(region: "us-east-1", http_proxy: expected_sts_http_proxy)
     mock(Aws::STS::Client).new(region: "us-east-1", http_proxy: expected_sts_http_proxy){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new({ role_arn: "test_arn",
-                                           role_session_name: "test_session",
-                                           client: sts_client,
-                                           sts_http_proxy: expected_sts_http_proxy }){
+    mock(Fluent::Plugin::EtleapAssumeRoleCredentials).new({ role_arn: "test_arn",
+                                                            role_session_name: "test_session",
+                                                            client: sts_client,
+                                                            sts_http_proxy: expected_sts_http_proxy }){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -729,10 +757,10 @@ EOC
     expected_sts_endpoint_url = 'http://example.com'
     sts_client = Aws::STS::Client.new(region: "us-east-1", endpoint: expected_sts_endpoint_url)
     mock(Aws::STS::Client).new(region: "us-east-1", endpoint: expected_sts_endpoint_url){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new({ role_arn: "test_arn",
-                                           role_session_name: "test_session",
-                                           client: sts_client,
-                                           sts_endpoint_url: expected_sts_endpoint_url }){
+    mock(Fluent::Plugin::EtleapAssumeRoleCredentials).new({ role_arn: "test_arn",
+                                                            role_session_name: "test_session",
+                                                            client: sts_client,
+                                                            sts_endpoint_url: expected_sts_endpoint_url }){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -755,9 +783,9 @@ EOC
     expected_sts_region = 'ap-south-1'
     sts_client = Aws::STS::Client.new(region: expected_sts_region)
     mock(Aws::STS::Client).new(region: expected_sts_region){ sts_client }
-    mock(Aws::AssumeRoleCredentials).new({ role_arn: "test_arn",
-                                           role_session_name: "test_session",
-                                           client: sts_client }){
+    mock(Fluent::Plugin::EtleapAssumeRoleCredentials).new({ role_arn: "test_arn",
+                                                            role_session_name: "test_session",
+                                                            client: sts_client }){
       expected_credentials
     }
     config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
@@ -1015,4 +1043,30 @@ EOC
     d.instance.log.out.reset
     FileUtils.rm_f(s3_local_file_path)
   end
+
+  def test_assume_role_credentials_fail
+    expected_credentials = Aws::Credentials.new("invalid", "invalid")
+    any_instance_of(Aws::STS::Client) do |klass|
+      stub(klass).assume_role({:role_arn => "test_arn", :role_session_name => "test_session"}) {
+        raise Aws::STS::Errors::AccessDenied.new("error", "message")
+      }
+    end
+    config = CONFIG_TIME_SLICE.split("\n").reject{|x| x =~ /.+aws_.+/}.join("\n")
+    config += %[
+      <assume_role_credentials>
+        role_arn test_arn
+        role_session_name test_session
+      </assume_role_credentials>
+    ]
+    d = create_driver(config)
+    # no exception should be raised during normal operation
+    assert_nothing_raised { d.run {} }
+
+    client = d.instance.instance_variable_get(:@s3).client
+    credentials = client.config.credentials
+    assert_instance_of(Fluent::Plugin::EtleapAssumeRoleCredentials, credentials)
+    assert_equal(credentials.credentials.access_key_id(), "invalid")
+    assert_equal(credentials.credentials.secret_access_key(), "invalid")
+  end
+
 end

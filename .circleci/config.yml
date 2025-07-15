@@ -1,0 +1,17 @@
+version: 2
+jobs:
+    build:
+        resource_class: small
+        docker:
+            - image: cimg/ruby:3.1.2
+        steps:
+            - checkout
+            - run:
+                name: Install bundler
+                command: gem install bundler
+            - run:
+                name: Install gems
+                command: bundle install
+            - run:
+                name: Run Tests
+                command: rake test

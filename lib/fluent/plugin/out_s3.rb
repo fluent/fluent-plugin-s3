@@ -502,6 +502,7 @@ module Fluent::Plugin
       credentials_options = {}
       case
       when @assume_role_credentials
+        log.info "Trying to assume the role #{:role_arn}"
         c = @assume_role_credentials
         iam_user_credentials = @aws_key_id && @aws_sec_key ? Aws::Credentials.new(@aws_key_id, @aws_sec_key) : nil
         region = c.sts_region || @s3_region
@@ -538,7 +539,8 @@ module Fluent::Plugin
                                          end
         end
 
-        options[:credentials] = Aws::AssumeRoleCredentials.new(credentials_options)
+        options[:credentials] = EtleapAssumeRoleCredentials.new(credentials_options)
+        log.info "Successfully assumed the role #{:role_arn}"
       when @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
@@ -592,6 +594,9 @@ module Fluent::Plugin
         # See http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Client.html
       end
       options
+    rescue Aws::STS::Errors::AccessDenied => e
+      log.error "Failed to assume the role #{:role_arn}, because: #{e.message}"
+      options ## return the options, this was try and use the default credentials
     end
 
     class Compressor
@@ -685,6 +690,86 @@ module Fluent::Plugin
 
     def self.register_compressor(name, compressor)
       COMPRESSOR_REGISTRY.register(name, compressor)
+    end
+  end
+
+  ## The following class is an adaptation of: https://github.com/aws/aws-sdk-ruby/blob/master/gems/aws-sdk-core/lib/aws-sdk-core/assume_role_credentials.rb
+  class EtleapAssumeRoleCredentials
+    include Aws::CredentialProvider
+    include Aws::RefreshingCredentials
+    include Aws::ARNParser
+
+    # @option options [required, String] :role_arn
+    # @option options [required, String] :role_session_name
+    # @option options [String] :policy
+    # @option options [Integer] :duration_seconds
+    # @option options [String] :external_id
+    # @option options [STS::Client] :client
+    # @option options [Callable] before_refresh Proc called before
+    #   credentials are refreshed.  Useful for updating tokens.
+    #   `before_refresh` is called when AWS credentials are
+    #   required and need to be refreshed. Tokens can be refreshed using
+    #   the following example:
+    #
+    #      before_refresh = Proc.new do |assume_role_credentials| do
+    #        assume_role_credentials.assume_role_params['token_code'] = update_token
+    #      end
+    #
+    def initialize(options = {})
+      client_opts = {}
+      @assume_role_params = {}
+      options.each_pair do |key, value|
+        if self.class.assume_role_options.include?(key)
+          @assume_role_params[key] = value
+        else
+          client_opts[key] = value
+        end
+      end
+      @client = client_opts[:client] || Aws::STS::Client.new(client_opts)
+      @async_refresh = true
+      @metrics = ['CREDENTIALS_STS_ASSUME_ROLE']
+      super
+    end
+
+    # @return [STS::Client]
+    attr_reader :client
+
+    # @return [Hash]
+    attr_reader :assume_role_params
+
+    private
+
+    def refresh
+      resp = @client.assume_role(@assume_role_params)
+      creds = resp.credentials
+      @credentials = Aws::Credentials.new(
+        creds.access_key_id,
+        creds.secret_access_key,
+        creds.session_token,
+        account_id: parse_account_id(resp)
+      )
+      @expiration = creds.expiration
+    rescue Aws::STS::Errors::AccessDenied => e
+      # We need to set some credentials, to prevent an NPE further up the call stack.
+      @credentials = Aws::Credentials.new("invalid", "invalid", "invalid")
+      @expiration = 0
+    end
+
+    def parse_account_id(resp)
+      arn = resp.assumed_role_user&.arn
+      Aws::ARNParser.parse(arn).account_id if Aws::ARNParser.arn?(arn)
+    end
+
+    class << self
+
+      # @api private
+      def assume_role_options
+        @aro ||= begin
+          input = Aws::STS::Client.api.operation(:assume_role).input
+          Set.new(input.shape.member_names)
+        end
+      end
+
     end
   end
 end
