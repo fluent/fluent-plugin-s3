@@ -502,7 +502,7 @@ module Fluent::Plugin
       credentials_options = {}
       case
       when @assume_role_credentials
-        log.info "Trying to assume the role #{:role_arn}"
+        log.info "Trying to assume the role #{credentials_options[:role_arn]}"
         c = @assume_role_credentials
         iam_user_credentials = @aws_key_id && @aws_sec_key ? Aws::Credentials.new(@aws_key_id, @aws_sec_key) : nil
         region = c.sts_region || @s3_region
@@ -540,7 +540,7 @@ module Fluent::Plugin
         end
 
         options[:credentials] = EtleapAssumeRoleCredentials.new(credentials_options)
-        log.info "Successfully assumed the role #{:role_arn}"
+        log.info "Successfully assumed the role #{credentials_options[:role_arn]}"
       when @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
