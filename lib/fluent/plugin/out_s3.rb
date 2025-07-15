@@ -502,7 +502,6 @@ module Fluent::Plugin
       credentials_options = {}
       case
       when @assume_role_credentials
-        log.info "Trying to assume the role #{credentials_options[:role_arn]}"
         c = @assume_role_credentials
         iam_user_credentials = @aws_key_id && @aws_sec_key ? Aws::Credentials.new(@aws_key_id, @aws_sec_key) : nil
         region = c.sts_region || @s3_region
@@ -513,6 +512,7 @@ module Fluent::Plugin
         credentials_options[:external_id] = c.external_id if c.external_id
         credentials_options[:sts_endpoint_url] = c.sts_endpoint_url if c.sts_endpoint_url
         credentials_options[:sts_http_proxy] = c.sts_http_proxy if c.sts_http_proxy
+        log.info "Trying to assume the role #{credentials_options[:role_arn]}"
         if c.sts_http_proxy && c.sts_endpoint_url
           credentials_options[:client] = if iam_user_credentials
                                            Aws::STS::Client.new(region: region, http_proxy: c.sts_http_proxy, endpoint: c.sts_endpoint_url, credentials: iam_user_credentials)
@@ -751,6 +751,7 @@ module Fluent::Plugin
       @expiration = creds.expiration
     rescue Aws::STS::Errors::AccessDenied => e
       # We need to set some credentials, to prevent an NPE further up the call stack.
+      log.error "Failed to assume the role #{@assume_role_params[:role_arn]}, because: #{e.message}."
       @credentials = Aws::Credentials.new("invalid", "invalid", "invalid")
       @expiration = 0
     end
