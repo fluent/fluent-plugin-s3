@@ -539,7 +539,6 @@ module Fluent::Plugin
                                          end
         end
 
-        credentials_options[:log] = log
         options[:credentials] = EtleapAssumeRoleCredentials.new(credentials_options)
         log.info "Successfully assumed the role #{credentials_options[:role_arn]}"
       when @aws_key_id && @aws_sec_key
@@ -719,7 +718,6 @@ module Fluent::Plugin
     def initialize(options = {})
       client_opts = {}
       @assume_role_params = {}
-      @log = options[:log]
       options.each_pair do |key, value|
         if self.class.assume_role_options.include?(key)
           @assume_role_params[key] = value
@@ -751,9 +749,9 @@ module Fluent::Plugin
         account_id: parse_account_id(resp)
       )
       @expiration = creds.expiration
-      @log.info "Assumed role #{@assume_role_params[:role_arn]} with session name #{@assume_role_params[:role_session_name]} for #{@credentials.account_id} until #{@expiration}" if @log
     rescue Aws::STS::Errors::AccessDenied => e
-      @log.error "Failed to assume the role #{@assume_role_params[:role_arn]}, because: #{e.message}." if @log
+      # We need to set some credentials, to prevent an NPE further up the call stack.
+      log.error "Failed to assume the role #{@assume_role_params[:role_arn]}, because: #{e.message}."
       @credentials = Aws::Credentials.new("invalid", "invalid", "invalid")
       @expiration = 0
     end
