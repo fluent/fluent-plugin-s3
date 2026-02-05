@@ -185,6 +185,7 @@ archive format on S3. You can use several format:
 *   parquet (Need columnify command)
     *   This compressor uses an external [columnify](https://github.com/reproio/columnify) command.
     *   Use [`<compress>`](#compress-for-parquet-compressor-only) section to configure columnify command behavior.
+*   zstd (Need `zstd-ruby` gem, supported since v1.8.0)
 
 See [Use your compression algorithm](howto.md#use-your-compression-algorighm) section for adding another format.
 
