@@ -25,6 +25,11 @@ module Fluent::Plugin
       end
 
       def compress(chunk, tmp)
+        if @buffer_compressed_type == :zstd
+          chunk.write_to(tmp, compressed: @buffer_compressed_type)
+          return
+        end
+
         compressed = Zstd.compress(chunk.read, level: @compress_config.level)
         tmp.write(compressed)
       rescue => e
