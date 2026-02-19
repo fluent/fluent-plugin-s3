@@ -203,7 +203,7 @@ module Fluent::Plugin
 
       begin
         buffer_type = @buffer_config[:@type]
-        @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(buffer_type: buffer_type, log: log)
+        @compressor = COMPRESSOR_REGISTRY.lookup(@store_as).new(buffer_type: buffer_type, buffer_compressed_type: @buffer.compress, log: log)
       rescue => e
         log.warn "'#{@store_as}' not supported. Use 'text' instead: error = #{e.message}"
         @compressor = TextCompressor.new
@@ -600,6 +600,7 @@ module Fluent::Plugin
       def initialize(opts = {})
         super()
         @buffer_type = opts[:buffer_type]
+        @buffer_compressed_type = opts[:buffer_compressed_type]
         @log = opts[:log]
       end
 
@@ -642,11 +643,18 @@ module Fluent::Plugin
       end
 
       def compress(chunk, tmp)
+        if @buffer_compressed_type == :gzip
+          chunk.write_to(tmp, compressed: @buffer_compressed_type)
+          return
+        end
+
         w = Zlib::GzipWriter.new(tmp)
         chunk.write_to(w)
         w.finish
       ensure
-        w.finish rescue nil
+        if w
+          w.finish rescue nil
+        end
       end
     end
 
