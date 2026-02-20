@@ -495,6 +495,123 @@ EOC
     FileUtils.rm_f(s3_local_file_path)
   end
 
+  def test_no_compress_by_gzip_with_compressed_buffer
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.gz"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path)
+
+    d = create_time_sliced_driver(CONFIG_TIME_SLICE + <<~EOF)
+      <buffer tag,time>
+        @type memory
+        compress gzip
+        timekey 3600
+        timekey_use_utc true
+      </buffer>
+    EOF
+
+    # GzipCompressor should not use Zlib::GzipWriter
+    dont_allow(Zlib::GzipWriter).new
+
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+
+    data = ""
+    File.open(s3_local_file_path, "rb") do |f|
+      until f.eof?
+        gz = Zlib::GzipReader.new(f)
+        data << gz.read
+
+        unused = gz.unused
+        gz.finish
+        f.pos -= unused.length if unused
+      end
+    end
+    assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                 %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                 data
+    FileUtils.rm_f(s3_local_file_path)
+  end
+
+  def test_no_compress_by_gzip_command_with_compressed_buffer
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.gz"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path)
+
+    d = create_time_sliced_driver(CONFIG_TIME_SLICE + <<~EOF)
+      store_as gzip_command
+      <buffer tag,time>
+        @type memory
+        compress gzip
+        timekey 3600
+        timekey_use_utc true
+      </buffer>
+    EOF
+
+    # GzipCommandCompressor should not use Kernel.system and Zlib::GzipWriter
+    dont_allow(Kernel).system
+    dont_allow(Zlib::GzipWriter).new
+
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+
+    data = ""
+    File.open(s3_local_file_path, "rb") do |f|
+      until f.eof?
+        gz = Zlib::GzipReader.new(f)
+        data << gz.read
+
+        unused = gz.unused
+        gz.finish
+        f.pos -= unused.length if unused
+      end
+    end
+    assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                 %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                 data
+    FileUtils.rm_f(s3_local_file_path)
+  end
+
+  def test_no_compress_by_zstd_with_compressed_buffer
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.zst"
+    expected_s3path = "log/events/ts=20110102-13/events_0-#{Socket.gethostname}.zst"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: expected_s3path)
+
+    d = create_time_sliced_driver(CONFIG_TIME_SLICE + <<~EOF)
+      store_as zstd
+      <buffer tag,time>
+        @type memory
+        compress zstd
+        timekey 3600
+        timekey_use_utc true
+      </buffer>
+    EOF
+
+    # ZstdCompressor should not use Zstd.compress
+    dont_allow(Zstd).compress
+
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+
+    File.open(s3_local_file_path, 'rb') do |file|
+      compressed_data = file.read
+      uncompressed_data = Zstd.decompress(compressed_data)
+      expected_data = %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                      %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n]
+      assert_equal expected_data, uncompressed_data
+    end
+    FileUtils.rm_f(s3_local_file_path)
+  end
+
   class MockResponse
     attr_reader :data
 
