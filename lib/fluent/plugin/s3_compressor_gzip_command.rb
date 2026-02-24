@@ -19,6 +19,11 @@ module Fluent::Plugin
       end
 
       def compress(chunk, tmp)
+        if @buffer_compressed_type == :gzip
+          chunk.write_to(tmp, compressed: @buffer_compressed_type)
+          return
+        end
+
         chunk_is_file = @buffer_type == 'file'
         path = if chunk_is_file
                  chunk.path
