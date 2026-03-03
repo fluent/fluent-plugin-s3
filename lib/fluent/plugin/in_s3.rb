@@ -8,6 +8,7 @@ require 'cgi/util'
 require 'zlib'
 require 'time'
 require 'tempfile'
+require 'shellwords'
 
 module Fluent::Plugin
   class S3Input < Input
@@ -30,6 +31,10 @@ module Fluent::Plugin
     config_param :aws_key_id, :string, default: nil, secret: true
     desc "AWS secret key."
     config_param :aws_sec_key, :string, default: nil, secret: true
+    desc "AWS profile name."
+    config_param :aws_profile, :string, default: nil
+    desc "The command to run to generate credentials."
+    config_param :aws_credential_process, :string, default: nil
     config_section :assume_role_credentials, multi: false do
       desc "The Amazon Resource Name (ARN) of the role to assume"
       config_param :role_arn, :string
@@ -211,7 +216,7 @@ module Fluent::Plugin
             if @match_regexp
               raw_key = get_raw_key(body)
               key = CGI.unescape(raw_key)
-              next unless @match_regexp.match?(key) 
+              next unless @match_regexp.match?(key)
             end
             process(body)
           rescue => e
@@ -231,7 +236,7 @@ module Fluent::Plugin
       if @sqs.event_bridge_mode
         log.debug("checking for eventbridge property")
         !!body["detail"]
-      else 
+      else
         log.debug("checking for Records property")
         !!body["Records"]
       end
@@ -242,7 +247,7 @@ module Fluent::Plugin
         body["detail"]["object"]["key"]
       else
         body["Records"].first["s3"]["object"]["key"]
-      end     
+      end
     end
 
     def setup_credentials
@@ -252,6 +257,10 @@ module Fluent::Plugin
       when @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
+      when @aws_profile
+        options[:profile] = @aws_profile
+      when @aws_credential_process
+        options[:credentials] = Aws::ProcessCredentials.new(Shellwords.split(@aws_credential_process))
       when @assume_role_credentials
         c = @assume_role_credentials
         credentials_options[:role_arn] = c.role_arn

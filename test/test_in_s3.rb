@@ -71,6 +71,32 @@ class S3InputTest < Test::Unit::TestCase
       end
     end
 
+    def test_aws_profile
+      d = create_driver(%[
+        aws_profile test_profile
+        s3_bucket test_bucket
+        buffer_type memory
+        <sqs>
+          queue_name test_queue
+          queue_owner_aws_account_id 123456789123
+        </sqs>
+      ])
+      assert_equal 'test_profile', d.instance.aws_profile
+    end
+
+    def test_aws_credential_process
+      d = create_driver(%[
+        aws_credential_process "/path/to/aws_signing_helper credential-process"
+        s3_bucket test_bucket
+        buffer_type memory
+        <sqs>
+          queue_name test_queue
+          queue_owner_aws_account_id 123456789123
+        </sqs>
+      ])
+      assert_equal '/path/to/aws_signing_helper credential-process', d.instance.aws_credential_process
+    end
+
     def test_without_sqs_section
       conf = %[
         aws_key_id test_key_id
@@ -708,7 +734,7 @@ EOS
         }
       }
     }
-    
+
     message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
     @sqs_poller.get_messages(anything, anything) do |config, stats|
       config.before_request.call(stats) if config.before_request

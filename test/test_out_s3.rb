@@ -69,6 +69,30 @@ class S3OutputTest < Test::Unit::TestCase
       assert_equal true, d.instance.check_object
     end
 
+    def test_aws_profile
+      d = create_driver(%[
+        aws_profile test_profile
+        s3_bucket test_bucket
+        path log
+        utc
+        buffer_type memory
+        time_slice_format %Y%m%d-%H
+      ])
+      assert_equal 'test_profile', d.instance.aws_profile
+    end
+
+    def test_aws_credential_process
+      d = create_driver(%[
+        aws_credential_process "/path/to/aws_signing_helper credential-process"
+        s3_bucket test_bucket
+        path log
+        utc
+        buffer_type memory
+        time_slice_format %Y%m%d-%H
+      ])
+      assert_equal '/path/to/aws_signing_helper credential-process', d.instance.aws_credential_process
+    end
+
     def test_s3_endpoint_with_valid_endpoint
       d = create_driver(CONFIG + 's3_endpoint riak-cs.example.com')
       assert_equal 'riak-cs.example.com', d.instance.s3_endpoint

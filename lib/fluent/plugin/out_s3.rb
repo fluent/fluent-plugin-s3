@@ -6,6 +6,7 @@ require 'zlib'
 require 'time'
 require 'tempfile'
 require 'securerandom'
+require 'shellwords'
 
 module Fluent::Plugin
   class S3Output < Output
@@ -29,6 +30,10 @@ module Fluent::Plugin
     config_param :aws_key_id, :string, default: nil, secret: true
     desc "AWS secret key."
     config_param :aws_sec_key, :string, default: nil, secret: true
+    desc "AWS profile name."
+    config_param :aws_profile, :string, default: nil
+    desc "The command to run to generate credentials."
+    config_param :aws_credential_process, :string, default: nil
     config_section :assume_role_credentials, multi: false do
       desc "The Amazon Resource Name (ARN) of the role to assume"
       config_param :role_arn, :string, secret: true
@@ -542,6 +547,10 @@ module Fluent::Plugin
       when @aws_key_id && @aws_sec_key
         options[:access_key_id] = @aws_key_id
         options[:secret_access_key] = @aws_sec_key
+      when @aws_profile
+        options[:profile] = @aws_profile
+      when @aws_credential_process
+        options[:credentials] = Aws::ProcessCredentials.new(Shellwords.split(@aws_credential_process))
       when @web_identity_credentials
         c = @web_identity_credentials
         region = c.sts_region || @s3_region

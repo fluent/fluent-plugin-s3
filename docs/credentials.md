@@ -14,6 +14,23 @@ AWS access key id.
 
 AWS secret key.
 
+### aws_profile
+
+Specify a named profile from your shared AWS configuration files (`~/.aws/credentials` or `~/.aws/config`).
+This is useful for environments using IAM Roles or short-lived credentials.
+
+### aws_credential_process
+
+Specify a `credential_process` command directly in the Fluentd configuration.
+This enables integration with external credential helpers like IAM Roles Anywhere.
+
+    <match *>
+      @type s3
+      # Example for IAM Roles Anywhere
+      aws_credential_process "/path/to/aws_signing_helper credential-process --certificate /path/to/cert.pem --private-key /path/to/key.pem --trust-anchor-arn <ARN> --profile-arn <ARN> --role-arn <ARN>"
+      # ... other settings
+    </match>
+
 ## \<assume_role_credentials\> section
 
 Typically, you use AssumeRole for cross-account access or federation.
