@@ -1,3 +1,12 @@
+Release 1.8.4 - 2026/03/04
+
+  * in_s3: add aws_profile / aws_credential_process parameters for credencials (GitHub: #464)
+  * out_s3: add aws_profile / aws_credential_process parameters for credencials (GitHub: #464)
+  * out_s3: stop unnecessary re-compression when chunk is already compressed (GitHub: #460)
+  * gem: use same zstd-ruby version with Fluentd (GitHub: #463)
+  * gem: add ostruct gem as dependency for Ruby 4.0 (GitHub: #461)
+  * docs: add missing zstd compression (GitHub: #459)
+
 Release 1.8.3 - 2025/02/18
 
   * out_s3: Add `sts_http_proxy` and `sts_endpoint_url` to web_identity_credentials (GitHub: #452)
