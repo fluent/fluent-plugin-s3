@@ -209,7 +209,7 @@ parquet file page size. default: 8192 bytes
 
 ### parquet_row_group_size
 
-parquet file row group size. default: 128 MB
+parquet file row group size. default: 128 MiB
 
 ### record_type
 
