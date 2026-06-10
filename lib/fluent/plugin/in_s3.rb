@@ -210,7 +210,7 @@ module Fluent::Plugin
       begin
         @poller.poll(options) do |message|
           begin
-            body = Yajl.load(message.body)
+            body = JSON.parse(message.body)
             log.debug(body)
             next unless is_valid_queue(body) # skip test queue
             if @match_regexp
