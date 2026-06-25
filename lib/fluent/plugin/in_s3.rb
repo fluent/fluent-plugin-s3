@@ -22,11 +22,14 @@ module Fluent::Plugin
     end
 
     DEFAULT_PARSE_TYPE = "none"
+    DECOMPRESSION_SIZE_LIMIT = 256 * 1024 * 1024
 
     desc "Use aws-sdk-ruby bundled cert"
     config_param :use_bundled_cert, :bool, default: false
     desc "Add object metadata to the records parsed out of a given object"
     config_param :add_object_metadata, :bool, default: false
+    desc 'The size limit of the extracted element.'
+    config_param :decompression_size_limit, :size, default: DECOMPRESSION_SIZE_LIMIT
     desc "AWS access key id"
     config_param :aws_key_id, :string, default: nil, secret: true
     desc "AWS secret key."
@@ -159,7 +162,7 @@ module Fluent::Plugin
 
       Aws.use_bundled_cert! if @use_bundled_cert
 
-      @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log)
+      @extractor = EXTRACTOR_REGISTRY.lookup(@store_as).new(log: log, decompression_size_limit: @decompression_size_limit)
       @extractor.configure(conf)
 
       @parser = parser_create(conf: parser_config, default_type: DEFAULT_PARSE_TYPE)
@@ -365,13 +368,18 @@ module Fluent::Plugin
     end
 
     class Extractor
+      class SizeLimitError < StandardError; end
+
       include Fluent::Configurable
 
       attr_reader :log
 
-      def initialize(log: $log, **options)
+      BYTES_TO_READ = 64 * 1024
+
+      def initialize(log: $log, decompression_size_limit: DECOMPRESSION_SIZE_LIMIT, **options)
         super()
         @log = log
+        @decompression_size_limit = decompression_size_limit
       end
 
       def configure(conf)
@@ -399,6 +407,38 @@ module Fluent::Plugin
           raise Fluent::ConfigError, "'#{command}' utility must be in PATH for #{algo} compression"
         end
       end
+
+      def extract_with_command(command, io, tempfile_basename = "s3-extractor-tmp")
+        path = if io.respond_to?(:path)
+                 io.path
+               else
+                 extractor = TextExtractor.new(log: log, decompression_size_limit: @decompression_size_limit)
+                 temp = Tempfile.new(tempfile_basename)
+                 temp.write(extractor.extract(io))
+                 temp.close
+                 temp.path
+               end
+
+        out = ''
+        begin
+          Open3.popen3("#{command} #{path}") do |stdin, stdout, stderr, wait_thr|
+            stdin.close
+            while (chunk = stdout.read(BYTES_TO_READ))
+              out << chunk
+              if out.bytesize > @decompression_size_limit
+                Process.kill("TERM", wait_thr.pid) rescue nil
+                raise SizeLimitError, "Extracted data exceeds limit of #{@decompression_size_limit} bytes"
+              end
+            end
+
+            if wait_thr.value.success?
+              out
+            else
+              raise "Command execution failed: #{command} (status: #{wait_thr.value})"
+            end
+          end
+        end
+      end
     end
 
     class GzipExtractor < Extractor
@@ -414,19 +454,25 @@ module Fluent::Plugin
       # https://bugs.ruby-lang.org/issues/11180
       # https://github.com/exAspArk/multiple_files_gzip_reader
       def extract(io)
-        parts = []
+        out = ''
         loop do
           unused = nil
           Zlib::GzipReader.wrap(io) do |gz|
-            parts << gz.read
+            while (chunk = gz.read(BYTES_TO_READ))
+              out << chunk
+              if out.bytesize > @decompression_size_limit
+                raise SizeLimitError, "Extracted data exceeds limit of #{@decompression_size_limit} bytes"
+              end
+            end
             unused = gz.unused
             gz.finish
           end
           io.pos -= unused ? unused.length : 0
           break if io.eof?
         end
-        io.close
-        parts.join
+        out
+      ensure
+        io.close unless io.closed?
       end
     end
 
@@ -440,7 +486,14 @@ module Fluent::Plugin
       end
 
       def extract(io)
-        io.read
+        out = ''
+        while (chunk = io.read(BYTES_TO_READ))
+          out << chunk
+          if out.bytesize > @decompression_size_limit
+            raise SizeLimitError, "Extracted data exceeds limit of #{@decompression_size_limit} bytes"
+          end
+        end
+        out
       end
     end
 

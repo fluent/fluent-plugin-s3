@@ -19,26 +19,15 @@ module Fluent::Plugin
       end
 
       def extract(io)
-        path = if io.respond_to?(:path)
-                 io.path
-               else
-                 temp = Tempfile.new("gzip-temp")
-                 temp.write(io.read)
-                 temp.close
-                 temp.path
-               end
-
-        stdout, succeeded = Open3.capture2("gzip #{@command_parameter} #{path}")
-        if succeeded
-          stdout
-        else
-          log.warn "failed to execute gzip command. Fallback to GzipReader. status = #{succeeded}"
-          begin
-            io.rewind
-            Zlib::GzipReader.wrap(io) do |gz|
-              gz.read
-            end
-          end
+        begin
+          extract_with_command("gzip #{@command_parameter}", io, "gzip-temp")
+        rescue SizeLimitError
+          raise
+        rescue => e
+          log.warn "gzip command execution failed: #{e.message}. Fallback to GzipExtractor."
+          io.rewind
+          extractor = GzipExtractor.new(log: log, decompression_size_limit: @decompression_size_limit)
+          extractor.extract(io)
         end
       end
     end

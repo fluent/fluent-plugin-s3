@@ -19,19 +19,11 @@ module Fluent::Plugin
       end
 
       def extract(io)
-        path = if io.respond_to?(path)
-                 io.path
-               else
-                 temp = Tempfile.new("xz-temp")
-                 temp.write(io.read)
-                 temp.close
-                 temp.path
-               end
-
-        stdout, succeeded = Open3.capture2("xz #{@command_parameter} #{path}")
-        if succeeded
-          stdout
-        else
+        begin
+          extract_with_command("xz #{@command_parameter}", io, "xz-temp")
+        rescue SizeLimitError
+          raise
+        rescue
           raise "Failed to extract #{path} with xz command."
         end
       end

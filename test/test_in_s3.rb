@@ -640,6 +640,91 @@ EOS
     assert_equal(expected_records, events.map {|_tag, _time, record| record })
   end
 
+  data(
+    "limit_gzip"          => { type: "gzip",         input: "StringIO", limit: 10,  expected_error: true },
+    "limit_text"          => { type: "text",         input: "StringIO", limit: 10,  expected_error: true },
+    "limit_gzip_command1" => { type: "gzip_command", input: "StringIO", limit: 10,  expected_error: true },
+    "limit_gzip_command2" => { type: "gzip_command", input: "Tempfile", limit: 10,  expected_error: true },
+    "normal_gzip_command" => { type: "gzip_command", input: "Tempfile", limit: 100, expected_error: false },
+    )
+  def test_decompression_size_limit(data)
+    store_type = data[:type]
+    input_type = data[:input]
+    limit = data[:limit]
+    setup_mocks
+
+    config = <<~CONF
+      #{CONFIG}
+      check_apikey_on_start false
+      store_as #{store_type}
+      format none
+      decompression_size_limit #{limit}
+    CONF
+
+    d = create_driver(config)
+
+    s3_object = stub(Object.new)
+    s3_response = stub(Object.new)
+    s3_response.body {
+      content = "#{'a'*10}\n#{'b'*10}\n"
+
+      # Switching between Tempfile and StringIO to cover both branches of the
+      # `io.respond_to?(:path)` condition in `extract_with_command`.
+      # This ensures that:
+      # 1. The StringIO route correctly uses TextExtractor to create a protected temporary file.
+      # 2. The Tempfile route correctly limits the output size during Open3.popen3 execution.
+      io = (input_type == "Tempfile") ? Tempfile.new : StringIO.new
+
+      case store_type
+      when "gzip", "gzip_command"
+        io.binmode
+        Zlib::GzipWriter.wrap(io) { |gz|
+          gz.write content
+          gz.finish
+        }
+      when "text"
+        io.write content
+      end
+
+      io.rewind
+      io
+    }
+    s3_object.get { s3_response }
+    @s3_bucket.object(anything).at_least(1) { s3_object }
+
+    body = {
+      "Records" => [
+        {
+          "s3" => {
+            "object" => {
+              "key" => "test_key"
+            }
+          }
+        }
+      ]
+    }
+    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    d.run
+
+    if data[:expected_error]
+      # Verify the protection mechanism: ensure SizeLimitError is logged.
+      assert_true d.logs.any? { |l| l.include?("Extracted data exceeds limit of #{limit} bytes") }
+    else
+      # Verify the normal execution path: ensure data is correctly extracted via Open3.popen3.
+      expected_records = [{ "message" => "#{'a'*10}\n" }, { "message" => "#{'b'*10}\n" }]
+      assert_equal(expected_records, d.events.map {|_tag, _time, record| record })
+      assert_false d.logs.any? { |l| l.include?("error_class") }
+    end
+  end
+
   def test_regexp_matching
     setup_mocks
     d = create_driver(CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\nmatch_regexp .*_key?")

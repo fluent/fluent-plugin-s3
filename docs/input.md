@@ -29,6 +29,11 @@ See also [Configuration: credentials](credentials.md) for common comprehensive p
 
 Whether or not object metadata should be added to the record. Defaults to `false`. See below for details.
 
+## decompression_size_limit
+
+The size limit of the decompressed data. The default is `256m` (256 MiB).
+This parameter is designed to prevent memory exhaustion when extracting highly compressed objects from S3.
+
 ## match_regexp
 
 If provided, process the S3 object only if its keys matches the regular expression
