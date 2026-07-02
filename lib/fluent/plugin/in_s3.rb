@@ -213,7 +213,7 @@ module Fluent::Plugin
       begin
         @poller.poll(options) do |message|
           begin
-            body = JSON.parse(message.body)
+            body = JSON.parse(message.body, allow_duplicate_key: true)
             log.debug(body)
             next unless is_valid_queue(body) # skip test queue
             if @match_regexp
