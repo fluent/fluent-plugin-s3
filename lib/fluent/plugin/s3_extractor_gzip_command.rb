@@ -21,7 +21,7 @@ module Fluent::Plugin
       def extract(io)
         begin
           extract_with_command("gzip #{@command_parameter}", io, "gzip-temp")
-        rescue SizeLimitError
+        rescue Fluent::UnrecoverableError
           raise
         rescue => e
           log.warn "gzip command execution failed: #{e.message}. Fallback to GzipExtractor."

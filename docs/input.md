@@ -33,6 +33,7 @@ Whether or not object metadata should be added to the record. Defaults to `false
 
 The size limit of the decompressed data. The default is `256m` (256 MiB).
 This parameter is designed to prevent memory exhaustion when extracting highly compressed objects from S3.
+An object over the limit is never ingested and its SQS message is deleted, so raising the limit afterwards will not bring the notification back. See [Handling of failed messages](#handling-of-failed-messages).
 
 ## match_regexp
 
@@ -110,3 +111,11 @@ Interval to retry polling SQS if polling unsuccessful, in seconds. Default is 30
 ### event_bridge_mode
 When true, Amazon S3 Event Notification should be configured using the EventBridge integration. Default is false.
 See [Configure S3 event notification using EventBridge](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html) for additional information.
+
+# Handling of failed messages
+
+When handling an SQS message fails, the plugin either deletes the message or leaves it in the queue for redelivery.
+
+A failure that cannot change on redelivery is reported with a warning and the message is deleted. This covers a body that is not an S3 notification, an object key that S3 would reject, an object that the configured `store_as` cannot extract, an object over `decompression_size_limit`, and a line that the configured parser refuses. The object in S3 is not touched, but it is never ingested and the notification is gone, so a mistake in `store_as`, `<parse>` or `decompression_size_limit` loses the notifications that arrive while it is in effect. The warning names the object key, truncated to 256 bytes, so that such an object can be ingested by hand once the configuration is corrected.
+
+Every other failure, such as a networking error, a throttle, a missing object or a bug in the plugin, leaves the message in the queue and SQS redelivers it after the visibility timeout. Configure a [redrive policy with a dead letter queue](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html) so that such a message is moved aside after a bounded number of attempts instead of being retried until the retention period expires.
