@@ -834,4 +834,281 @@ EOS
     assert_equal({ "message" => "aaa" }, events.first[2])
   end
 
+  POLL_CONFIG = CONFIG + "\ncheck_apikey_on_start false\nstore_as text\nformat none\n"
+
+  EVENT_BRIDGE_POLL_CONFIG =
+    CONFIG.sub("<sqs>", "<sqs>\n      event_bridge_mode true") +
+    "\ncheck_apikey_on_start false\nstore_as text\nformat none\n"
+
+  def notification(key)
+    JSON.generate({ "Records" => [{ "s3" => { "object" => { "key" => key } } }] })
+  end
+
+  def gzipped(text)
+    buffer = StringIO.new(String.new, "wb")
+    Zlib::GzipWriter.wrap(buffer) { |gz| gz.write(text) }
+    buffer.string
+  end
+
+  def stub_s3_object(payload: "aaa", get_error: nil)
+    s3_response = stub(Object.new)
+    s3_response.body { StringIO.new(payload) }
+    s3_object = stub(Object.new)
+    s3_object.get { raise get_error if get_error; s3_response }
+    @s3_bucket.object(anything).at_least(0) do |key|
+      raise ArgumentError, ":key must not be blank" if key.to_s.empty?
+      raise ArgumentError, "invalid byte sequence in UTF-8" unless key.to_s.valid_encoding?
+      s3_object
+    end
+  end
+
+  def poll_once(d, message)
+    deleted = []
+    @sqs_poller.delete_messages(anything) { |messages| deleted.concat(messages) }
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 1
+        d.instance.instance_variable_set(:@running, false)
+      end
+      [message]
+    end
+    deleted
+  end
+
+  def warn_logs(d)
+    d.logs.select { |log| log.include?("[warn]") }
+  end
+
+  data(
+    "body is not JSON" => "hello",
+    "body is empty" => "",
+    "body is not a JSON object" => "[]",
+    "body is null" => "null",
+    "Records is empty" => '{"Records":[]}',
+    "record without s3" => '{"Records":[{}]}',
+    "record without object" => '{"Records":[{"s3":{}}]}',
+    "record without key" => '{"Records":[{"s3":{"object":{}}}]}',
+    "Records is a string" => '{"Records":"test_key"}',
+    "Records is an object" => '{"Records":{"s3":{}}}',
+    "key is not a string" => '{"Records":[{"s3":{"object":{"key":1}}}]}',
+    "key is empty" => '{"Records":[{"s3":{"object":{"key":""}}}]}',
+    "key holds invalid utf-8" => %Q({"Records":[{"s3":{"object":{"key":"a\xFF\xFEb"}}}]}),
+    "key decodes to invalid utf-8" => '{"Records":[{"s3":{"object":{"key":"%FF"}}}]}',
+  )
+  def test_unrecoverable_message_is_deleted(body)
+    setup_mocks
+    stub_s3_object
+    d = create_driver(POLL_CONFIG)
+
+    message = Struct::StubMessage.new(1, 1, body)
+    deleted = poll_once(d, message)
+
+    assert_nothing_raised { d.run {} }
+    assert_equal([message], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?("Skipping SQS message") })
+  end
+
+  def test_unrecoverable_message_in_event_bridge_mode_is_deleted
+    setup_mocks
+    stub_s3_object
+    d = create_driver(EVENT_BRIDGE_POLL_CONFIG)
+
+    message = Struct::StubMessage.new(1, 1, '{"detail":{}}')
+    deleted = poll_once(d, message)
+
+    assert_nothing_raised { d.run {} }
+    assert_equal([message], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?("Skipping SQS message") })
+  end
+
+  data(
+    "no Records property" => "{}",
+    "sns envelope" => '{"Type":"Notification","Message":"{}"}',
+    "s3 test event" => '{"Service":"Amazon S3","Event":"s3:TestEvent"}',
+  )
+  def test_message_that_is_not_an_s3_notification_is_reported(body)
+    setup_mocks
+    stub_s3_object
+    d = create_driver(POLL_CONFIG)
+    mock(d.instance).process(anything).never
+
+    message = Struct::StubMessage.new(1, 1, body)
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([message], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?("not an S3 notification") })
+  end
+
+  data(
+    "missing object" => "NoSuchKey",
+    "missing bucket" => "NoSuchBucket",
+    "access denied" => "AccessDenied",
+    "throttled" => "SlowDown",
+  )
+  def test_service_error_keeps_the_message_for_redelivery(error_name)
+    setup_mocks
+    stub_s3_object(get_error: Aws::S3::Errors.const_get(error_name).new(nil, error_name))
+    d = create_driver(POLL_CONFIG)
+
+    message = Struct::StubMessage.new(1, 1, notification("test_key"))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?("Failed to handle SQS message") })
+  end
+
+  def test_networking_error_keeps_the_message_for_redelivery
+    setup_mocks
+    stub_s3_object(get_error: Seahorse::Client::NetworkingError.new(Errno::ECONNRESET.new))
+    d = create_driver(POLL_CONFIG)
+
+    message = Struct::StubMessage.new(1, 1, notification("test_key"))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([], deleted)
+  end
+
+  data(
+    "gzip" => "gzip",
+    "gzip_command" => "gzip_command",
+    "lzo" => "lzo",
+    "lzma2" => "lzma2",
+  )
+  def test_corrupt_archive_is_deleted(store_type)
+    setup_mocks
+    stub_s3_object(payload: "this is not an archive")
+    begin
+      d = create_driver(POLL_CONFIG.sub("store_as text", "store_as #{store_type}"))
+    rescue Fluent::ConfigError => e
+      pend(e.message)
+    end
+
+    message = Struct::StubMessage.new(1, 1, notification("test_key"))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([message], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?("Skipping SQS message") })
+  end
+
+  def test_object_over_the_decompression_limit_is_deleted
+    setup_mocks
+    stub_s3_object(payload: gzipped("a" * 100))
+    d = create_driver(POLL_CONFIG.sub("store_as text", "store_as gzip") + "\ndecompression_size_limit 10\n")
+
+    message = Struct::StubMessage.new(1, 1, notification("test_key"))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([message], deleted)
+    assert_true(d.logs.any? { |log| log.include?("Extracted data exceeds limit") })
+  end
+
+  def test_unrecoverable_message_is_not_redelivered
+    setup_mocks
+    stub_s3_object
+    d = create_driver(POLL_CONFIG)
+
+    deleted = []
+    attempts = 0
+    @sqs_poller.delete_messages(anything) { |messages| deleted.concat(messages) }
+    message = Struct::StubMessage.new("mid-1", "rh-1", '{"Records":[]}')
+    @sqs_poller.get_messages(anything, anything) do |config, stats|
+      config.before_request.call(stats) if config.before_request
+      stats.request_count += 1
+      if stats.request_count >= 5
+        d.instance.instance_variable_set(:@running, false)
+      end
+      next [] unless deleted.empty?
+      attempts += 1
+      [message]
+    end
+    d.run {}
+
+    assert_equal([message], deleted)
+    assert_equal(1, attempts)
+  end
+
+  def test_a_bug_in_the_plugin_keeps_the_message_for_redelivery
+    setup_mocks
+    stub_s3_object
+    d = create_driver(POLL_CONFIG)
+    stub(d.instance).is_valid_queue(anything) { raise NoMethodError, "undefined method 'foo' for nil" }
+
+    message = Struct::StubMessage.new(1, 1, notification("test_key"))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?("Failed to handle SQS message") })
+  end
+
+  def test_unparsable_object_is_deleted
+    setup_mocks
+    stub_s3_object(payload: "\xC1")
+    d = create_driver(POLL_CONFIG.sub("format none", "<parse>\n  @type msgpack\n</parse>"))
+
+    message = Struct::StubMessage.new(1, 1, notification("test_key"))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([message], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?("Skipping SQS message") })
+  end
+
+  def test_deleting_warn_names_the_object_key
+    setup_mocks
+    stub_s3_object(payload: "this is not an archive")
+    d = create_driver(POLL_CONFIG.sub("store_as text", "store_as gzip"))
+
+    message = Struct::StubMessage.new(1, 1, notification("path/to/broken.gz"))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([message], deleted)
+    assert_true(warn_logs(d).any? { |log| log.include?(%Q(key="path/to/broken.gz")) })
+    assert_true(warn_logs(d).any? { |log| log.include?("in_s3.rb:") })
+  end
+
+  def test_deleting_warn_truncates_a_long_object_key
+    setup_mocks
+    stub_s3_object(payload: "this is not an archive")
+    d = create_driver(POLL_CONFIG.sub("store_as text", "store_as gzip"))
+
+    message = Struct::StubMessage.new(1, 1, notification("\u3042" * 400))
+    deleted = poll_once(d, message)
+    d.run {}
+
+    assert_equal([message], deleted)
+    line = warn_logs(d).find { |log| log.include?("Skipping SQS message") }
+    assert_operator(line[/key="(.*)"/, 1].length, :<=, Fluent::Plugin::S3Input::LOG_MAX_BYTES)
+  end
+
+  def test_a_truncated_object_key_is_still_valid_utf8
+    d = create_driver(POLL_CONFIG)
+    logged = d.instance.__send__(:loggable, "\u3042" * 400)
+
+    assert_true(logged.valid_encoding?)
+    assert_operator(logged.bytesize, :<=, Fluent::Plugin::S3Input::LOG_MAX_BYTES)
+    assert_nothing_raised { JSON.generate([logged]) }
+  end
+
+  def test_valid_message_is_processed_and_deleted
+    setup_mocks
+    stub_s3_object
+    d = create_driver(POLL_CONFIG)
+
+    message = Struct::StubMessage.new(1, 1, notification("test_key"))
+    deleted = poll_once(d, message)
+    d.run(expect_emits: 1)
+
+    assert_equal([message], deleted)
+    assert_equal({ "message" => "aaa" }, d.events.first[2])
+    assert_equal([], warn_logs(d))
+  end
+
 end

@@ -21,10 +21,10 @@ module Fluent::Plugin
       def extract(io)
         begin
           extract_with_command("xz #{@command_parameter}", io, "xz-temp")
-        rescue SizeLimitError
+        rescue Fluent::UnrecoverableError
           raise
-        rescue
-          raise "Failed to extract #{path} with xz command."
+        rescue => e
+          raise "Failed to extract with the xz command: #{e.message}"
         end
       end
     end

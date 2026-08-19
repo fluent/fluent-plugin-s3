@@ -5,6 +5,8 @@ require 'aws-sdk-s3'
 require 'aws-sdk-sqs'
 require 'aws-sdk-sqs/queue_poller'
 require 'cgi/util'
+require 'json'
+require 'msgpack'
 require 'zlib'
 require 'time'
 require 'tempfile'
@@ -22,7 +24,17 @@ module Fluent::Plugin
     end
 
     DEFAULT_PARSE_TYPE = "none"
+    UNRECOVERABLE_ERRORS = [
+      Fluent::UnrecoverableError,
+      TypeError,
+      ArgumentError,
+      EncodingError,
+      JSON::ParserError,
+      MessagePack::UnpackError,
+      Zlib::Error,
+    ].freeze
     DECOMPRESSION_SIZE_LIMIT = 256 * 1024 * 1024
+    LOG_MAX_BYTES = 256
 
     desc "Use aws-sdk-ruby bundled cert"
     config_param :use_bundled_cert, :bool, default: false
@@ -213,17 +225,18 @@ module Fluent::Plugin
       begin
         @poller.poll(options) do |message|
           begin
-            body = JSON.parse(message.body, allow_duplicate_key: true)
-            log.debug(body)
-            next unless is_valid_queue(body) # skip test queue
-            if @match_regexp
-              raw_key = get_raw_key(body)
-              key = CGI.unescape(raw_key)
-              next unless @match_regexp.match?(key)
-            end
-            process(body)
+            raw_key, key = object_key_from(message)
+            next if raw_key.nil?
+
+            process(raw_key, key)
+          rescue *UNRECOVERABLE_ERRORS => e
+            attributes = { message_id: message.message_id, error_class: e.class.to_s, error: e.message }
+            attributes[:key] = loggable(raw_key) if raw_key
+            log.warn("Skipping SQS message that cannot be handled", attributes)
+            log.warn_backtrace(e.backtrace)
+            next
           rescue => e
-            log.warn(error: e)
+            log.warn("Failed to handle SQS message", message_id: message.message_id, error: e)
             log.warn_backtrace(e.backtrace)
             throw :skip_delete
           end
@@ -233,6 +246,36 @@ module Fluent::Plugin
         sleep(@sqs.retry_error_interval)
         retry
       end
+    end
+
+    def loggable(value)
+      value.byteslice(0, LOG_MAX_BYTES).scrub("?")
+    end
+
+    def object_key_from(message)
+      log.debug { "SQS message #{message.message_id}: #{message.body.dump}" }
+
+      body = JSON.parse(message.body, allow_duplicate_key: true)
+      unless body.is_a?(Hash)
+        log.warn("Skipping SQS message whose body is not a JSON object", message_id: message.message_id)
+        return nil
+      end
+
+      unless is_valid_queue(body)
+        log.warn("Skipping SQS message that is not an S3 notification", message_id: message.message_id)
+        return nil
+      end
+
+      raw_key = get_raw_key(body)
+      if raw_key.nil?
+        log.warn("Skipping SQS message with a malformed notification body", message_id: message.message_id)
+        return nil
+      end
+
+      key = CGI.unescape(raw_key)
+      return nil if @match_regexp && !@match_regexp.match?(key)
+
+      [raw_key, key]
     end
 
     def is_valid_queue(body)
@@ -247,9 +290,9 @@ module Fluent::Plugin
 
     def get_raw_key(body)
       if @sqs.event_bridge_mode
-        body["detail"]["object"]["key"]
+        body.dig("detail", "object", "key")
       else
-        body["Records"].first["s3"]["object"]["key"]
+        body.dig("Records", 0, "s3", "object", "key")
       end
     end
 
@@ -348,10 +391,7 @@ module Fluent::Plugin
       raise "can't call S3 API. Please check your credentials or s3_region configuration. error = #{e.inspect}"
     end
 
-    def process(body)
-      raw_key = get_raw_key(body)
-      key = CGI.unescape(raw_key)
-
+    def process(raw_key, key)
       io = @bucket.object(key).get.body
       content = @extractor.extract(io)
       es = Fluent::MultiEventStream.new
@@ -368,7 +408,8 @@ module Fluent::Plugin
     end
 
     class Extractor
-      class SizeLimitError < StandardError; end
+      class SizeLimitError < Fluent::UnrecoverableError; end
+      class CommandError < Fluent::UnrecoverableError; end
 
       include Fluent::Configurable
 
@@ -431,10 +472,16 @@ module Fluent::Plugin
               end
             end
 
-            if wait_thr.value.success?
+            status = wait_thr.value
+            if status.success?
               out
+            elsif status.signaled?
+              # not a CommandError: a signal comes from outside the data, so a retry may succeed
+              raise "Command #{command} was terminated by signal #{status.termsig}"
             else
-              raise "Command execution failed: #{command} (status: #{wait_thr.value})"
+              stderr_tail = stderr.read.strip[0, 200]
+              reason = stderr_tail.empty? ? "" : ": #{stderr_tail}"
+              raise CommandError, "Command #{command} exited with #{status.exitstatus}#{reason}"
             end
           end
         end

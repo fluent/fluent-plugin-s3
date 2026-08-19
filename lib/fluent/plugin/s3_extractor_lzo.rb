@@ -21,10 +21,10 @@ module Fluent::Plugin
       def extract(io)
         begin
           extract_with_command("lzop #{@command_parameter}", io, "lzop-temp")
-        rescue SizeLimitError
+        rescue Fluent::UnrecoverableError
           raise
-        rescue
-          raise "Failed to extract #{path} with lzop command."
+        rescue => e
+          raise "Failed to extract with the lzop command: #{e.message}"
         end
       end
     end
