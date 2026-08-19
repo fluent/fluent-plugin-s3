@@ -362,7 +362,7 @@ module Fluent::Plugin
       begin
         @compressor.compress(chunk, tmp)
         tmp.rewind
-        log.debug "out_s3: write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}"
+        log.debug { "out_s3: write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}" }
 
         put_options = {
           body: tmp,
@@ -390,7 +390,7 @@ module Fluent::Plugin
         end
         @bucket.object(s3path).put(put_options)
 
-        log.debug "out_s3: completed to write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}"
+        log.debug { "out_s3: completed to write chunk #{dump_unique_id_hex(chunk.unique_id)} with metadata #{chunk.metadata} to s3://#{@s3_bucket}/#{s3path}" }
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)
 
