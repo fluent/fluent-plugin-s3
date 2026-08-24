@@ -109,7 +109,7 @@ module Fluent::Plugin
     desc "Check AWS key on start"
     config_param :check_apikey_on_start, :bool, default: true
     desc "URI of proxy environment"
-    config_param :proxy_uri, :string, default: nil
+    config_param :proxy_uri, :string, default: nil, secret: true
     desc "Optional RegEx to match incoming messages"
     config_param :match_regexp, :regexp, default: nil
 

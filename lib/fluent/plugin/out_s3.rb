@@ -121,7 +121,7 @@ module Fluent::Plugin
     desc "Check AWS key on start"
     config_param :check_apikey_on_start, :bool, default: true
     desc "URI of proxy environment"
-    config_param :proxy_uri, :string, default: nil
+    config_param :proxy_uri, :string, default: nil, secret: true
     desc "Use S3 reduced redundancy storage for 33% cheaper pricing. Deprecated. Use storage_class instead"
     config_param :reduced_redundancy, :bool, default: false, deprecated: "Use storage_class parameter instead."
     desc "The type of storage to use for the object(STANDARD,REDUCED_REDUNDANCY,STANDARD_IA)"
