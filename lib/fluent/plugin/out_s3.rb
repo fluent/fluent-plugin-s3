@@ -162,9 +162,9 @@ module Fluent::Plugin
     config_param :warn_for_delay, :time, default: nil
     desc "Arbitrary S3 tag-set for the object"
     config_param :tagging, :string, default: nil
-    desc "Arbitrary S3 metadata headers to set for the object"
-    config_param :checksum_algorithm, :string, default: nil
     desc "Indicates the algorithm you want Amazon S3 to use to create the checksum for the object (CRC32,CRC32C,SHA1,SHA256)"
+    config_param :checksum_algorithm, :string, default: nil
+    desc "Arbitrary S3 metadata headers to set for the object"
     config_param :s3_metadata, :hash, default: nil
     config_section :bucket_lifecycle_rule, param_name: :bucket_lifecycle_rules, multi: true do
       desc "A unique ID for this rule"
