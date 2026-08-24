@@ -76,7 +76,7 @@ Check AWS key on start. Default is true.
 
 ## proxy_uri
 
-URI of proxy environment.
+URI of proxy environment. The value is masked in the configuration dump, so credentials embedded in the URI are not written to the log.
 
 ## \<sqs\> section
 
