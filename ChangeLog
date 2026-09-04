@@ -1,3 +1,11 @@
+Release 1.8.6 - 2026/09/04
+
+  * in_s3: stop retrying SQS messages that can never succeed (GitHub: #484)
+  * in_s3: allow duplicate keys in JSON parser (GitHub: #481)
+  * in_s3/out_s3: mask `proxy_uri` in the configuration dump (GitHub: #486)
+  * out_s3: build the chunk debug message only when debug is on (GitHub: #485)
+  * out_s3: fix parameter descriptions of `checksum_algorithm` and `s3_metadata` (GitHub: #487)
+
 Release 1.8.5 - 2026/06/25
 
   * in_s3: enforce size limits on decompressed payloads
