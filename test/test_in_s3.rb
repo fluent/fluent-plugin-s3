@@ -703,7 +703,7 @@ EOS
         }
       ]
     }
-    message = Struct::StubMessage.new(1, 1, Yajl.dump(body))
+    message = Struct::StubMessage.new(1, 1, JSON.generate(body))
     @sqs_poller.get_messages(anything, anything) do |config, stats|
       config.before_request.call(stats) if config.before_request
       stats.request_count += 1
