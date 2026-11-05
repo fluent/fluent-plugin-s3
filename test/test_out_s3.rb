@@ -1159,4 +1159,37 @@ EOC
     d.instance.log.out.reset
     FileUtils.rm_f(s3_local_file_path)
   end
+
+  def test_warn_for_delay_without_time_chunk_key
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.txt"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path, s3path: "log/events/ts=/events_0-#{Socket.gethostname}.gz")
+
+    config = %[
+      aws_key_id test_key_id
+      aws_sec_key test_sec_key
+      s3_bucket test_bucket
+      s3_object_key_format %{path}/events/ts=%{time_slice}/events_%{index}-%{hostname}.%{file_extension}
+      path log
+      utc
+      check_bucket true
+      check_object true
+      warn_for_delay 1d
+      <buffer tag>
+        @type memory
+      </buffer>
+    ]
+    d = create_time_sliced_driver(config)
+
+    d.instance.log.out.flush_logs = false
+    d.run(default_tag: "test") do
+      d.feed(event_time("2011-01-02 13:14:15 UTC"), {"a"=>1})
+    end
+    logs = d.instance.log.out.logs
+    assert_false logs.any? {|log| log.include?('got unrecoverable error') }
+    assert_false logs.any? {|log| log.include?('out_s3: delayed events were put') }
+    d.instance.log.out.flush_logs = true
+    d.instance.log.out.reset
+    FileUtils.rm_f(s3_local_file_path)
+  end
 end
