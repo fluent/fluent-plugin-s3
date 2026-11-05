@@ -394,7 +394,7 @@ module Fluent::Plugin
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)
 
-        if @warn_for_delay
+        if @warn_for_delay && chunk.metadata.timekey
           if Time.at(chunk.metadata.timekey) < Time.now - @warn_for_delay
             log.warn "out_s3: delayed events were put to s3://#{@s3_bucket}/#{s3path}"
           end
