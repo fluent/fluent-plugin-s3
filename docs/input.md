@@ -52,7 +52,7 @@ recommend using `s3_region` instead of `s3_endpoint`.
 
 ## store_as
 
-archive format on S3. You can use serveral format:
+archive format on S3. You can use several format:
 
 * gzip (default)
 * json

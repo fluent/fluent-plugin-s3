@@ -113,7 +113,7 @@ E.g., "logs/" in the example configuration above.
 time-slice in text that are formatted with **time_slice_format**.
 * %{index} is the sequential number starts from 0, increments when multiple files are uploaded to S3 in the same time slice.
 * %{file_extension} depends on **store_as** parameter.
-* %{uuid_flush} a uuid that is replaced everytime the buffer will be flushed.
+* %{uuid_flush} a uuid that is replaced every time the buffer will be flushed.
 * %{hostname} is replaced with `Socket.gethostname` result.
 * %{hex_random} a random hex string that is replaced for each buffer chunk, not
 assured to be unique. This is used to follow a way of performance tuning, `Add
@@ -333,7 +333,7 @@ Use UTC instead of local time.
 
 Set storage class. Possible values are `STANDARD`, `REDUCED_REDUNDANCY`, `STANDARD_IA` from [Ruby SDK](http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Object.html#storage_class-instance_method).
 
-Note that reduced redundancy is [not reccomended](https://serverfault.com/a/1010951/512362).
+Note that reduced redundancy is [not recommended](https://serverfault.com/a/1010951/512362).
 
 ## reduced_redundancy
 

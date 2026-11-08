@@ -46,7 +46,7 @@ on EC2 instances.
 ## Example when `check_bucket false` and `check_object false`
 
 When the mentioned configuration will be made, fluentd will work with the
-minimum IAM poilcy, like:
+minimum IAM policy, like:
 
 
     "Statement": [{
@@ -58,7 +58,7 @@ minimum IAM poilcy, like:
 
 # Use your (de)compression algorithm
 
-s3 plugin has pluggable compression mechanizm like Fluentd's input / output
+s3 plugin has pluggable compression mechanism like Fluentd's input / output
 plugin. If you set 'store_as xxx', `out_s3` plugin searches
 `fluent/plugin/s3_compressor_xxx.rb` and `in_s3` plugin searches
 `fluent/plugin/s3_extractor_xxx.rb`. You can define your (de)compression with
