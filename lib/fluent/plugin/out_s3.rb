@@ -630,6 +630,12 @@ module Fluent::Plugin
 
       private
 
+      # The file of a chunk holds compressed data when the buffer compresses it,
+      # so it can only be given to a command as is when it does not.
+      def buffer_compressed?
+        !@buffer_compressed_type.nil? && @buffer_compressed_type != :text
+      end
+
       def check_command(command, algo = nil)
         require 'open3'
 

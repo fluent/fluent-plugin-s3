@@ -5,6 +5,7 @@ require 'fluent/test/driver/output'
 require 'fluent/version'
 require 'aws-sdk-s3'
 require 'fluent/plugin/out_s3'
+require 'fluent/plugin/s3_compressor_parquet'
 
 require 'test/unit/rr'
 require 'zlib'
@@ -637,6 +638,105 @@ EOC
       assert_equal expected_data, uncompressed_data
     end
     FileUtils.rm_f(s3_local_file_path)
+  end
+
+  data("gzip" => :gzip, "zstd" => :zstd)
+  def test_compress_by_gzip_command_with_compressed_file_buffer(buffer_compress)
+    pend "This test require Fluentd 1.19.0 or later which supports zstd buffer compressed." if buffer_compress == :zstd && Gem::Version.new(Fluent::VERSION) < Gem::Version.new('1.19.0')
+
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.gz"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path)
+    stub.proxy(Tempfile).new("chunk-gzip-tmp")
+    buffer_path = Dir.mktmpdir
+
+    d = create_time_sliced_driver(CONFIG_TIME_SLICE + <<~EOF)
+      store_as gzip_command
+      <buffer tag,time>
+        @type file
+        path #{buffer_path}
+        compress #{buffer_compress}
+        timekey 3600
+        timekey_use_utc true
+      </buffer>
+    EOF
+
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+
+    data = ""
+    File.open(s3_local_file_path, "rb") do |f|
+      until f.eof?
+        gz = Zlib::GzipReader.new(f)
+        data << gz.read
+
+        unused = gz.unused
+        gz.finish
+        f.pos -= unused.length if unused
+      end
+    end
+    assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                 %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                 data
+  ensure
+    FileUtils.rm_f(s3_local_file_path)
+    FileUtils.rm_rf(buffer_path) if buffer_path
+  end
+
+  data("gzip" => :gzip, "zstd" => :zstd)
+  def test_compress_by_parquet_with_compressed_file_buffer(buffer_compress)
+    pend "This test require Fluentd 1.19.0 or later which supports zstd buffer compressed." if buffer_compress == :zstd && Gem::Version.new(Fluent::VERSION) < Gem::Version.new('1.19.0')
+
+    setup_mocks(true)
+    s3obj = stub(Aws::S3::Object.new(bucket_name: "test_bucket", key: "test", client: @s3_client))
+    s3obj.exists? { false }
+    s3obj.put(anything)
+    @s3_bucket.object("log/events/ts=20110102-13/events_0-#{Socket.gethostname}.parquet") { s3obj }
+
+    # columnify is not installed in CI, so record what it would read
+    columnify_input = nil
+    status = Object.new
+    def status.success?; true; end
+    any_instance_of(Fluent::Plugin::S3Output::ParquetCompressor) do |klass|
+      stub(klass).check_command
+      stub(klass).columnify do |src_path, _dst_path|
+        columnify_input = File.binread(src_path)
+        ["", "", status]
+      end
+    end
+    buffer_path = Dir.mktmpdir
+
+    d = create_time_sliced_driver(CONFIG_TIME_SLICE + <<~EOF)
+      store_as parquet
+      <compress>
+        schema_type avro
+        schema_file /dev/null
+        record_type jsonl
+      </compress>
+      <format>
+        @type json
+      </format>
+      <buffer tag,time>
+        @type file
+        path #{buffer_path}
+        compress #{buffer_compress}
+        timekey 3600
+        timekey_use_utc true
+      </buffer>
+    EOF
+
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+
+    assert_equal %[{"a":1}\n{"a":2}\n], columnify_input
+  ensure
+    FileUtils.rm_rf(buffer_path) if buffer_path
   end
 
   class MockResponse
