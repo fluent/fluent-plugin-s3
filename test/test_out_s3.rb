@@ -682,7 +682,7 @@ EOC
                  %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
                  data
   ensure
-    FileUtils.rm_f(s3_local_file_path)
+    FileUtils.rm_f(s3_local_file_path) if s3_local_file_path
     FileUtils.rm_rf(buffer_path) if buffer_path
   end
 
