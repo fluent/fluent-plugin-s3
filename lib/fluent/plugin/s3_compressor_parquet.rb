@@ -45,7 +45,7 @@ module Fluent::Plugin
       end
 
       def compress(chunk, tmp)
-        chunk_is_file = @buffer_type == "file"
+        chunk_is_file = @buffer_type == "file" && !buffer_compressed?
         path = if chunk_is_file
                  chunk.path
                else
