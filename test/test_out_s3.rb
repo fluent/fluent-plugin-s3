@@ -686,6 +686,42 @@ EOC
     FileUtils.rm_rf(buffer_path) if buffer_path
   end
 
+  def test_compress_by_gzip_command_fallback_to_gzip_writer
+    setup_mocks(true)
+    s3_local_file_path = "/tmp/s3-test.gz"
+    setup_s3_object_mocks(s3_local_file_path: s3_local_file_path)
+    stub.proxy(Tempfile).new("chunk-gzip-tmp")
+
+    d = create_time_sliced_driver(CONFIG_TIME_SLICE + "store_as gzip_command\n")
+
+    # Make the gzip command fail
+    any_instance_of(Fluent::Plugin::S3Output::GzipCommandCompressor) do |klass|
+      stub(klass).system { false }
+    end
+
+    d.instance.log.out.flush_logs = false
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: "test") do
+      d.feed(time, {"a"=>1})
+      d.feed(time, {"a"=>2})
+    end
+    logs = d.instance.log.out.logs
+    assert_true logs.any? {|log| log.include?('Fallback to GzipWriter') }
+    assert_false logs.any? {|log| log.include?('failed to flush the buffer') }
+
+    Zlib::GzipReader.open(s3_local_file_path) do |gz|
+      assert_equal %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n] +
+                   %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n],
+                   gz.read
+    end
+  ensure
+    if d
+      d.instance.log.out.flush_logs = true
+      d.instance.log.out.reset
+    end
+    FileUtils.rm_f(s3_local_file_path) if s3_local_file_path
+  end
+
   data("gzip" => :gzip, "zstd" => :zstd)
   def test_compress_by_parquet_with_compressed_file_buffer(buffer_compress)
     pend "This test require Fluentd 1.19.0 or later which supports zstd buffer compressed." if buffer_compress == :zstd && Gem::Version.new(Fluent::VERSION) < Gem::Version.new('1.19.0')
