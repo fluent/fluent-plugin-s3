@@ -42,7 +42,7 @@ module Fluent::Plugin
             tmp.truncate(0)
             gw = Zlib::GzipWriter.new(tmp)
             chunk.write_to(gw)
-            gw.close
+            gw.finish
           ensure
             gw.close rescue nil
           end
